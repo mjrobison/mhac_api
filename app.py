@@ -12,22 +12,17 @@ db = SQLAlchemy(app)
 #from models import Teams
 import models
 
-@app.route('/')
-def hello():
-    return "Hello World!"
+@app.route('/getTeams', methods=['GET'])
+@app.route('/getTeams/id', methods=['GET'])
+def getTeam(id=None):
+    if not id:
+        data = models.Teams.query,join('Address').all()
+        data_all = []
+        for team in data:
+            data_all.append((team.id, team.team_name, team.team_mascot))
+        return jsonify(team=data_all)
 
-
-@app.route('/<name>')
-def hello_name(name):
-    return "Hello {}!".format(name)
-
-@app.route('/teams', methods=['GET'])
-def getTeam():
-    data = models.Teams.query.all()
-    data_all = []
-    for team in data:
-        data_all.append((team.id, team.team_name, team.team_mascot))
-    return jsonify(team=data_all)
+    # data =
 
 @app.route('/players/', methods=['GET'])
 def getPlayers(team_id=None):
