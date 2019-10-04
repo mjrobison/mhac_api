@@ -19,7 +19,6 @@ def getTeam(id=None):
     if not id:
         data = models.Teams.query.join(models.Address).all()
         for team in data:
-       #data_all.append((team.id, team.team_name, team.team_mascot))
             data_all.append(utils.row2dict(team))
         return jsonify(team=data_all)
     data = models.Teams.query.get(id)
@@ -28,13 +27,14 @@ def getTeam(id=None):
 @app.route('/getPlayers/', methods=['GET'])
 @app.route('/getPlayers/<team_id>', methods=['GET'])
 def getPlayers(team_id=None):
-    if not id:
-        data = models.Persons.query.filter(Persons.type='Player')
+    if not team_id:
+        data = models.Persons.query.all()
         data_all = []
         for player in data:
             data_all.append((player.id, player.first_name, player.last_name, player.team_id))
         return jsonify(team=data_all)
-    data = models.Persons.query.filter(Persons.Team_id=team_id)
+    data = models.Persons.query.all()
+#.filter(models.Persons.Team_id=team_id)
 
     return jsonify(utils.row2dict(data))
 
