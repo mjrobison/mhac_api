@@ -33,8 +33,7 @@ def getPlayers(team_id=None):
         for player in data:
             data_all.append((player.id, player.first_name, player.last_name, player.team_id))
         return jsonify(team=data_all)
-    data = models.Persons.query.all()
-#.filter(models.Persons.Team_id=team_id)
+    data = models.Persons.query.all()#.filter(models.Persons.Team_id=team_id)
 
     return jsonify(utils.row2dict(data))
 
@@ -53,6 +52,31 @@ def updatePlayers():
 def addGame():
     results = request.get_json()
     app.logger.info(results)
+
+@app.route('/getStandings', methods=['GET'])
+@app.route('/getStandings/<division>')
+def getStandings(division=None):
+    if division:
+        pass
+
+# @app.route('/getScheduleBy')
+@app.route('/getScheduleBy/<type>/<id>')
+def getSchedule(type=None, id=None):
+    if lower(type) == 'year':
+        # Query the schedule table with year as the filter
+        pass
+    elif lower(type) == 'team':
+        # Query the schedule table with team as the filter
+        pass
+    else:
+        # Query results by team_uuid
+        pass
+
+@app.route('/getStatsBy/<type>/<id>')
+def getStats(type=None, id=None):
+    pass
+
+
 
 
 if __name__ == '__main__':
