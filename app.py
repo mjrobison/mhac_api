@@ -53,10 +53,33 @@ def addPlayers():
 
     return "Player Succesfully Added", 200
 
-@app.route('/updatePlayer', methods=['PUT'])
-def updatePlayers():
+@app.route('/updatePlayer/<id>', methods=['PUT'])
+def updatePlayers(id):
     results = request.get_json()
+    player = models.Persons.query.filter(models.Persons.id==id).first()
+    if 'first_name' in results:
+        player.first_name = results['first_name']
+    if 'last_name' in results:
+        player.last_name = results['last_name']
+    if 'birth_date' in results:
+        player.birth_date = results['birth_date']
+    if 'height' in results:
+        player.height = results['height']
+    if 'team_id' in results:
+        # update active dates as well
+        player.team_id = results['team_id']
+    if 'person_type' in results:
+        # update active dates as well
+        player.person_type = results['person_type']
+
     app.logger.info(results)
+
+    try:
+        db.session.commit()
+    except Exception as exc:
+        return str(exc), 400
+
+    return 'Player Updated Sucessfully', 200
 
 
 @app.route('/addCoach', methods=['POST'])
