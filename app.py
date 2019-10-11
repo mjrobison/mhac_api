@@ -1,4 +1,4 @@
-from flask import Flask, jsonify,request
+from flask import Flask, jsonify, request
 #from flask.ext.sqlalchemy import SQLAlchemy
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -16,6 +16,7 @@ import models
 @app.route('/getTeams', methods=['GET'])
 @app.route('/getTeams/<id>', methods=['GET'])
 def getTeam(id=None):
+    data_all = []
     if not id:
         data = models.Teams.query.join(models.Address).all()
         for team in data:
@@ -25,24 +26,32 @@ def getTeam(id=None):
     return jsonify(utils.row2dict(data))
 
 @app.route('/getPlayers', methods=['GET'])
-@app.route('/getPlayers/<team_id>', methods=['GET'])
-def getPlayers(team_id=None):
-    if not team_id:
+@app.route('/getPlayers/<team>', methods=['GET'])
+def getPlayers(team=None):
+    print(team)
+    if not team:
         data = models.Persons.query.all()
-        data_all = []
-        for player in data:
-            data_all.append((player.id, player.first_name, player.last_name, player.team_id))
-        return jsonify(team=data_all)
-    data = models.Persons.query.all()#.filter(models.Persons.Team_id=team_id)
+    else:
+        data = models.Persons.query.filter(models.Persons.team_id==team)
 
-    return jsonify(utils.row2dict(data))
+    data_all = []
+    for player in data:
+        data_all.append(utils.row2dict(player))
+
+    return jsonify(data_all)
 
 @app.route('/addPlayer', methods=['POST'])
 def addPlayers():
-    results = request.get_json()
-    user = request.args.get('player')
-    app.logger.info(results)
+    user = request.get_json()
+    u = models.Persons(first_name=user['player']['first'], last_name=user['player']['last'], birth_date=user['player']['birth_date'], team_id=user['player']['team_id'], person_type='1')
+    try:
+        db.session.add(u)
+        db.session.commit()
+    except Exception as exc:
+        app.logger(str(exc))
+        return str(exc), 400
 
+    return "Player Succesfully Added", 200
 
 @app.route('/updatePlayer', methods=['PUT'])
 def updatePlayers():
@@ -51,10 +60,17 @@ def updatePlayers():
 
 
 @app.route('/addCoach', methods=['POST'])
-def addPlayers():
-    results = request.get_json()
-    user = request.args.get('coach')
-    app.logger.info(results)
+def addCoach():
+    user = request.get_json()
+    u = models.Persons(first_name=user['coach']['first'], last_name=user['coach']['last'], birth_date=user['coach']['birth_date'], team_id=user['coach']['team_id'], person_type='2')
+    try:
+        db.session.add(u)
+        db.session.commit()
+    except Exception as exc:
+        app.logger(str(exc))
+        return str(exc), 400
+
+    return "Player Succesfully Added", 200
 
 @app.route('/addGame', methods=['POST'])
 def addGame():

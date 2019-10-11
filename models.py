@@ -1,5 +1,6 @@
 from app import db
 from sqlalchemy.dialects.postgresql import JSON, UUID
+from uuid import uuid4
 #from sqlalchemy.dialects.postgresql import UUID
 
 class Address(db.Model):
@@ -27,11 +28,20 @@ class Teams(db.Model):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+class PersonType(db.Model):
+    __table__name = 'person_type'
+    __table_args__ = {'schema':'mhac'}
+
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(100))
+    persons = db.relationship('Persons', backref=('PersonType'))
+    
+
 class Persons(db.Model):
     __tablename__ = 'person'
     __table_args__ = {"schema":"mhac"}
 
-    id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True,default=uuid4)
     first_name= db.Column(db.String(100))
     last_name= db.Column(db.String(100))
     birth_date= db.Column(db.Date())
