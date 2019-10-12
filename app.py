@@ -53,10 +53,13 @@ def addPlayers():
 
     return "Player Succesfully Added", 200
 
-@app.route('/updatePlayer/<id>', methods=['PUT'])
+@app.route('/updatePlayer/<id>', methods=['PUT', 'POST'])
 def updatePlayers(id):
     results = request.get_json()
-    player = models.Persons.query.filter(models.Persons.id==id).first()
+    player = models.Persons.query.filter(models.Persons.id==id && models.Persons.person_type == '1').first()
+    if not player:
+        return "No player to update", 404
+
     if 'first_name' in results:
         player.first_name = results['first_name']
     if 'last_name' in results:
