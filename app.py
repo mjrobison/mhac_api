@@ -56,7 +56,7 @@ def addPlayers():
 @app.route('/updatePlayer/<id>', methods=['PUT', 'POST'])
 def updatePlayers(id):
     results = request.get_json()
-    player = models.Persons.query.filter(models.Persons.id==id && models.Persons.person_type == '1').first()
+    player = models.Persons.query.filter(models.Persons.id==id).filter(models.Persons.person_type == '1').first()
     if not player:
         return "No player to update", 404
 
