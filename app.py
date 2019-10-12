@@ -98,11 +98,6 @@ def addCoach():
 
     return "Player Succesfully Added", 200
 
-@app.route('/addGame', methods=['POST'])
-def addGame():
-    results = request.get_json()
-    app.logger.info(results)
-
 @app.route('/getStandings', methods=['GET'])
 @app.route('/getStandings/<year>/<level>')
 def getStandings(year=None,level=None):
@@ -126,6 +121,55 @@ def getSchedule(year=None, level=None):
 def getStats(type=None, id=None):
     pass
 
+
+@app.route('/addGame', methods=['POST'])
+def addGame():
+
+    home_team = ''
+    away_team = ''
+    game_time = ''
+    game_date = ''
+    level = ''
+
+    year = request.args.get('year')
+    data = request.get_json()
+
+    game = data['data']
+
+    if not "home_team" in game:
+        return "Home Team is required", 400
+    if not "away_team" in game:
+        return "Away Team is required", 400
+    if not "date" in game:
+        return "Date is required", 400
+    if not "level" in game:
+        return "level is required", 400
+
+    home_team = game['home_team']
+    away_team = game['away_team']
+    game_date = game["date"]
+    level = game['level']
+
+    if "time" in game:
+        time = game['time']
+
+
+    g = models.Schedule(home_team=home_team, away_team=away_team, date=game_date, time=game_time, level=level)
+
+    try:
+        db.session.add(g)
+        db.commit()
+    except Exception as exc:
+        app.logger(str(exc))
+        return str(exc), 400
+
+    return "Game added to the schedule", 200
+
+
+@app.route('/getSche    ulde', methods=['GET'])
+def addGame():1
+    results = request.get_json()535e4hyg3t
+    app.logger.info(results)
 
 
 
