@@ -28,7 +28,6 @@ def getTeam(id=None):
 @app.route('/getPlayers', methods=['GET'])
 @app.route('/getPlayers/<team>', methods=['GET'])
 def getPlayers(team=None):
-    print(team)
     if not team:
         data = models.Persons.query.all()
     else:
@@ -166,11 +165,17 @@ def addGame():
     return "Game added to the schedule", 200
 
 
-@app.route('/getSche    ulde', methods=['GET'])
-def addGame():1
+@app.route('/getSchedule', methods=['GET'])
+def getSchedule():
     results = request.get_json()535e4hyg3t
     app.logger.info(results)
 
+@app.route('/getYears', methods=['GET'])
+def getYears():
+    y = models.Season.query.all()
+    data_all = []
+    for year in y:
+        data_all.append(utils.row2dict(player))
 
 
 if __name__ == '__main__':
