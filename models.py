@@ -24,7 +24,8 @@ class Teams(db.Model):
     team_name = db.Column(db.String(100))
     team_mascot = db.Column(db.String(150))
     address_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.addresses.id'))
-    schedule = db.relationship('Schedule', backref=('Teams'))
+    home_team = db.relationship('Schedule', backref=('home_teams'), foreign_keys="Schedule.home_team_id")
+    away_team = db.relationship('Schedule', backref=('away_teams'), foreign_keys="Schedule.away_team_id")
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -71,6 +72,7 @@ class Season(db.Model):
                    nullable=False, primary_key=True, default=uuid4)
     name = db.Column(db.String(100))
     year = db.Column(db.String(4))
+    season = db.relationship('Schedule', backref=('Season'), foreign_keys="Schedule.season_id")
 
     def __repr__(self):
         return '{}'.format(name)
@@ -80,12 +82,13 @@ class Schedule(db.Model):
     __table_args__ = {"schema": "mhac"}
 
     id = db.Column(db.Integer, primary_key=True)
-    home_team = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
-    away_team = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
     home_score = db.Column(db.String(3))
     away_score = db.Column(db.String(3))
     game_date = db.Column(db.DateTime)
-    season = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.seasons.id'))
+    season_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.seasons.id'))
     neutral_site = db.Column(db.Boolean)
-
-
+   # home_team = db.relationship("Teams", foreign_keys=[home_team_id])
+   # away_team = db.relationship("Teams", foreign_keys=[away_team_id])
+   # season = db.relationship("Season", foreign_keys=[season_id])

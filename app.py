@@ -13,6 +13,17 @@ db = SQLAlchemy(app)
 #from models import Teams
 import models
 
+@app.route('/')
+def index():
+    return """ <HTML><h1> MHAC api </h1>
+    <table>
+    <tr><td>call</td><td>description</td></tr>
+    <tr><td>/getTeams/<id></td><td>Gets all teams when called without an id.  With an id will return the info about an individual team.</td></tr>
+    </table>
+    </HTML>
+    """
+
+
 @app.route('/getTeams', methods=['GET'])
 @app.route('/getTeams/<id>', methods=['GET'])
 def getTeam(id=None):
@@ -23,6 +34,9 @@ def getTeam(id=None):
             data_all.append(utils.row2dict(team))
         return jsonify(team=data_all)
     data = models.Teams.query.get(id)
+    print(data)
+    for team in data:
+        print(team.Schedule)
     return jsonify(utils.row2dict(data))
 
 @app.route('/getPlayers', methods=['GET'])
@@ -104,17 +118,17 @@ def getStandings(year=None,level=None):
         pass
 
 # @app.route('/getScheduleBy')
-@app.route('/getScheduleBy/<year>/<level>/<id>')
-def getSchedule(year=None, level=None):
-    if lower(type) == 'year':
-        # Query the schedule table with year as the filter
-        pass
-    elif lower(type) == 'team':
+#@app.route('/getScheduleBy/<year>/<level>/<id>')
+#def getSchedule(year=None, level=None):
+#    if lower(type) == 'year':
+#        # Query the schedule table with year as the filter
+#        pass
+#    elif lower(type) == 'team':
         # Query the schedule table with team as the filter
-        pass
-    else:
+#        pass
+#    else:
         # Query results by team_uuid
-        pass
+#        pass
 
 @app.route('/getStatsBy/<type>/<id>')
 def getStats(type=None, id=None):
@@ -167,15 +181,23 @@ def addGame():
 
 @app.route('/getSchedule', methods=['GET'])
 def getSchedule():
-    results = request.get_json()535e4hyg3t
-    app.logger.info(results)
+#    results = request.get_json()
+#    app.logger.info(results)
+    schedule = models.Schedule.query.all()
+    data_all = []
+    for game in schedule:
+        data_all.append(utils.row2dict(year))
+
+    return jsonify(data_all), 200
 
 @app.route('/getYears', methods=['GET'])
 def getYears():
     y = models.Season.query.all()
     data_all = []
     for year in y:
-        data_all.append(utils.row2dict(player))
+        data_all.append(utils.row2dict(year))
+
+    return jsonify(data_all), 200
 
 
 if __name__ == '__main__':
