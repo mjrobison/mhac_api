@@ -10,7 +10,7 @@ app.config.from_object('config.DevelopmentConfig')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-#from models import Teams
+# from models import Teams
 import models
 
 @app.route('/')
@@ -23,20 +23,19 @@ def index():
     </HTML>
     """
 
-
 @app.route('/getTeams', methods=['GET'])
 @app.route('/getTeams/<id>', methods=['GET'])
 def getTeam(id=None):
+    print("Here")
     data_all = []
     if not id:
         data = models.Teams.query.join(models.Address).all()
         for team in data:
+            print(team.home_team)
             data_all.append(utils.row2dict(team))
         return jsonify(team=data_all)
     data = models.Teams.query.get(id)
-    print(data)
-    for team in data:
-        print(team.Schedule)
+    
     return jsonify(utils.row2dict(data))
 
 @app.route('/getPlayers', methods=['GET'])
@@ -117,19 +116,6 @@ def getStandings(year=None,level=None):
     if division:
         pass
 
-# @app.route('/getScheduleBy')
-#@app.route('/getScheduleBy/<year>/<level>/<id>')
-#def getSchedule(year=None, level=None):
-#    if lower(type) == 'year':
-#        # Query the schedule table with year as the filter
-#        pass
-#    elif lower(type) == 'team':
-        # Query the schedule table with team as the filter
-#        pass
-#    else:
-        # Query results by team_uuid
-#        pass
-
 @app.route('/getStatsBy/<type>/<id>')
 def getStats(type=None, id=None):
     pass
@@ -179,14 +165,13 @@ def addGame():
     return "Game added to the schedule", 200
 
 
-@app.route('/getSchedule', methods=['GET'])
-def getSchedule():
-#    results = request.get_json()
-#    app.logger.info(results)
-    schedule = models.Schedule.query.all()
+@app.route('/getSchedule/<season_id>', methods=['GET'])
+# @app.route('/getSchedule/<team_id>', methods=['GET'])
+def getSchedule(season_id=None):
+    schedule = models.Schedule.query.filter(models.Schedule.season_id == season_id)
     data_all = []
     for game in schedule:
-        data_all.append(utils.row2dict(year))
+        data_all.append(utils.row2dict(game))
 
     return jsonify(data_all), 200
 

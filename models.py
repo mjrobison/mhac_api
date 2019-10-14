@@ -54,15 +54,23 @@ class Persons(db.Model):
     def __repr__(self):
         return 'Person Name {} {}'.format(self.first_name, self.last_name)
 
-class level(db.Model):
+class Level(db.Model):
     __tablename__ = 'levels'
     __table_args__ = {"schema":"mhac"}
 
     id = db.Column(db.Integer, primary_key=True)
-    level_name = db.Column(db.String(50))
+    level_name = db.Column(db.String(50)) 
 
     def __repr__(self):
         return '{}'.format(self.level_name)
+
+class Sport(db.Model):
+    __tablename__ = 'sports'
+    __table_args__ = {"schema":"mhac"}
+
+    id = db.Column(db.Integer, primary_key=True)
+    sport_name = db.Column(db.String(100), nullable=False)
+    db.relationship('Season', backref=('sport_season'))
 
 class Season(db.Model):
     __tablename__ = 'seasons'
@@ -72,7 +80,10 @@ class Season(db.Model):
                    nullable=False, primary_key=True, default=uuid4)
     name = db.Column(db.String(100))
     year = db.Column(db.String(4))
-    season = db.relationship('Schedule', backref=('Season'), foreign_keys="Schedule.season_id")
+    level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
+    sport_id = db.Column(db.Integer, db.ForeignKey('mhac.sports.id'), nullable=False)
+    schedule = db.relationship('Schedule', backref=('Season'), foreign_keys="Schedule.season_id")
+    # sport = db.relationship('Sport', backref=('sport'), foreign_keys="")
 
     def __repr__(self):
         return '{}'.format(name)
@@ -81,12 +92,13 @@ class Schedule(db.Model):
     __tablename__ = 'schedule'
     __table_args__ = {"schema": "mhac"}
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
     home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
     away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
     home_score = db.Column(db.String(3))
     away_score = db.Column(db.String(3))
     game_date = db.Column(db.DateTime)
+    game_time = db.Column(db.DateTime)
     season_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.seasons.id'))
     neutral_site = db.Column(db.Boolean)
    # home_team = db.relationship("Teams", foreign_keys=[home_team_id])
