@@ -104,3 +104,11 @@ class Schedule(db.Model):
    # home_team = db.relationship("Teams", foreign_keys=[home_team_id])
    # away_team = db.relationship("Teams", foreign_keys=[away_team_id])
    # season = db.relationship("Season", foreign_keys=[season_id])
+
+
+
+# Results? 
+# Standings
+# Scores?
+
+

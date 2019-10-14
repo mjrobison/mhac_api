@@ -111,14 +111,18 @@ def addCoach():
     return "Player Succesfully Added", 200
 
 @app.route('/getStandings', methods=['GET'])
-@app.route('/getStandings/<year>/<level>')
-def getStandings(year=None,level=None):
-    if division:
-        pass
+@app.route('/getStandings/<season_id>')
+def getStandings(season_id=None):
+    if not season_id:
+        return 
+    
+    schedule = models.Schedule.query.filter(models.Schedule.season_id == season_id)
+    
 
-@app.route('/getStatsBy/<type>/<id>')
-def getStats(type=None, id=None):
-    pass
+
+# @app.route('/getStatsBy/<type>/<id>')
+# def getStats(type=None, id=None):
+#     pass
 
 
 @app.route('/addGame', methods=['POST'])
@@ -128,7 +132,9 @@ def addGame():
     away_team = ''
     game_time = ''
     game_date = ''
-    level = ''
+    season = ''
+    neutral_site = None
+
 
     year = request.args.get('year')
     data = request.get_json()
@@ -140,20 +146,26 @@ def addGame():
     if not "away_team" in game:
         return "Away Team is required", 400
     if not "date" in game:
-        return "Date is required", 400
-    if not "level" in game:
-        return "level is required", 400
+        return "Date is required", 400    
+    if not "season" in game:
+        return "season is required", 400
+    if "neutral_site" in game:
+        neutral_site = game['neutral_site']
 
     home_team = game['home_team']
     away_team = game['away_team']
     game_date = game["date"]
-    level = game['level']
+    season = game['season']
 
     if "time" in game:
         time = game['time']
 
-
-    g = models.Schedule(home_team=home_team, away_team=away_team, date=game_date, time=game_time, level=level)
+    g = models.Schedule(home_team_id=home_team, 
+                        away_team_id=away_team, 
+                        game_date=game_date, 
+                        game_time=game_time, 
+                        season_id=season, 
+                        neutral_site=netural_site)
 
     try:
         db.session.add(g)
@@ -163,7 +175,6 @@ def addGame():
         return str(exc), 400
 
     return "Game added to the schedule", 200
-
 
 @app.route('/getSchedule/<season_id>', methods=['GET'])
 # @app.route('/getSchedule/<team_id>', methods=['GET'])
