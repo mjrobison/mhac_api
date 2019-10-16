@@ -13,8 +13,22 @@ db = SQLAlchemy(app)
 # from models import Teams
 import models
 
+
+def has_no_empty_params(rule):
+    defaults = rule.defaults if rule.defaults is not None else ()
+    arguments = rule.arguments if rule.arguments is not None else ()
+    return len(defaults) >= len(arguments)
+
+
 @app.route('/')
 def index():
+    links = []
+    for rule in app.url_map.iter_rules():
+        # Filter out rules we can't navigate to in a browser
+        # and rules that require parameters
+        if "GET" in rule.methods and has_no_empty_params(rule):
+            url = url_for(rule.endpoint, **(rule.defaults or {}))
+            links.append((url, rule.endpoint))
     return """ <HTML><h1> MHAC api </h1>
     <table>
     <tr><td>call</td><td>description</td></tr>
@@ -26,7 +40,6 @@ def index():
 @app.route('/getTeams', methods=['GET'])
 @app.route('/getTeams/<id>', methods=['GET'])
 def getTeam(id=None):
-    print("Here")
     data_all = []
     if not id:
         data = models.Teams.query.join(models.Address).all()
@@ -35,7 +48,7 @@ def getTeam(id=None):
             data_all.append(utils.row2dict(team))
         return jsonify(team=data_all)
     data = models.Teams.query.get(id)
-    
+
     return jsonify(utils.row2dict(data))
 
 @app.route('/getPlayers', methods=['GET'])
@@ -96,7 +109,6 @@ def updatePlayers(id):
 
     return 'Player Updated Sucessfully', 200
 
-
 @app.route('/addCoach', methods=['POST'])
 def addCoach():
     user = request.get_json()
@@ -114,15 +126,9 @@ def addCoach():
 @app.route('/getStandings/<season_id>')
 def getStandings(season_id=None):
     if not season_id:
-        return 
-    
+        return
+
     schedule = models.Schedule.query.filter(models.Schedule.season_id == season_id)
-    
-
-
-# @app.route('/getStatsBy/<type>/<id>')
-# def getStats(type=None, id=None):
-#     pass
 
 
 @app.route('/addGame', methods=['POST'])
@@ -146,7 +152,7 @@ def addGame():
     if not "away_team" in game:
         return "Away Team is required", 400
     if not "date" in game:
-        return "Date is required", 400    
+        return "Date is required", 400
     if not "season" in game:
         return "season is required", 400
     if "neutral_site" in game:
@@ -160,11 +166,11 @@ def addGame():
     if "time" in game:
         time = game['time']
 
-    g = models.Schedule(home_team_id=home_team, 
-                        away_team_id=away_team, 
-                        game_date=game_date, 
-                        game_time=game_time, 
-                        season_id=season, 
+    g = models.Schedule(home_team_id=home_team,
+                        away_team_id=away_team,
+                        game_date=game_date,
+                        game_time=game_time,
+                        season_id=season,
                         neutral_site=netural_site)
 
     try:
@@ -177,7 +183,6 @@ def addGame():
     return "Game added to the schedule", 200
 
 @app.route('/getSchedule/<season_id>', methods=['GET'])
-# @app.route('/getSchedule/<team_id>', methods=['GET'])
 def getSchedule(season_id=None):
     schedule = models.Schedule.query.filter(models.Schedule.season_id == season_id)
     data_all = []
@@ -186,8 +191,8 @@ def getSchedule(season_id=None):
 
     return jsonify(data_all), 200
 
-@app.route('/getYears', methods=['GET'])
-def getYears():
+@app.route('/getSeasons', methods=['GET'])
+def getSeason():
     y = models.Season.query.all()
     data_all = []
     for year in y:

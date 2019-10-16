@@ -20,10 +20,16 @@ class Teams(db.Model):
     __tablename__ = 'teams'
     __table_args__ = {"schema":"mhac"}
 
+    # Team color, website, Team Secondary, logo name color, logo name grey
     id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True)
     team_name = db.Column(db.String(100))
     team_mascot = db.Column(db.String(150))
     address_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.addresses.id'))
+    main_color = db.Column(db.String(6))
+    secondary_color = db.Column(db.String(6))
+    website = db.Column(db.String(150))
+    logo_color = db.Column(db.String(150))
+    logo_grey = db.Column(db.String(150))
     home_team = db.relationship('Schedule', backref=('home_teams'), foreign_keys="Schedule.home_team_id")
     away_team = db.relationship('Schedule', backref=('away_teams'), foreign_keys="Schedule.away_team_id")
 
@@ -59,7 +65,7 @@ class Level(db.Model):
     __table_args__ = {"schema":"mhac"}
 
     id = db.Column(db.Integer, primary_key=True)
-    level_name = db.Column(db.String(50)) 
+    level_name = db.Column(db.String(50))
 
     def __repr__(self):
         return '{}'.format(self.level_name)
@@ -74,7 +80,9 @@ class Sport(db.Model):
 
 class Season(db.Model):
     __tablename__ = 'seasons'
-    __table_args__ = {"schema":"mhac"}
+    __table_args__ = {"schema": "mhac"}
+
+    #Create an active flag/begin and endate/ deadline dates
 
     id = db.Column(UUID(as_uuid=True), unique=True,
                    nullable=False, primary_key=True, default=uuid4)
@@ -82,8 +90,12 @@ class Season(db.Model):
     year = db.Column(db.String(4))
     level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
     sport_id = db.Column(db.Integer, db.ForeignKey('mhac.sports.id'), nullable=False)
+    start_date = db.Column(db.DateTime)
+    roster_submission_deadline = db.Column(db.DateTime)
+    roster_addition_deadline = db.Column(db.DateTime)
+    tournament_start_date = db.Column(db.DateTime)
+    archive = db.Column(db.Boolean)
     schedule = db.relationship('Schedule', backref=('Season'), foreign_keys="Schedule.season_id")
-    # sport = db.relationship('Sport', backref=('sport'), foreign_keys="")
 
     def __repr__(self):
         return '{}'.format(name)
@@ -107,7 +119,7 @@ class Schedule(db.Model):
 
 
 
-# Results? 
+# Results?
 # Standings
 # Scores?
 
