@@ -200,6 +200,32 @@ def getSeason():
 
     return jsonify(data_all), 200
 
+@app.route('/getCurrentSeasons', methods=['GET'])
+def getSeason():
+    seasons = models.Season.query.filter(models.Season.archive != False)
+    data_all = []
+    for season in seasons:
+        data_all.append(utils.row2dict(season))
+
+    return jsonify(data_all), 200
+
+def archiveSeason(season_id):
+    season = models.Season.query.filter(models.Season.id == season_id).first()
+    season.archive = True
+
+    try:
+        db.session.add(season)
+        db.commit()
+    except Exception as exc:
+        app.logger(str(exc))
+        return str(exc), 400
+
+    return '{} has been archived'.format(season)
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
