@@ -2,12 +2,15 @@ from flask import Flask, jsonify, request
 #from flask.ext.sqlalchemy import SQLAlchemy
 from flask_sqlalchemy import SQLAlchemy
 import os
+from flask_cors import CORS
+
 
 import utils
 
 app = Flask(__name__)
 app.config.from_object('config.DevelopmentConfig')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+CORS(app)
 db = SQLAlchemy(app)
 
 # from models import Teams
@@ -201,7 +204,7 @@ def getSeason():
     return jsonify(data_all), 200
 
 @app.route('/getCurrentSeasons', methods=['GET'])
-def getSeason():
+def getCurrentSeason():
     seasons = models.Season.query.filter(models.Season.archive != False)
     data_all = []
     for season in seasons:
