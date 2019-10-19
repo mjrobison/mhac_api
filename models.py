@@ -56,6 +56,8 @@ class Persons(db.Model):
     height= db.Column(db.Integer)
     person_type = db.Column(db.Integer, db.ForeignKey('mhac.person_type.id'))
     team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    number = db.Column(db.Integer)
+    position = db.Column(db.String)
 
     def __repr__(self):
         return 'Person Name {} {}'.format(self.first_name, self.last_name)

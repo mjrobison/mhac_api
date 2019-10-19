@@ -70,16 +70,51 @@ def getPlayers(team=None):
 
 @app.route('/addPlayer', methods=['POST'])
 def addPlayers():
-    user = request.get_json()
-    u = models.Persons(first_name=user['player']['first'], last_name=user['player']['last'], birth_date=user['player']['birth_date'], team_id=user['player']['team_id'], person_type='1')
+    results = request.get_json()
+
+    first_name = None
+    last_name = None
+    birth_date = None
+    position = None
+    age = None
+    height = None
+    team_id = None
+    player_number = None
+    
+    if 'first_name' in results:
+        first_name = results['first_name']
+    if 'last_name' in results:
+        last_name = results['last_name']
+    if 'birth_date' in results:
+        birth_date = results['birth_date']
+    else: 
+        return "Birth Date is required", 401
+    if 'height' in results:
+        height = results['height']
+    if 'team' in results:
+        # update active dates as well
+        team_id = results['team_id']
+    if 'position' in results: 
+        position = results['position']
+    if 'age' in results:
+        age = results['age']
+    if 'number' in results:
+        player_number= results['number']
+
+    u = models.Persons(first_name=first_name, last_name=last_name, birth_date=birth_date, team_id=team_id, person_type='1',number=player_number, position=position)
+
     try:
         db.session.add(u)
         db.session.commit()
     except Exception as exc:
-        app.logger(str(exc))
+        print(str(exc))
         return str(exc), 400
-
-    return "Player Succesfully Added", 200
+    response = {
+        'headers': {
+            'Access-Control-Allow-Origin':'*'
+        }
+    }
+    return jsonify(u.id), 200
 
 @app.route('/updatePlayer/<id>', methods=['PUT', 'POST'])
 def updatePlayers(id):
