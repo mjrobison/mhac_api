@@ -109,11 +109,7 @@ def addPlayers():
     except Exception as exc:
         print(str(exc))
         return str(exc), 400
-    response = {
-        'headers': {
-            'Access-Control-Allow-Origin':'*'
-        }
-    }
+
     return jsonify(u.id), 200
 
 @app.route('/updatePlayer/<id>', methods=['PUT', 'POST'])
