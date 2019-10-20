@@ -119,10 +119,62 @@ class Schedule(db.Model):
    # away_team = db.relationship("Teams", foreign_keys=[away_team_id])
    # season = db.relationship("Season", foreign_keys=[season_id])
 
+class Standings(db.Model):
+    __tablename__ = 'standings'
+    __table_args__ = {'schema':'mhac'}
 
+    pk = db.Column(db.Integer, primary_key=True, nullable=False)
+    team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    season_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.seasons.id'))
+    wins = db.Column(db.Integer)
+    losses = db.Column(db.Integer)
+    games_played = db.Column(db.Integer)
 
+class Games(db.Model):
+    __tablename__ = 'games'
+    __table_args__= {'schema':'mhac'}
+
+    game_id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True, default=uuid64)
+    home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    final_home_score = db.Column(db.Integer)
+    final_away_score = db.Column(db.Intger)
+
+class GameResults(db.Model):
+    __tablename__ = 'game_results'
+    __table_args__= {'schema':'mhac'}
+    
+    pk = db.Column(db.Integer, primary_key=True, nullable=False)
+    game_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.games.game_id'))
+    period = db.Column(db.String(5))
+    home_score = db.Column(db.Integer)
+    away_score = db.Column(db.Integer)
+    game_order = db.Column(db.Integer)
+
+class BasketballStats(db.Model):
+    __tablename__ = 'basketball_stats'
+    __table_args__= {'schema':'mhac'}
+
+    pk = db.Column(db.Integer, primary_key=True, nullable=False)
+    game_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.games.game_id'))
+    team_id = UUID(as_uuid=True), db.ForeignKey('mhac.teams.id')
+    player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.persons.id'))
+    field_goals_attempted = db.Column(db.Integer)
+    field_goals_made = db.Column(db.Integer)
+    three_pointers_attempted = db.Column(db.Integer)
+    three_pointers_made = db.Column(db.Integer)
+    free_throws_attempted = db.Column(db.Integer)
+    free_throws_made = db.Column(db.Integer)
+    total_points = db.Column(db.Integer)
+    assists = db.Column(db.Integer)
+    offensive_rebounds = db.Column(db.Integer)
+    deffensive_rebounds = db.Column(db.Integer)
+    total_rebounds = db.Column(db.Integer)
+    steals = db.Column(db.Integer)
+    blocks = db.Column(db.Integer)
+
+    
 # Results?
-# Standings
-# Scores?
+
 
 
