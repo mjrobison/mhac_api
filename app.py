@@ -80,18 +80,18 @@ def addPlayers():
     height = None
     team_id = None
     player_number = None
-    
+
     if 'first_name' in results:
         first_name = results['first_name']
     if 'last_name' in results:
         last_name = results['last_name']
     if 'birth_date' in results:
         birth_date = results['birth_date']
-    else: 
+    else:
         return "Birth Date is required", 401
     if 'height' in results:
         height = results['height']
-    if 'team' in results:
+    if 'team_id' in results:
         # update active dates as well
         team_id = results['team_id']
     if 'position' in results: 

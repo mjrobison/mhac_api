@@ -134,11 +134,11 @@ class Games(db.Model):
     __tablename__ = 'games'
     __table_args__= {'schema':'mhac'}
 
-    game_id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True, default=uuid64)
+    game_id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True, default=uuid4)
     home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
     away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
     final_home_score = db.Column(db.Integer)
-    final_away_score = db.Column(db.Intger)
+    final_away_score = db.Column(db.Integer)
 
 class GameResults(db.Model):
     __tablename__ = 'game_results'
