@@ -30,8 +30,8 @@ class Teams(db.Model):
     website = db.Column(db.String(150))
     logo_color = db.Column(db.String(150))
     logo_grey = db.Column(db.String(150))
-    home_team = db.relationship('Schedule', backref=('home_teams'), foreign_keys="Games.home_team_id")
-    away_team = db.relationship('Schedule', backref=('away_teams'), foreign_keys="Games.away_team_id")
+    home_team = db.relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
+    away_team = db.relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -43,7 +43,6 @@ class PersonType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.String(100))
     persons = db.relationship('Persons', backref=('PersonType'))
-
 
 class Persons(db.Model):
     __tablename__ = 'person'
@@ -107,18 +106,11 @@ class Schedule(db.Model):
     __table_args__ = {"schema": "mhac"}
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
-    #home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
-    #away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
-    #home_score = db.Column(db.String(3))
-    #away_score = db.Column(db.String(3))
     game_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.games.game_id'))
     game_date = db.Column(db.DateTime)
     game_time = db.Column(db.DateTime)
     season_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.seasons.id'))
     neutral_site = db.Column(db.Boolean)
-   # home_team = db.relationship("Teams", foreign_keys=[home_team_id])
-   # away_team = db.relationship("Teams", foreign_keys=[away_team_id])
-   # season = db.relationship("Season", foreign_keys=[season_id])
 
 class Standings(db.Model):
     __tablename__ = 'standings'
@@ -140,6 +132,11 @@ class Games(db.Model):
     away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
     final_home_score = db.Column(db.Integer)
     final_away_score = db.Column(db.Integer)
+    schedule = db.relationship('Schedule', backref=('Games'), foreign_keys="Schedule.game_id")
+    # home_team = db.relationship("Teams", foreign_keys=[home_team])
+    # away_team = db.relationship("Teams", foreign_keys=[away_team])
+   # season = db.relationship("Season", foreign_keys=[season_id])
+
 
 class GameResults(db.Model):
     __tablename__ = 'game_results'

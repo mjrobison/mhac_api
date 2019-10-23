@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 import os
 from flask_cors import CORS
-
+from sqlalchemy.orm import aliased
 
 import utils
 
@@ -216,14 +216,47 @@ def addGame():
 
     return "Game added to the schedule", 200
 
-@app.route('/getSchedule/<season_id>', methods=['GET'])
-def getSchedule(season_id=None):
-    schedule = models.Schedule.query.filter(models.Schedule.season_id == season_id)
+@app.route('/getSchedule/<season_id>/', methods=['GET'])
+def getSchedule(season_id=None, team_id):
+    home_team = aliased(models.Teams, name='home_team')
+    away_team = aliased(models.Teams, name='away_team')
+    #schedule = models.Schedule.query.filter(models.Schedule.season_id == season_id)
+    # results = db.session.query(mdels.Schedule, models.Games, models.Teams).filter(models.Schedule.season_id == season_id).filter(mode)
+    results = db.session.query(models.Schedule).join(models.Games).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id)
     data_all = []
-    for game in schedule:
-        data_all.append(utils.row2dict(game))
 
-    return jsonify(data_all), 200
+    data = {
+        away_score: "None",
+        away_team_id: {
+          id: "8b31d1b6-e233-11e9-a4c2-b827ebcfd443",
+          name: "Hendersonville Royals"
+        }
+        game_date: "2019-11-19",
+        game_time: "7:00pm",
+        home_score: "None",
+        home_team_id: {
+          id: "8b31d3fa-e233-11e9-a4c2-b827ebcfd443",
+          name: "Tennessee Heat"
+        }
+        id: "d9f5564c-ee31-11e9-88d3-b827ebcfd443",
+        neutral_site: "None",
+        season_id: {
+          id: "0182b606-ee31-11e9-b8a6-b827ebcfd443",
+          name: "Boys 18u Basketball"
+        }
+    data_all.append(data)
+
+    # for r in results:
+    #     data = {}
+    #     data['id'] = r.Schedule.id
+    #     data['game_date'] = r.Schedule.game_date
+    #     data['game_time'] = r.Schedule.game_time
+    #     home_team = {}
+    #     home_team['id'] = r.Teams.
+    #     data[]
+    #     data_all.append(data)
+    
+    return jsonify(results), 200
 
 @app.route('/getSeasons', methods=['GET'])
 def getSeason():
