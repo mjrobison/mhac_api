@@ -230,14 +230,14 @@ def getSchedule(season_id=None, team_id):
         "away_team_id": {
           "id": "8b31d1b6-e233-11e9-a4c2-b827ebcfd443",
           "name": "Hendersonville Royals"
-        }
+        },
         "game_date": "2019-11-19",
         "game_time": "7:00pm",
         "home_score": "None",
         "home_team_id": {
           "id": "8b31d3fa-e233-11e9-a4c2-b827ebcfd443",
           "name": "Tennessee Heat"
-        }
+        },
         "id": "d9f5564c-ee31-11e9-88d3-b827ebcfd443",
         "neutral_site": "None",
         "season_id": {
