@@ -157,27 +157,25 @@ def addCoach():
     return "Player Succesfully Added", 200
 
 @app.route('/getStandings', methods=['GET'])
-@app.route('/getStandings/<season_id>')
+@app.route('/getStandings/<season_id>', methods=['GET'])
 def getStandings(season_id=None):
     if not season_id:
         return
 
-    results = models.Standings.query.filter(models.Schedule.season_id == season_id).all()
+    results = models.Standings.query.filter(models.Standings.season_id == season_id).all()
     standings = []
-    i = 0
+    i = 1
     for team in results:
         data = {}
         data['team'] = team.team_id
-        data['wins'] = teams.wins
-        data['losses'] = teams.losses
-        data['games_played'] = teams.games_played
+        data['wins'] = team.wins
+        data['losses'] = team.losses
+        data['games_played'] = team.games_played
         data['rank'] = i
         i += 1
         standings.append(data)
 
-
     return jsonify(standings), 200
-
 
 @app.route('/addGame', methods=['POST'])
 def addGame():
@@ -275,6 +273,7 @@ def getCurrentSeason():
         data_all.append(utils.row2dict(season))
 
     return jsonify(data_all), 200
+
 
 def archiveSeason(season_id):
     season = models.Season.query.filter(models.Season.id == season_id).first()
