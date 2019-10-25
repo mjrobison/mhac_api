@@ -162,7 +162,21 @@ def getStandings(season_id=None):
     if not season_id:
         return
 
-    standings = models.Standings.query.filter(models.Schedule.season_id == season_id)
+    results = models.Standings.query.filter(models.Schedule.season_id == season_id).all()
+    standings = []
+    i = 0
+    for team in results:
+        data = {}
+        data['team'] = team.team_id
+        data['wins'] = teams.wins
+        data['losses'] = teams.losses
+        data['games_played'] = teams.games_played
+        data['rank'] = i
+        i += 1
+        standings.append(data)
+
+
+    return jsonify(standings), 200
 
 
 @app.route('/addGame', methods=['POST'])
