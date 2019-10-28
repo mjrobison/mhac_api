@@ -36,7 +36,9 @@ def index():
     return """ <HTML><h1> MHAC api </h1>
     <table>
     <tr><td>call</td><td>description</td></tr>
-    <tr><td>/getTeams/<id></td><td>Gets all teams when called without an id.  With an id will return the info about an individual team.</td></tr>
+    <tr><td>/getTeams/<id></td><td>Gets all teams when called without an id.
+              With an id will return the info about an individual team.
+    </td></tr>
     </table>
     </HTML>
     """
@@ -95,7 +97,7 @@ def addPlayers():
     if 'team_id' in results:
         # update active dates as well
         team_id = results['team_id']
-    if 'position' in results: 
+    if 'position' in results:
         position = results['position']
     if 'age' in results:
         age = results['age']
@@ -306,7 +308,111 @@ def archiveSeason(season_id):
 
 @app.route('/addGameResults/<game_id>', methods=['POST'])
 def addGameResults(game_id):
-    pass
+    data = request.get_json()
+    if not ['game', 'team'] in data:
+        return 'Please ensure required fields are filled out', 400
+
+    game_id   = data['game']
+    player_id = data['player']
+    team_id   = data['team']
+    game = db.session.query(models.Game).filter(models.Game.game_id == game_id).first_or_404()
+
+    if 'scores' in data:
+        home_final = 0
+        away_final = 0
+        for score in data['scores']:
+            home_final += score['home']
+            away_final += score['away']
+            period = score['period']
+            if score['period'] > 4:
+                period = 'OT ' + score['period'] - 4
+            gr = models.GameResults(game_id=game, period=period,home_score=score['home'], away_score=score['away'], game_order=score['period'])
+            try:
+                gr.save()
+            except Exeption as exc:
+                return str(exc), 500
+
+        if home_final != data['final_scores']['home'] or away_final != data['final_scores']['away']:
+            # Send back an alert
+            pass
+        # Alert if individual stats don't match final scores
+        try:
+            game.final_home_score = home_final
+            game.final_away_score = away_final
+            game.save()
+            gr.commit()
+            game.commit()
+        except Exception as exc:
+            return str(exc), 500
+
+    if 'player_stats' in data:
+        for player in data['player_stats']:
+            message = addPlayerStats(player_id = data['player_stats']['id'], game_id=game, team_id=team)
+
+
+@app.route('/addPlayerStats/<player_id>/<game_id>/<team_id>', methods=['POST'])
+def addPlayerStats(player_id, game_id, stats=None):
+    two_points_attempted = 0
+    two_points_made = 0
+    three_points_attempted = 0
+    three_points_made = 0
+    free_throws_attempted = 0
+    free_throws_made = 0
+    assists = 0
+    offensive_rebounds = 0
+    defensive_rebounds = 0
+    steals = 0
+    blocks = 0
+    if not stats:
+        data = request.get_json()
+        stats = data
+
+    if '2PA' in stats:
+        two_points_attempted   = stats['2PA']
+    if '2PM' in stats:
+        two_points_made        = stats['2PM']
+    if '3PM' in stats:
+        three_points_attempted = stats['3PM']
+    if '3PA' in stats:
+        three_points_made      = stats['3PA']
+    if 'FTA' in stats:
+        free_throws_attempted  = stats['FTA']
+    if 'FTM' in stats:
+        free_throws_made       = stats['FTM']
+    if 'assists' in stats:
+        assists                = stats['assists']
+    if 'offensive_rebounds' in stats:
+        offensive_rebounds     = stats['offensive_rebounds']
+    if 'defensive_rebounds' in stats:
+        defensive_rebounds     = stats['defensive_rebounds']
+    if 'steals' in stats:
+        steals                 = stats['steals']
+    if 'blocks' in stats:
+        blocks                 = stats['blocks']
+
+    game_stats = models.BasketballStats(game_id=game_id,
+                                         team_id=team_id,
+                                         player_id=player_id,
+                                         field_goals_attempted=two_points_attempted,
+                                         field_goals_made=two_points_made,
+                                         three_pointers_attempted=three_pointers_attempted,
+                                         three_pointers_made=three_pointers_made,
+                                         free_throws_attempted=free_throws_attempted,
+                                         free_throws_made=free_throws_made,
+                                         total_points = utils.total_points(field_goals_made, three_pointers_made, free_throws_made),
+                                         assists=assists,
+                                         offensive_rebounds=offensive_rebounds,
+                                         defensive_rebounds=defensive_rebounds,
+                                         total_rebounds=offensive_rebounds + defensive_rebounds,
+                                         steals=steals,
+                                         blocks=blocks
+                                        )
+    try:
+        game_stats.save()
+        game_stats.commit()
+    except Exception as exc:
+        return str(exc), 500
+
 
 
 
@@ -315,3 +421,4 @@ def addGameResults(game_id):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
+

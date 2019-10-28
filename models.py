@@ -142,7 +142,7 @@ class Games(db.Model):
 class GameResults(db.Model):
     __tablename__ = 'game_results'
     __table_args__= {'schema':'mhac'}
-    
+
     pk = db.Column(db.Integer, primary_key=True, nullable=False)
     game_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.games.game_id'))
     period = db.Column(db.String(5))
@@ -167,7 +167,7 @@ class BasketballStats(db.Model):
     total_points = db.Column(db.Integer)
     assists = db.Column(db.Integer)
     offensive_rebounds = db.Column(db.Integer)
-    deffensive_rebounds = db.Column(db.Integer)
+    defensive_rebounds = db.Column(db.Integer)
     total_rebounds = db.Column(db.Integer)
     steals = db.Column(db.Integer)
     blocks = db.Column(db.Integer)
