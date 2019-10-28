@@ -69,7 +69,7 @@ class Level(db.Model):
     level_name = db.Column(db.String(50))
 
     def __repr__(self):
-        return '{}'.format(self.level_name)
+        return '{0}'.format(self.level_name)
 
 class Sport(db.Model):
     __tablename__ = 'sports'
@@ -99,7 +99,7 @@ class Season(db.Model):
     schedule = db.relationship('Schedule', backref=('Season'), foreign_keys="Schedule.season_id")
 
     def __repr__(self):
-        return '{}'.format(name)
+        return '{0}'.format(self.name)
 
 class Schedule(db.Model):
     __tablename__ = 'schedule'
@@ -122,6 +122,7 @@ class Standings(db.Model):
     wins = db.Column(db.Integer)
     losses = db.Column(db.Integer)
     games_played = db.Column(db.Integer)
+    win_percentage = db.Column(db.Numeric(precision=4, asdecimal=True))
 
 class Games(db.Model):
     __tablename__ = 'games'

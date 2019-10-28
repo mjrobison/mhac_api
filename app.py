@@ -1,3 +1,4 @@
+
 from flask import Flask, jsonify, request
 #from flask.ext.sqlalchemy import SQLAlchemy
 from flask_sqlalchemy import SQLAlchemy
@@ -160,20 +161,28 @@ def addCoach():
 @app.route('/getStandings/<season_id>', methods=['GET'])
 def getStandings(season_id=None):
     if not season_id:
-        return
-
-    results = models.Standings.query.filter(models.Standings.season_id == season_id).all()
+        return "Page Not Found", 404
+    results = db.session.query(models.Standings, models.Teams).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
+#    results = models.Standings.query.filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
     standings = []
     i = 1
+    leader= {}
     for team in results:
+        if i == 1:
+            leader['wins']= team.Standings.wins
+            leader['losses'] = team.Standings.losses
+            gb=0
+        else:
+            gb = utils.calcGamesBehind(leader=leader, wins=team.Standings.wins, losses=team.Standings.losses)
         data = {}
-        data['team'] = team.team_id
-        data['wins'] = team.wins
-        data['losses'] = team.losses
-        data['games_played'] = team.games_played
-        data['rank'] = i
-        i += 1
+        data['team'] = team.Standings.team_id
+        data['team_name'] = team.Teams.team_name
+        data['wins'] = team.Standings.wins
+        data['losses'] = team.Standings.losses
+        data['games_played'] = team.Standings.games_played
+        data['games_behind'] = gb
         standings.append(data)
+        i += 1
 
     return jsonify(standings), 200
 
@@ -267,10 +276,17 @@ def getSeason():
 
 @app.route('/getCurrentSeasons', methods=['GET'])
 def getCurrentSeason():
-    seasons = models.Season.query.filter(models.Season.archive != False)
+    #seasons = models.Season.query.filter(models.Season.archive != False)
+    seasons = db.session.query(models.Season, models.Level).filter(models.Season.archive != False).all()
     data_all = []
     for season in seasons:
-        data_all.append(utils.row2dict(season))
+        s={}
+        s['season_id'] = season.Season.id
+        s['level'] = season.Level.level_name
+        s['season_name'] = season.Season.name
+        s['roster_submission_deadline'] = season.Season.roster_submission_deadline
+        s['year'] = season.Season.year
+        data_all.append(s)
 
     return jsonify(data_all), 200
 
@@ -287,6 +303,10 @@ def archiveSeason(season_id):
         return str(exc), 400
 
     return '{} has been archived'.format(season)
+
+@app.route('/addGameResults/<game_id>', methods=['POST'])
+def addGameResults(game_id):
+    pass
 
 
 
