@@ -67,6 +67,7 @@ class Level(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     level_name = db.Column(db.String(50))
+    db.relationship('Season', backref=('season_level'))
 
     def __repr__(self):
         return '{0}'.format(self.level_name)
@@ -77,7 +78,10 @@ class Sport(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     sport_name = db.Column(db.String(100), nullable=False)
-    db.relationship('Season', backref=('sport_season'))
+    db.relationship('Season', backref=('sport_season'), foreign_keys="Season.sport_id")
+
+    def __repr__(self):
+        return '{0}'.format(self.sport_name)
 
 class Season(db.Model):
     __tablename__ = 'seasons'

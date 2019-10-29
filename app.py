@@ -161,10 +161,14 @@ def addCoach():
 @app.route('/getStandings', methods=['GET'])
 @app.route('/getStandings/<season_id>', methods=['GET'])
 def getStandings(season_id=None):
-    results = db.session.query(models.Standings, models.Teams).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
+    if not season_id:
+        seasons = db.session.query(models.Season, models.Level).join(models.Level).filter(models.Season.archive == None).filter(models.Level.level_name == '18U Boys').first()
+        season_id = seasons.Season.id
+
+    results = db.session.query(models.Standings, models.Teams).join(models.Teams).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
     if not results:
         return "No season found", 404
-#    results = models.Standings.query.filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
+
     standings = []
     i = 1
     leader= {}
@@ -245,7 +249,6 @@ def getSchedule(season_id=None, team_id=None):
     away_team = aliased(models.Teams, name='away_team')
     query = db.session.query(models.Schedule, models.Games, home_team, away_team)
     if season_id:
-#        query = db.session.query(models.Schedule, models.Games, home_team, away_team).filter(models.Schedule.season_id == season_id)
         query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id)
     results = query.all()
     data_all = []
@@ -279,7 +282,8 @@ def getSeason():
 @app.route('/getCurrentSeasons', methods=['GET'])
 def getCurrentSeason():
     #seasons = models.Season.query.filter(models.Season.archive != False)
-    seasons = db.session.query(models.Season, models.Level).filter(models.Season.archive != False).all()
+    #seasons = db.session.query(models.Season, models.Level, models.Sport).filter(models.Season.archive != False).all()
+    seasons = db.session.query(models.Season, models.Level, models.Sport).join(models.Level).join(models.Sport).filter(models.Season.archive == None)
     data_all = []
     for season in seasons:
         s={}
@@ -287,6 +291,7 @@ def getCurrentSeason():
         s['level'] = season.Level.level_name
         s['season_name'] = season.Season.name
         s['roster_submission_deadline'] = season.Season.roster_submission_deadline
+        s['sport'] = season.Sport.sport_name
         s['year'] = season.Season.year
         data_all.append(s)
 
