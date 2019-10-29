@@ -172,8 +172,5 @@ class BasketballStats(db.Model):
     steals = db.Column(db.Integer)
     blocks = db.Column(db.Integer)
 
-    
+
 # Results?
-
-
-
