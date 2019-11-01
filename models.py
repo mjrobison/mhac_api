@@ -138,9 +138,6 @@ class Games(db.Model):
     final_home_score = db.Column(db.Integer)
     final_away_score = db.Column(db.Integer)
     schedule = db.relationship('Schedule', backref=('Games'), foreign_keys="Schedule.game_id")
-    # home_team = db.relationship("Teams", foreign_keys=[home_team])
-    # away_team = db.relationship("Teams", foreign_keys=[away_team])
-   # season = db.relationship("Season", foreign_keys=[season_id])
 
 
 class GameResults(db.Model):

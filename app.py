@@ -1,9 +1,9 @@
 from flask import Flask, jsonify, request
-#from flask.ext.sqlalchemy import SQLAlchemy
 from flask_sqlalchemy import SQLAlchemy
 import os
 from flask_cors import CORS
 from sqlalchemy.orm import aliased
+from datetime import datetime
 
 import utils
 
@@ -13,7 +13,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 db = SQLAlchemy(app)
 
-#from models import Teams
 import models
 
 
@@ -162,10 +161,10 @@ def addCoach():
 @app.route('/getStandings/<season_id>', methods=['GET'])
 def getStandings(season_id=None):
     if not season_id:
-        seasons = db.session.query(models.Season, models.Level).join(models.Level).filter(models.Season.archive == None).filter(models.Level.level_name == '18U Boys').first()
+        seasons = db.session.query(models.Season, models.Level, models.Teams).join(models.Level).filter(models.Season.archive == None).filter(models.Level.level_name == '18U Boys').first()
         season_id = seasons.Season.id
 
-    results = db.session.query(models.Standings, models.Teams).join(models.Teams).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
+    results = db.session.query(models.Standings, models.Teams).outerjoin(models.Teams).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
     if not results:
         return "No season found", 404
 
@@ -196,16 +195,12 @@ def addGame():
 
     home_team = ''
     away_team = ''
-    game_time = ''
+    game_time = '00:00'
     game_date = ''
     season = ''
     neutral_site = None
 
-
-    year = request.args.get('year')
-    data = request.get_json()
-
-    game = data['data']
+    game = request.get_json()
 
     if not "home_team" in game:
         return "Home Team is required", 400
@@ -221,43 +216,47 @@ def addGame():
     home_team = game['home_team']
     away_team = game['away_team']
     game_date = game["date"]
+    game_date = datetime.strptime(game_date, '%m/%d/%Y')
     season = game['season']
 
     if "time" in game:
-        time = game['time']
+        game_time = game['time']
 
-    g = models.Schedule(home_team_id=home_team,
-                        away_team_id=away_team,
-                        game_date=game_date,
-                        game_time=game_time,
-                        season_id=season,
-                        neutral_site=netural_site)
-
+    g = models.Games(home_team_id=home_team,
+                    away_team_id=away_team)
     try:
         db.session.add(g)
-        db.commit()
+        db.session.commit()
     except Exception as exc:
-        app.logger(str(exc))
-        return str(exc), 400
+        print(str(exc))
+        return jsonify({"message": str(exc)}), 400
 
-    return "Game added to the schedule", 200
+    s = models.Schedule(game_id=g.game_id, game_date=game_date, game_time=game_time, season_id = season)
+    try:
+        db.session.add(s)
+        db.session.commit()
+    except Exception as exc:
+        print(str(exc))
+        return jsonify({"message": str(exc)}), 400
+
+    return jsonify({"message": "Game added to the schedule"}), 200
 
 
-@app.route('/getSchedule/<season_id>/', methods=['GET'])
+@app.route('/getSchedule/<season_id>/<team_id>', methods=['GET'])
 def getSchedule(season_id=None, team_id=None):
     home_team = aliased(models.Teams, name='home_team')
     away_team = aliased(models.Teams, name='away_team')
     query = db.session.query(models.Schedule, models.Games, home_team, away_team)
     if season_id:
-        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id)
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id).filter((home_team.id == team_id) | (away_team.id ==team_id))
     results = query.all()
     data_all = []
-
+    print(results)
     for r in results:
         data = {}
         data['id']        = r.Schedule.id
         data['game_date'] = r.Schedule.game_date
-        data['game_time'] = r.Schedule.game_time
+        data['game_time'] = str(r.Schedule.game_time)
         home_team = {}
         home_team['id']   = r.home_team.id
         home_team['name'] = r.home_team.team_name
@@ -266,6 +265,10 @@ def getSchedule(season_id=None, team_id=None):
         away_team['id']   = r.away_team.id
         away_team['name'] = r.away_team.team_name
         data['away_team'] = away_team
+        final_score = {}
+        final_score['home'] = r.Games.final_home_score
+        final_score['away'] = r.Games.final_away_score
+        data['final_score'] = final_score
         data_all.append(data)
 
     return jsonify(data_all), 200
@@ -418,6 +421,9 @@ def addPlayerStats(player_id, game_id, stats=None):
     except Exception as exc:
         return str(exc), 500
 
+@app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
+def getGameResults():
+    pass
 
 
 if __name__ == '__main__':
