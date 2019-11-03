@@ -32,6 +32,7 @@ class Teams(db.Model):
     logo_grey = db.Column(db.String(150))
     home_team = db.relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
     away_team = db.relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
+    team_stats = db.relationship('BasketballStats', backref=('team_stats'), foreign_keys='BasketballStats.team_id')
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -57,6 +58,7 @@ class Persons(db.Model):
     team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
     number = db.Column(db.Integer)
     position = db.Column(db.String)
+    player_stats = db.relationship('BasketballStats', backref=('Player Stats'), foreign_keys='BasketballStats.player_id')
 
     def __repr__(self):
         return 'Person Name {} {}'.format(self.first_name, self.last_name)
@@ -138,6 +140,7 @@ class Games(db.Model):
     final_home_score = db.Column(db.Integer)
     final_away_score = db.Column(db.Integer)
     schedule = db.relationship('Schedule', backref=('Games'), foreign_keys="Schedule.game_id")
+    game_stats = db.relationship('BasketballStats', backref=('Game Stats'), foreign_keys='BasketballStats.game_id')
 
 
 class GameResults(db.Model):
@@ -157,8 +160,8 @@ class BasketballStats(db.Model):
 
     pk = db.Column(db.Integer, primary_key=True, nullable=False)
     game_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.games.game_id'))
-    team_id = UUID(as_uuid=True), db.ForeignKey('mhac.teams.id')
-    player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.persons.id'))
+    team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.person.id'))
     field_goals_attempted = db.Column(db.Integer)
     field_goals_made = db.Column(db.Integer)
     three_pointers_attempted = db.Column(db.Integer)
