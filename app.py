@@ -425,17 +425,6 @@ def addPlayerStats(player_id, game_id, stats=None):
 
 @app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
 def getGameResults(game_id=None, team_id=None):
-    two_points_attempted = 0
-    two_points_made = 0
-    three_points_attempted = 0
-    three_points_made = 0
-    free_throws_attempted = 0
-    free_throws_made = 0
-    assists = 0
-    offensive_rebounds = 0
-    defensive_rebounds = 0
-    steals = 0
-    blocks = 0
 
     results = db.session.query(models.Games, models.Teams, models.Persons, models.GameResults, models.BasketballStats).\
         join(models.Games, or_(models.Games.home_team_id == models.Teams.id, models.Games.away_team_id == models.Teams.id)).\
