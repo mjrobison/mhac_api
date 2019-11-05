@@ -1,10 +1,14 @@
 from flask import Flask, jsonify, request
-from flask_sqlalchemy import SQLAlchemy
-import os
 from flask_cors import CORS
+from flask_bcrypt import Bcrypt
+from flask_sqlalchemy import SQLAlchemy
+
 from sqlalchemy.orm import aliased
 from sqlalchemy import and_, or_
+
+import os
 from datetime import datetime
+
 
 import utils
 
