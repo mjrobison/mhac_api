@@ -21,6 +21,23 @@ class User(db.Model):
         ).decode()
         self.registered_on = datetime.datetime.now()
         self.admin = admin
+    
+    @classmethod
+    def authenticate(cls, **kwargs):
+        email = kwargs.get('email')
+        password = kwargs.get('password')
+        
+        if not email or not password:
+            return None
+
+        user = cls.query.filter_by(email=email).first()
+        if not user or not check_password_hash(user.password, password):
+            return None
+
+        return user
+
+    def to_dict(self):
+        return dict(id=self.id, email=self.email)
 
 class Address(db.Model):
     __tablename__ = 'addresses'
@@ -155,9 +172,7 @@ class Games(db.Model):
     final_home_score = db.Column(db.Integer)
     final_away_score = db.Column(db.Integer)
     schedule = db.relationship('Schedule', backref=('Games'), foreign_keys="Schedule.game_id")
-    # home_team = db.relationship("Teams", foreign_keys=[home_team])
-    # away_team = db.relationship("Teams", foreign_keys=[away_team])
-   # season = db.relationship("Season", foreign_keys=[season_id])
+
 
 
 class GameResults(db.Model):

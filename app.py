@@ -49,7 +49,7 @@ def login():
     user = User.authenticate(**data)
 
     if not user:
-        return jsonify({'message': 'Invalid credentials', 'authenticated'=False}), 401
+        return jsonify({'message': 'Invalid credentials', 'authenticated':False}), 401
 
     token = jwt.encode({
         'sub': user.email,
@@ -59,6 +59,7 @@ def login():
     app.config['SECRET KEY'])
 
     return jsonify({'token': token.decode('UTF-8')})
+
 @app.route('/getTeams', methods=['GET'])
 @app.route('/getTeams/<id>', methods=['GET'])
 def getTeam(id=None):
@@ -303,8 +304,6 @@ def getSeason():
 
 @app.route('/getCurrentSeasons', methods=['GET'])
 def getCurrentSeason():
-    #seasons = models.Season.query.filter(models.Season.archive != False)
-    #seasons = db.session.query(models.Season, models.Level, models.Sport).filter(models.Season.archive != False).all()
     seasons = db.session.query(models.Season, models.Level, models.Sport).join(models.Level).join(models.Sport).filter(models.Season.archive == None)
     data_all = []
     for season in seasons:
@@ -458,6 +457,7 @@ def getGameResults(game_id=None, team_id=None):
         data['game_id'] = r.Games.game_id
         data['player_first_name'] = r.Persons.first_name
         data['player_last_name'] = r.Persons.last_name
+        data['player_number'] = r.Persons.number
         stats = {}
         stats['2PA'] = 0
         stats['2PM'] = 0
