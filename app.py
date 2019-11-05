@@ -13,6 +13,7 @@ app.config.from_object('config.DevelopmentConfig')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
 import models
 
@@ -42,6 +43,22 @@ def index():
     </HTML>
     """
 
+@app.route('/login/', methods=['POST'])
+def login():
+    data = request.get_json()
+    user = User.authenticate(**data)
+
+    if not user:
+        return jsonify({'message': 'Invalid credentials', 'authenticated'=False}), 401
+
+    token = jwt.encode({
+        'sub': user.email,
+        'iat': datetime.utcnow(),
+        'exp': datetime.utcnow() +timedelta(minutes=30)
+    },
+    app.config['SECRET KEY'])
+
+    return jsonify({'token': token.decode('UTF-8')})
 @app.route('/getTeams', methods=['GET'])
 @app.route('/getTeams/<id>', methods=['GET'])
 def getTeam(id=None):
@@ -72,7 +89,7 @@ def getPlayers(team=None):
 
 @app.route('/addPlayer', methods=['POST'])
 def addPlayers():
-    results = request.get_json()
+    data = request.get_json()
 
     first_name = None
     last_name = None
@@ -83,25 +100,25 @@ def addPlayers():
     team_id = None
     player_number = None
 
-    if 'first_name' in results:
-        first_name = results['first_name']
-    if 'last_name' in results:
-        last_name = results['last_name']
-    if 'birth_date' in results:
-        birth_date = results['birth_date']
+    if 'first_name' in data:
+        first_name = data['first_name']
+    if 'last_name' in data:
+        last_name = data['last_name']
+    if 'birth_date' in data:
+        birth_date = data['birth_date']
     else:
         return "Birth Date is required", 401
-    if 'height' in results:
-        height = results['height']
-    if 'team_id' in results:
+    if 'height' in data:
+        height = data['height']
+    if 'team_id' in data:
         # update active dates as well
-        team_id = results['team_id']
-    if 'position' in results:
-        position = results['position']
-    if 'age' in results:
-        age = results['age']
-    if 'number' in results:
-        player_number= results['number']
+        team_id = data['team_id']
+    if 'position' in data:
+        position = data['position']
+    if 'age' in data:
+        age = data['age']
+    if 'number' in data:
+        player_number= data['number']
 
     u = models.Persons(first_name=first_name, last_name=last_name, birth_date=birth_date, team_id=team_id, person_type='1',number=player_number, position=position)
 

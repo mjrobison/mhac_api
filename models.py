@@ -1,4 +1,4 @@
-from app import db
+from app import db, bcrypt
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from uuid import uuid4
 #from sqlalchemy.dialects.postgresql import UUID
