@@ -1,6 +1,6 @@
 import configparser
-#import psycopg2
-#from sqlalchemy.dialects.postgresql import UUID
+import os
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Read Config File
 config = configparser.ConfigParser()
