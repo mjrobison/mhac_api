@@ -21,12 +21,12 @@ class User(db.Model):
         ).decode()
         self.registered_on = datetime.datetime.now()
         self.admin = admin
-    
+
     @classmethod
     def authenticate(cls, **kwargs):
         email = kwargs.get('email')
         password = kwargs.get('password')
-        
+
         if not email or not password:
             return None
 
@@ -73,6 +73,18 @@ class Teams(db.Model):
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+
+class TeamRoster(db.Model):
+    __tablename__ = 'team_rosters'
+    __table_args__ = {"schema": "mhac"}
+
+    # Roster is a group of persons on the team for the season, in the level
+    # PersonID
+    # TeamId
+    # levelid
+
+
+
 
 class PersonType(db.Model):
     __table__name = 'person_type'
