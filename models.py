@@ -1,6 +1,7 @@
 from app import db, bcrypt
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from uuid import uuid4
+import datetime
 #from sqlalchemy.dialects.postgresql import UUID
 
 class User(db.Model):
@@ -17,7 +18,7 @@ class User(db.Model):
     def __init__(self, email, password, admin=False):
         self.email = email
         self.password = bcrypt.generate_password_hash(
-            password, app.config.get('BCRYPT_LOG_ROUNDS')
+            password, 15
         ).decode()
         self.registered_on = datetime.datetime.now()
         self.admin = admin
@@ -31,7 +32,7 @@ class User(db.Model):
             return None
 
         user = cls.query.filter_by(email=email).first()
-        if not user or not check_password_hash(user.password, password):
+        if not user or not bcrypt.check_password_hash(user.password, password):
             return None
 
         return user
@@ -74,17 +75,16 @@ class Teams(db.Model):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
-class TeamRoster(db.Model):
-    __tablename__ = 'team_rosters'
-    __table_args__ = {"schema": "mhac"}
 
-    # Roster is a group of persons on the team for the season, in the level
-    # PersonID
-    # TeamId
-    # levelid
+class Level(db.Model):
+    __tablename__ = 'levels'
+    __table_args__ = {"schema":"mhac"}
 
+    id = db.Column(db.Integer, primary_key=True)
+    level_name = db.Column(db.String(50))
 
-
+    def __repr__(self):
+        return '{0}'.format(self.level_name)
 
 class PersonType(db.Model):
     __table__name = 'person_type'
@@ -102,7 +102,7 @@ class Persons(db.Model):
     first_name= db.Column(db.String(100))
     last_name= db.Column(db.String(100))
     birth_date= db.Column(db.Date())
-    height= db.Column(db.Integer)
+    height= db.Column(db.String(10))
     person_type = db.Column(db.Integer, db.ForeignKey('mhac.person_type.id'))
     team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
     number = db.Column(db.Integer)
@@ -111,15 +111,19 @@ class Persons(db.Model):
     def __repr__(self):
         return 'Person Name {} {}'.format(self.first_name, self.last_name)
 
-class Level(db.Model):
-    __tablename__ = 'levels'
-    __table_args__ = {"schema":"mhac"}
+class TeamRoster(db.Model):
+    __tablename__ = 'team_rosters'
+    __table_args__ = {"schema": "mhac"}
 
-    id = db.Column(db.Integer, primary_key=True)
-    level_name = db.Column(db.String(50))
+    roster_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.person.id'))
+    level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'))
 
-    def __repr__(self):
-        return '{0}'.format(self.level_name)
+    # Roster is a group of persons on the team for the season, in the level
+    # PersonID
+    # TeamId
+    # levelid
 
 class Sport(db.Model):
     __tablename__ = 'sports'
@@ -184,7 +188,6 @@ class Games(db.Model):
     final_home_score = db.Column(db.Integer)
     final_away_score = db.Column(db.Integer)
     schedule = db.relationship('Schedule', backref=('Games'), foreign_keys="Schedule.game_id")
-
 
 
 class GameResults(db.Model):

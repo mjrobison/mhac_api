@@ -1,14 +1,14 @@
+from functools import wraps
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
-
 from sqlalchemy.orm import aliased
 from sqlalchemy import and_, or_
 
 import os
-from datetime import datetime
-
+from datetime import datetime, timedelta
 
 import utils
 
@@ -19,8 +19,43 @@ CORS(app)
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
+import jwt
 import models
 
+
+def token_required(f):
+    @wraps(f)
+    def _verify(*args, **kwargs):
+        auth_headers = request.headers.get('Authorization', '').split()
+
+        invalid_msg = {
+            'message': 'Invalid token. Registeration and / or authentication required',
+            'authenticated': False
+        }
+        expired_msg = {
+            'message': 'Expired token. Reauthentication required.',
+            'authenticated': False
+        }
+
+        # if len(auth_headers) != 2:
+            # return jsonify(invalid_msg), 401
+
+        try:
+            token = auth_headers[0]
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+            user = models.User.query.filter_by(email=data['sub']).first()
+            if not user:
+                raise RuntimeError('User not found')
+            print(f)
+            return f(user, *args, **kwargs)
+        except jwt.ExpiredSignatureError:
+            # 401 is Unauthorized HTTP status code
+            return jsonify(expired_msg), 401
+        except (jwt.InvalidTokenError, Exception) as e:
+            print(e)
+            return jsonify(invalid_msg), 401
+
+    return _verify
 
 def has_no_empty_params(rule):
     defaults = rule.defaults if rule.defaults is not None else ()
@@ -50,7 +85,7 @@ def index():
 @app.route('/login/', methods=['POST'])
 def login():
     data = request.get_json()
-    user = User.authenticate(**data)
+    user = models.User.authenticate(**data)
 
     if not user:
         return jsonify({'message': 'Invalid credentials', 'authenticated':False}), 401
@@ -58,11 +93,12 @@ def login():
     token = jwt.encode({
         'sub': user.email,
         'iat': datetime.utcnow(),
-        'exp': datetime.utcnow() +timedelta(minutes=30)
+        'exp': datetime.utcnow() + timedelta(minutes=30)
     },
-    app.config['SECRET KEY'])
+    app.config['SECRET_KEY'])
 
     return jsonify({'token': token.decode('UTF-8')})
+
 
 @app.route('/getTeams', methods=['GET'])
 @app.route('/getTeams/<id>', methods=['GET'])
@@ -77,6 +113,7 @@ def getTeam(id=None):
     data = models.Teams.query.get(id)
 
     return jsonify(utils.row2dict(data))
+
 
 @app.route('/getPlayers', methods=['GET'])
 @app.route('/getPlayers/<team>', methods=['GET'])
@@ -495,6 +532,26 @@ def getGameResults(game_id=None, team_id=None):
         data_all.append(data)
 
     return jsonify(data_all), 200
+
+@app.route('/addPlayerToRoster', methods=['POST'])
+def addToRoster():
+    data = request.get_json()
+    print(data)
+
+    if 'team_id' not in data.keys():
+        return jsonify({'message': "Team is required"}), 401
+    if 'player_id' not in data.keys():
+        return jsonify({'message': "player is required"}), 401
+    if 'level_id' not in data.keys():
+        return jsonify({'message': "Level is required"}), 401
+
+    player = models.TeamRoster(**data)
+    db.session.add(player)
+    db.session.commit()
+    return jsonify({"message": "Player added to Roster"})
+
+
+
 
 
 if __name__ == '__main__':
