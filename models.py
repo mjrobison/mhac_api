@@ -69,8 +69,8 @@ class Teams(db.Model):
     website = db.Column(db.String(150))
     logo_color = db.Column(db.String(150))
     logo_grey = db.Column(db.String(150))
-    home_team = db.relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
-    away_team = db.relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
+    # home_team = db.relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
+    # away_team = db.relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -111,20 +111,6 @@ class Persons(db.Model):
     def __repr__(self):
         return 'Person Name {} {}'.format(self.first_name, self.last_name)
 
-class TeamRoster(db.Model):
-    __tablename__ = 'team_rosters'
-    __table_args__ = {"schema": "mhac"}
-
-    roster_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
-    player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.person.id'))
-    level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'))
-
-    # Roster is a group of persons on the team for the season, in the level
-    # PersonID
-    # TeamId
-    # levelid
-
 class Sport(db.Model):
     __tablename__ = 'sports'
     __table_args__ = {"schema":"mhac"}
@@ -143,7 +129,7 @@ class Season(db.Model):
                    nullable=False, primary_key=True, default=uuid4)
     name = db.Column(db.String(100))
     year = db.Column(db.String(4))
-    level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
+    # level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
     sport_id = db.Column(db.Integer, db.ForeignKey('mhac.sports.id'), nullable=False)
     start_date = db.Column(db.DateTime)
     roster_submission_deadline = db.Column(db.DateTime)
@@ -154,6 +140,28 @@ class Season(db.Model):
 
     def __repr__(self):
         return '{0}'.format(self.name)
+
+class SeasonTeams(db.Model):
+    __tablename__ = 'season_teams'
+    __table_args__ = {"schema": "mhac"}
+
+    id = db.Column(UUID(as_uuid=True), unique=True,
+                   nullable=False, primary_key=True, default=uuid4)
+    season_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.seasons.id'), nullable=False)
+    level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
+    team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'), nullable=False)
+    home_team = db.relationship('Games', backref=(
+            'home_teams'), foreign_keys="Games.home_team_id")
+    away_team = db.relationship('Games', backref=(
+        'away_teams'), foreign_keys="Games.away_team_id")
+
+class TeamRoster(db.Model):
+    __tablename__ = 'team_rosters'
+    __table_args__ = {"schema": "mhac"}
+
+    roster_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    season_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.season_teams.id'))
+    player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.person.id'))
 
 class Schedule(db.Model):
     __tablename__ = 'schedule'
@@ -183,8 +191,8 @@ class Games(db.Model):
     __table_args__= {'schema':'mhac'}
 
     game_id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True, default=uuid4)
-    home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
-    away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.season_teams.id'))
+    away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.season_teams.id'))
     final_home_score = db.Column(db.Integer)
     final_away_score = db.Column(db.Integer)
     schedule = db.relationship('Schedule', backref=('Games'), foreign_keys="Schedule.game_id")
@@ -222,9 +230,3 @@ class BasketballStats(db.Model):
     total_rebounds = db.Column(db.Integer)
     steals = db.Column(db.Integer)
     blocks = db.Column(db.Integer)
-
-
-# Results?
-
-
-
