@@ -129,7 +129,7 @@ class Season(db.Model):
                    nullable=False, primary_key=True, default=uuid4)
     name = db.Column(db.String(100))
     year = db.Column(db.String(4))
-    # level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
+    level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
     sport_id = db.Column(db.Integer, db.ForeignKey('mhac.sports.id'), nullable=False)
     start_date = db.Column(db.DateTime)
     roster_submission_deadline = db.Column(db.DateTime)
@@ -148,7 +148,7 @@ class SeasonTeams(db.Model):
     id = db.Column(UUID(as_uuid=True), unique=True,
                    nullable=False, primary_key=True, default=uuid4)
     season_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.seasons.id'), nullable=False)
-    level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
+    #level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
     team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'), nullable=False)
     home_team = db.relationship('Games', backref=(
             'home_teams'), foreign_keys="Games.home_team_id")

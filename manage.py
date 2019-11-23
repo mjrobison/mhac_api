@@ -13,7 +13,7 @@ def createdb(drop_first=False, build=False):
     db.create_all()
     if build:
         build_dev_db.run()
-
+        
 
 if __name__ == '__main__':
     manager.run()

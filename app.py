@@ -225,6 +225,7 @@ def getStandings(season_id=None):
         season_id = seasons.Season.id
 
     results = db.session.query(models.Standings, models.Teams).outerjoin(models.Teams).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
+    print
     if not results:
         return "No season found", 404
 
