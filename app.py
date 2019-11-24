@@ -262,6 +262,7 @@ def addGame():
     neutral_site = None
 
     game = request.get_json()
+    print(game)
 
     if not "home_team" in game:
         return "Home Team is required", 400
@@ -282,6 +283,7 @@ def addGame():
 
     if "time" in game:
         game_time = game['time']
+        game_time= datetime.strptime(game_time, '%H:%M')
 
     g = models.Games(home_team_id=home_team,
                     away_team_id=away_team)
@@ -303,7 +305,8 @@ def addGame():
     return jsonify({"message": "Game added to the schedule"}), 200
 
 
-@app.route('/getSchedule/<season_id>/<team_id>', methods=['GET'])
+# @app.route('/getSchedule/<season_id>/<team_id>', methods=['GET'])
+@app.route('/getSchedule/<team_id>', methods=['GET'])
 def getSchedule(season_id=None, team_id=None):
     home_team = aliased(models.Teams, name='home_team')
     away_team = aliased(models.Teams, name='away_team')
@@ -377,13 +380,14 @@ def archiveSeason(season_id):
 @app.route('/addGameResults/<game_id>', methods=['POST'])
 def addGameResults(game_id):
     data = request.get_json()
-    if not ['game', 'team'] in data:
+    if not 'game' in data:
+        return 'Please ensure required fields are filled out', 400
+    if not 'team' in data:
         return 'Please ensure required fields are filled out', 400
 
     game_id   = data['game']
-    player_id = data['player']
     team_id   = data['team']
-    game = db.session.query(models.Game).filter(models.Game.game_id == game_id).first_or_404()
+    game = db.session.query(models.Games).filter(models.Games.game_id == game_id).first_or_404()
 
     if 'scores' in data:
         home_final = 0
@@ -415,11 +419,11 @@ def addGameResults(game_id):
 
     if 'player_stats' in data:
         for player in data['player_stats']:
-            message = addPlayerStats(player_id = data['player_stats']['id'], game_id=game, team_id=team)
-
+            message = addPlayerStats(player_id = player['id'], game_id=game_id, stats=data, team_id=team_id)
+    return message
 
 @app.route('/addPlayerStats/<player_id>/<game_id>/<team_id>', methods=['POST'])
-def addPlayerStats(player_id, game_id, stats=None):
+def addPlayerStats(player_id, game_id, team_id, stats=None):
     two_points_attempted = 0
     two_points_made = 0
     three_points_attempted = 0
@@ -431,6 +435,8 @@ def addPlayerStats(player_id, game_id, stats=None):
     defensive_rebounds = 0
     steals = 0
     blocks = 0
+    turnovers = 0
+    
     if not stats:
         data = request.get_json()
         stats = data
@@ -440,9 +446,9 @@ def addPlayerStats(player_id, game_id, stats=None):
     if '2PM' in stats:
         two_points_made        = stats['2PM']
     if '3PM' in stats:
-        three_points_attempted = stats['3PM']
+        three_points_attempted = stats['3PA']
     if '3PA' in stats:
-        three_points_made      = stats['3PA']
+        three_points_made      = stats['3PM']
     if 'FTA' in stats:
         free_throws_attempted  = stats['FTA']
     if 'FTM' in stats:
@@ -463,11 +469,11 @@ def addPlayerStats(player_id, game_id, stats=None):
                                          player_id=player_id,
                                          field_goals_attempted=two_points_attempted,
                                          field_goals_made=two_points_made,
-                                         three_pointers_attempted=three_pointers_attempted,
-                                         three_pointers_made=three_pointers_made,
+                                         three_pointers_attempted=three_points_attempted,
+                                         three_pointers_made=three_points_made,
                                          free_throws_attempted=free_throws_attempted,
                                          free_throws_made=free_throws_made,
-                                         total_points = utils.total_points(field_goals_made, three_pointers_made, free_throws_made),
+                                         total_points = utils.totalPoints(two_points_made, three_points_made, free_throws_made),
                                          assists=assists,
                                          offensive_rebounds=offensive_rebounds,
                                          defensive_rebounds=defensive_rebounds,
@@ -476,10 +482,15 @@ def addPlayerStats(player_id, game_id, stats=None):
                                          blocks=blocks
                                         )
     try:
-        game_stats.save()
-        game_stats.commit()
+        # game_stats.save()
+        db.session.add(game_stats)
+        # game_stats.commit()
+        db.session.commit()
+
     except Exception as exc:
         return str(exc), 500
+    
+    return jsonify("Saved"), 200
 
 @app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
 def getGameResults(game_id=None, team_id=None):

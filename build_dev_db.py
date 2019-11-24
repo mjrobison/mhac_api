@@ -160,37 +160,37 @@ def run():
     db.session.commit()
 
     players = { '18U Boys': [
-            {'first_name': 'Jace', 'last_name': 'Mortimer',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Hudson', 'last_name': 'Mortimer',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Canyon', 'last_name': 'Gilbert',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Ellis', 'last_name': 'Bass',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Carson', 'last_name': 'Harris',           'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Kris', 'last_name': 'Ware',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Christian', 'last_name': 'Luisi',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Harrison', 'last_name': 'Burkeen',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Owen', 'last_name': 'Bass',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Jude', 'last_name': 'Kimmel',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Silas', 'last_name': 'Kingsbury',            'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Jace', 'last_name': 'Mortimer', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Hudson', 'last_name': 'Mortimer', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Canyon', 'last_name': 'Gilbert', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Ellis', 'last_name': 'Bass', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Carson', 'last_name': 'Harris', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Kris', 'last_name': 'Ware', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Christian', 'last_name': 'Luisi', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Harrison', 'last_name': 'Burkeen', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Owen', 'last_name': 'Bass', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Jude', 'last_name': 'Kimmel', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Silas', 'last_name': 'Kingsbury', 'team_id': t.id, 'person_type': 1},
         ],
     '16U Boys': [
-            {'first_name': 'Silas', 'last_name': 'Kingsbury',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Jace', 'last_name': 'Mortimer',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Hudson', 'last_name': 'Mortimer',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Canyon', 'last_name': 'Gilbert',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Preston', 'last_name': 'Burkeen',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Jack', 'last_name': 'Pierce',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Wes', 'last_name': 'Luisi',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Toren', 'last_name': 'Gilbert',            'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Silas', 'last_name': 'Kingsbury', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Jace', 'last_name': 'Mortimer', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Hudson', 'last_name': 'Mortimer', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Canyon', 'last_name': 'Gilbert', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Preston', 'last_name': 'Burkeen', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Jack', 'last_name': 'Pierce', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Wes', 'last_name': 'Luisi', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Toren', 'last_name': 'Gilbert', 'team_id': t.id, 'person_type': 1},
         ], 
     '14U Boys': [
-            {'first_name': 'Preston', 'last_name': 'Burkeen',            'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Preston', 'last_name': 'Burkeen', 'team_id': t.id, 'person_type': 1},
             {'first_name': 'Sanders', 'last_name': 'McMurty', 'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Logan', 'last_name': 'Goins',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Jayden', 'last_name': 'Hillis',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Keaton', 'last_name': 'Sadler',           'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Luke', 'last_name': 'Vierkantz',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Wes', 'last_name': 'Luisi',            'team_id': t.id, 'person_type': 1},
-            {'first_name': 'Toren', 'last_name': 'Gilbert',            'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Logan', 'last_name': 'Goins', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Jayden', 'last_name': 'Hillis', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Keaton', 'last_name': 'Sadler', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Luke', 'last_name': 'Vierkantz', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Wes', 'last_name': 'Luisi', 'team_id': t.id, 'person_type': 1},
+            {'first_name': 'Toren', 'last_name': 'Gilbert', 'team_id': t.id, 'person_type': 1},
         ]
     }
     create_team(team=t, players=players)
@@ -332,3 +332,152 @@ def run():
     #     game = models.Games(home_team_id=g[1], away_team_id=g[0])
     #     db.session.add(game)
     #     db.session.commit()
+
+
+games = {
+    'Royals 18U': [{
+    "home_team": "a5c1b203-57d6-4b92-944b-e276901538ee",
+    "away_team": "611e262d-5d17-4581-993b-9420092ea5fd",
+    "date": "11/14/2019",
+    "time": "18:30",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+},
+{
+    "home_team": "a5c1b203-57d6-4b92-944b-e276901538ee",
+    "away_team": "84bdeb20-f84f-496d-8153-ad3eeb93fb1a",
+    "date": "12/2/2019",
+    "time": "19:30",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+},
+{
+    "home_team": "a5c1b203-57d6-4b92-944b-e276901538ee",
+    "away_team": "f223e26d-aad9-4e6d-8494-a3ced6453750",
+    "date": "12/12/2019",
+    "time": "19:30",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+},
+{
+    "home_team": "a5c1b203-57d6-4b92-944b-e276901538ee",
+    "away_team": "935967cd-bd84-4672-9c5b-0d5c0db18570",
+    "date": "12/17/2019",
+    "time": "18:00",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+},
+{
+    "home_team": "a5c1b203-57d6-4b92-944b-e276901538ee",
+    "away_team": "20680aa5-03ce-4b40-b88a-ef26b1210703",
+    "date": "1/7/2020",
+    "time": "19:00",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+},
+{
+    "home_team": "a5c1b203-57d6-4b92-944b-e276901538ee",
+    "away_team": "552c95f6-e80a-4873-8f56-7e8eb3eb625b",
+    "date": "1/10/2020",
+    "time": "19:00",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+},
+{
+    "home_team": "a5c1b203-57d6-4b92-944b-e276901538ee",
+    "away_team": "c9a6c76a-df62-4b76-a662-d47383ec03cb",
+    "date": "1/17/2020",
+    "time": "19:00",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+}
+],
+"Patriots 18U Boys": [
+    {
+    "home_team": "935967cd-bd84-4672-9c5b-0d5c0db18570",
+    "away_team": "20680aa5-03ce-4b40-b88a-ef26b1210703",
+    "date": "11/5/2019",
+    "time": "20:00",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9"
+},
+{
+    "home_team": "935967cd-bd84-4672-9c5b-0d5c0db18570",
+    "away_team": "c9a6c76a-df62-4b76-a662-d47383ec03cb",
+    "date": "11/22/2019",
+    "time": "20:30",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+},
+    {
+    "home_team": "935967cd-bd84-4672-9c5b-0d5c0db18570",
+    "away_team": "f223e26d-aad9-4e6d-8494-a3ced6453750",
+    "date": "12/14/2019",
+    "time": "18:30",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9"
+},
+{
+    "home_team": "935967cd-bd84-4672-9c5b-0d5c0db18570",
+    "away_team": "552c95f6-e80a-4873-8f56-7e8eb3eb625b",
+    "date": "12/16/2019",
+    "time": "19:00",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9"
+},
+{
+    "home_team": "935967cd-bd84-4672-9c5b-0d5c0db18570",
+    "away_team": "84bdeb20-f84f-496d-8153-ad3eeb93fb1a",
+    "date": "1/4/2020",
+    "time": "16:00",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9"
+},
+{
+    "home_team": "935967cd-bd84-4672-9c5b-0d5c0db18570",
+    "away_team": "611e262d-5d17-4581-993b-9420092ea5fd",
+    "date": "1/13/2020",
+    "time": "21:00",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9"
+},
+{
+    "home_team": "935967cd-bd84-4672-9c5b-0d5c0db18570",
+    "away_team": "c9a6c76a-df62-4b76-a662-d47383ec03cb",
+    "date": "1/18/2020",
+    "time": "18:00",
+    "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9"
+}
+], 
+"CCA 18U Boys": [
+    {
+        "home_team": "611e262d-5d17-4581-993b-9420092ea5fd",
+        "away_team": "f223e26d-aad9-4e6d-8494-a3ced6453750",
+        "date": "11/15/2019",
+        "time": "20:00",
+        "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+    },
+    {
+        "home_team": "611e262d-5d17-4581-993b-9420092ea5fd",
+        "away_team": "935967cd-bd84-4672-9c5b-0d5c0db18570",
+        "date": "11/16/2019",
+        "time": "13:00",
+        "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+    },
+    {
+        "home_team": "611e262d-5d17-4581-993b-9420092ea5fd",
+        "away_team": "552c95f6-e80a-4873-8f56-7e8eb3eb625b",
+        "date": "11/19/2019",
+        "time": "19:00",
+        "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+    },
+    {
+        "home_team": "611e262d-5d17-4581-993b-9420092ea5fd",
+        "away_team": "20680aa5-03ce-4b40-b88a-ef26b1210703",
+        "date": "11/23/2019",
+        "time": "15:30",
+        "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+    },
+    {
+        "home_team": "611e262d-5d17-4581-993b-9420092ea5fd",
+        "away_team": "c9a6c76a-df62-4b76-a662-d47383ec03cb",
+        "date": "12/7/2019",
+        "time": "13:00",
+        "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+    },
+    {
+        "home_team": "611e262d-5d17-4581-993b-9420092ea5fd",
+        "away_team": "a5c1b203-57d6-4b92-944b-e276901538ee",
+        "date": "1/21/2020",
+        "time": "19:00",
+        "season": "3323edf0-d806-4e32-9fd2-cb698a27b3a9" 
+    }
+]
+}
