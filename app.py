@@ -1,11 +1,13 @@
 from functools import wraps
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, url_for
+
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
 from sqlalchemy import and_, or_
+
 
 import os
 from datetime import datetime, timedelta
@@ -107,7 +109,7 @@ def getTeam(id=None):
     if not id:
         data = models.Teams.query.join(models.Address).all()
         for team in data:
-            print(team.home_team)
+            #print(team.home_team)
             data_all.append(utils.row2dict(team))
         return jsonify(team=data_all)
     data = models.Teams.query.get(id)
@@ -380,12 +382,12 @@ def archiveSeason(season_id):
 @app.route('/addGameResults/<game_id>', methods=['POST'])
 def addGameResults(game_id):
     data = request.get_json()
-    if not 'game' in data:
-        return 'Please ensure required fields are filled out', 400
+#    if not 'game' in data:
+#        return 'Please ensure required fields are filled out', 400
     if not 'team' in data:
         return 'Please ensure required fields are filled out', 400
 
-    game_id   = data['game']
+#    game_id   = data['game']
     team_id   = data['team']
     game = db.session.query(models.Games).filter(models.Games.game_id == game_id).first_or_404()
 
