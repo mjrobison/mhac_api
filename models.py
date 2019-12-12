@@ -1,13 +1,52 @@
-from app import db
+
+from app import db, bcrypt
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from uuid import uuid4
+import datetime
 #from sqlalchemy.dialects.postgresql import UUID
+
+class User(db.Model):
+    """ User Model for storing user related details """
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    uuid = db.Column(UUID(as_uuid=True), unique=True,nullable=False, default=uuid4)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    registered_on = db.Column(db.DateTime, nullable=False)
+    admin = db.Column(db.Boolean, nullable=False, default=False)
+
+    def __init__(self, email, password, admin=False):
+        self.email = email
+        self.password = bcrypt.generate_password_hash(
+            password, 15
+        ).decode()
+        self.registered_on = datetime.datetime.now()
+        self.admin = admin
+
+    @classmethod
+    def authenticate(cls, **kwargs):
+        email = kwargs.get('email')
+        password = kwargs.get('password')
+
+        if not email or not password:
+            return None
+
+        user = cls.query.filter_by(email=email).first()
+        if not user or not bcrypt.check_password_hash(user.password, password):
+            return None
+
+        return user
+
+    def to_dict(self):
+        return dict(id=self.id, email=self.email)
 
 class Address(db.Model):
     __tablename__ = 'addresses'
     __table_args__ = {"schema":"mhac"}
 
-    id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), unique=True,
+                   nullable=False, primary_key=True, default=uuid4)
     name = db.Column(db.String(150))
     address_line_1 = db.Column(db.String(150))
     address_line_2 = db.Column(db.String(150))
@@ -21,7 +60,8 @@ class Teams(db.Model):
     __table_args__ = {"schema":"mhac"}
 
     # Team color, website, Team Secondary, logo name color, logo name grey
-    id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), unique=True,
+                   nullable=False, primary_key=True, default=uuid4)
     team_name = db.Column(db.String(100))
     team_mascot = db.Column(db.String(150))
     address_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.addresses.id'))
@@ -30,12 +70,23 @@ class Teams(db.Model):
     website = db.Column(db.String(150))
     logo_color = db.Column(db.String(150))
     logo_grey = db.Column(db.String(150))
-    home_team = db.relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
-    away_team = db.relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
-    team_stats = db.relationship('BasketballStats', backref=('team_stats'), foreign_keys='BasketballStats.team_id')
+    # home_team = db.relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
+    # away_team = db.relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
+    slug = db.Column(db.String(150))
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+
+
+class Level(db.Model):
+    __tablename__ = 'levels'
+    __table_args__ = {"schema":"mhac"}
+
+    id = db.Column(db.Integer, primary_key=True)
+    level_name = db.Column(db.String(50))
+
+    def __repr__(self):
+        return '{0}'.format(self.level_name)
 
 class PersonType(db.Model):
     __table__name = 'person_type'
@@ -53,26 +104,14 @@ class Persons(db.Model):
     first_name= db.Column(db.String(100))
     last_name= db.Column(db.String(100))
     birth_date= db.Column(db.Date())
-    height= db.Column(db.Integer)
+    height= db.Column(db.String(10))
     person_type = db.Column(db.Integer, db.ForeignKey('mhac.person_type.id'))
     team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
     number = db.Column(db.Integer)
     position = db.Column(db.String)
-    player_stats = db.relationship('BasketballStats', backref=('Player Stats'), foreign_keys='BasketballStats.player_id')
 
     def __repr__(self):
         return 'Person Name {} {}'.format(self.first_name, self.last_name)
-
-class Level(db.Model):
-    __tablename__ = 'levels'
-    __table_args__ = {"schema":"mhac"}
-
-    id = db.Column(db.Integer, primary_key=True)
-    level_name = db.Column(db.String(50))
-    db.relationship('Season', backref=('season_level'))
-
-    def __repr__(self):
-        return '{0}'.format(self.level_name)
 
 class Sport(db.Model):
     __tablename__ = 'sports'
@@ -80,10 +119,7 @@ class Sport(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     sport_name = db.Column(db.String(100), nullable=False)
-    db.relationship('Season', backref=('sport_season'), foreign_keys="Season.sport_id")
-
-    def __repr__(self):
-        return '{0}'.format(self.sport_name)
+    db.relationship('Season', backref=('sport_season'))
 
 class Season(db.Model):
     __tablename__ = 'seasons'
@@ -106,6 +142,28 @@ class Season(db.Model):
 
     def __repr__(self):
         return '{0}'.format(self.name)
+
+class SeasonTeams(db.Model):
+    __tablename__ = 'season_teams'
+    __table_args__ = {"schema": "mhac"}
+
+    id = db.Column(UUID(as_uuid=True), unique=True,
+                   nullable=False, primary_key=True, default=uuid4)
+    season_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.seasons.id'), nullable=False)
+    #level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
+    team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'), nullable=False)
+    home_team = db.relationship('Games', backref=(
+            'home_teams'), foreign_keys="Games.home_team_id")
+    away_team = db.relationship('Games', backref=(
+        'away_teams'), foreign_keys="Games.away_team_id")
+
+class TeamRoster(db.Model):
+    __tablename__ = 'team_rosters'
+    __table_args__ = {"schema": "mhac"}
+
+    roster_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    season_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.season_teams.id'))
+    player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.person.id'))
 
 class Schedule(db.Model):
     __tablename__ = 'schedule'
@@ -135,12 +193,11 @@ class Games(db.Model):
     __table_args__= {'schema':'mhac'}
 
     game_id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True, default=uuid4)
-    home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
-    away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.season_teams.id'))
+    away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.season_teams.id'))
     final_home_score = db.Column(db.Integer)
     final_away_score = db.Column(db.Integer)
     schedule = db.relationship('Schedule', backref=('Games'), foreign_keys="Schedule.game_id")
-    game_stats = db.relationship('BasketballStats', backref=('Game Stats'), foreign_keys='BasketballStats.game_id')
 
 
 class GameResults(db.Model):
@@ -160,7 +217,7 @@ class BasketballStats(db.Model):
 
     pk = db.Column(db.Integer, primary_key=True, nullable=False)
     game_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.games.game_id'))
-    team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'))
+    team_id = UUID(as_uuid=True), db.ForeignKey('mhac.teams.id')
     player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.person.id'))
     field_goals_attempted = db.Column(db.Integer)
     field_goals_made = db.Column(db.Integer)
@@ -175,6 +232,3 @@ class BasketballStats(db.Model):
     total_rebounds = db.Column(db.Integer)
     steals = db.Column(db.Integer)
     blocks = db.Column(db.Integer)
-
-
-# Results?

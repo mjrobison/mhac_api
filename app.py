@@ -1,10 +1,16 @@
-from flask import Flask, jsonify, request
-from flask_sqlalchemy import SQLAlchemy
-import os
+from functools import wraps
+
+from flask import Flask, jsonify, request, url_for
+
 from flask_cors import CORS
+from flask_bcrypt import Bcrypt
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
 from sqlalchemy import and_, or_
-from datetime import datetime
+
+
+import os
+from datetime import datetime, timedelta
 
 import utils
 
@@ -13,9 +19,45 @@ app.config.from_object('config.DevelopmentConfig')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
+import jwt
 import models
 
+
+def token_required(f):
+    @wraps(f)
+    def _verify(*args, **kwargs):
+        auth_headers = request.headers.get('Authorization', '').split()
+
+        invalid_msg = {
+            'message': 'Invalid token. Registeration and / or authentication required',
+            'authenticated': False
+        }
+        expired_msg = {
+            'message': 'Expired token. Reauthentication required.',
+            'authenticated': False
+        }
+
+        # if len(auth_headers) != 2:
+            # return jsonify(invalid_msg), 401
+
+        try:
+            token = auth_headers[0]
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+            user = models.User.query.filter_by(email=data['sub']).first()
+            if not user:
+                raise RuntimeError('User not found')
+            print(f)
+            return f(user, *args, **kwargs)
+        except jwt.ExpiredSignatureError:
+            # 401 is Unauthorized HTTP status code
+            return jsonify(expired_msg), 401
+        except (jwt.InvalidTokenError, Exception) as e:
+            print(e)
+            return jsonify(invalid_msg), 401
+
+    return _verify
 
 def has_no_empty_params(rule):
     defaults = rule.defaults if rule.defaults is not None else ()
@@ -42,19 +84,41 @@ def index():
     </HTML>
     """
 
+@app.route('/login/', methods=['POST'])
+def login():
+    data = request.get_json()
+    user = models.User.authenticate(**data)
+
+    if not user:
+        return jsonify({'message': 'Invalid credentials', 'authenticated':False}), 401
+
+    token = jwt.encode({
+        'sub': user.email,
+        'iat': datetime.utcnow(),
+        'exp': datetime.utcnow() + timedelta(minutes=30)
+    },
+    app.config['SECRET_KEY'])
+
+    return jsonify({'token': token.decode('UTF-8') })
+
+
 @app.route('/getTeams', methods=['GET'])
-@app.route('/getTeams/<id>', methods=['GET'])
-def getTeam(id=None):
+@app.route('/getTeams/<slug>', methods=['GET'])
+def getTeam(slug=None):
     data_all = []
-    if not id:
-        data = models.Teams.query.join(models.Address).all()
+    if not slug:
+        data = db.session.query(models.Teams).all()
+        print("here")
         for team in data:
-            print(team.home_team)
             data_all.append(utils.row2dict(team))
         return jsonify(team=data_all)
-    data = models.Teams.query.get(id)
 
-    return jsonify(utils.row2dict(data))
+    data = models.Teams.query.filter(models.Teams.slug==slug)
+    for team in data:
+        data_all.append(utils.row2dict(team))
+
+    return jsonify(team=data_all)
+
 
 @app.route('/getPlayers', methods=['GET'])
 @app.route('/getPlayers/<team>', methods=['GET'])
@@ -72,7 +136,7 @@ def getPlayers(team=None):
 
 @app.route('/addPlayer', methods=['POST'])
 def addPlayers():
-    results = request.get_json()
+    data = request.get_json()
 
     first_name = None
     last_name = None
@@ -83,25 +147,25 @@ def addPlayers():
     team_id = None
     player_number = None
 
-    if 'first_name' in results:
-        first_name = results['first_name']
-    if 'last_name' in results:
-        last_name = results['last_name']
-    if 'birth_date' in results:
-        birth_date = results['birth_date']
+    if 'first_name' in data:
+        first_name = data['first_name']
+    if 'last_name' in data:
+        last_name = data['last_name']
+    if 'birth_date' in data:
+        birth_date = data['birth_date']
     else:
         return "Birth Date is required", 401
-    if 'height' in results:
-        height = results['height']
-    if 'team_id' in results:
+    if 'height' in data:
+        height = data['height']
+    if 'team_id' in data:
         # update active dates as well
-        team_id = results['team_id']
-    if 'position' in results:
-        position = results['position']
-    if 'age' in results:
-        age = results['age']
-    if 'number' in results:
-        player_number= results['number']
+        team_id = data['team_id']
+    if 'position' in data:
+        position = data['position']
+    if 'age' in data:
+        age = data['age']
+    if 'number' in data:
+        player_number= data['number']
 
     u = models.Persons(first_name=first_name, last_name=last_name, birth_date=birth_date, team_id=team_id, person_type='1',number=player_number, position=position)
 
@@ -166,6 +230,7 @@ def getStandings(season_id=None):
         season_id = seasons.Season.id
 
     results = db.session.query(models.Standings, models.Teams).outerjoin(models.Teams).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
+    print
     if not results:
         return "No season found", 404
 
@@ -202,6 +267,7 @@ def addGame():
     neutral_site = None
 
     game = request.get_json()
+    print(game)
 
     if not "home_team" in game:
         return "Home Team is required", 400
@@ -222,6 +288,7 @@ def addGame():
 
     if "time" in game:
         game_time = game['time']
+        game_time= datetime.strptime(game_time, '%H:%M')
 
     g = models.Games(home_team_id=home_team,
                     away_team_id=away_team)
@@ -243,13 +310,17 @@ def addGame():
     return jsonify({"message": "Game added to the schedule"}), 200
 
 
-@app.route('/getSchedule/<season_id>/<team_id>', methods=['GET'])
-def getSchedule(season_id=None, team_id=None):
+# @app.route('/getSchedule/<season_id>/<team_id>', methods=['GET'])
+@app.route('/getSchedule/<slug>', methods=['GET'])
+def getSchedule(season_id=None, slug=None):
+
     home_team = aliased(models.Teams, name='home_team')
     away_team = aliased(models.Teams, name='away_team')
     query = db.session.query(models.Schedule, models.Games, home_team, away_team)
+
     if season_id:
-        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id).filter((home_team.id == team_id) | (away_team.id ==team_id))
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id).filter((home_team.slug == slug) | (away_team.slug == slug))
+
     results = query.all()
     data_all = []
     print(results)
@@ -277,7 +348,9 @@ def getSchedule(season_id=None, team_id=None):
 
 @app.route('/getSeasons', methods=['GET'])
 def getSeason():
-    y = models.Season.query.all()
+    #y = models.Season.query.all()
+    y = db.session.query(models.Season, models.Level).join(models.Level)
+
     data_all = []
     for year in y:
         data_all.append(utils.row2dict(year))
@@ -286,8 +359,6 @@ def getSeason():
 
 @app.route('/getCurrentSeasons', methods=['GET'])
 def getCurrentSeason():
-    #seasons = models.Season.query.filter(models.Season.archive != False)
-    #seasons = db.session.query(models.Season, models.Level, models.Sport).filter(models.Season.archive != False).all()
     seasons = db.session.query(models.Season, models.Level, models.Sport).join(models.Level).join(models.Sport).filter(models.Season.archive == None)
     data_all = []
     for season in seasons:
@@ -319,13 +390,14 @@ def archiveSeason(season_id):
 @app.route('/addGameResults/<game_id>', methods=['POST'])
 def addGameResults(game_id):
     data = request.get_json()
-    if not ['game', 'team'] in data:
+#    if not 'game' in data:
+#        return 'Please ensure required fields are filled out', 400
+    if not 'team' in data:
         return 'Please ensure required fields are filled out', 400
 
-    game_id   = data['game']
-    player_id = data['player']
+#    game_id   = data['game']
     team_id   = data['team']
-    game = db.session.query(models.Game).filter(models.Game.game_id == game_id).first_or_404()
+    game = db.session.query(models.Games).filter(models.Games.game_id == game_id).first_or_404()
 
     if 'scores' in data:
         home_final = 0
@@ -357,11 +429,11 @@ def addGameResults(game_id):
 
     if 'player_stats' in data:
         for player in data['player_stats']:
-            message = addPlayerStats(player_id = data['player_stats']['id'], game_id=game, team_id=team)
-
+            message = addPlayerStats(player_id = player['id'], game_id=game_id, stats=data, team_id=team_id)
+    return message
 
 @app.route('/addPlayerStats/<player_id>/<game_id>/<team_id>', methods=['POST'])
-def addPlayerStats(player_id, game_id, stats=None):
+def addPlayerStats(player_id, game_id, team_id, stats=None):
     two_points_attempted = 0
     two_points_made = 0
     three_points_attempted = 0
@@ -373,6 +445,8 @@ def addPlayerStats(player_id, game_id, stats=None):
     defensive_rebounds = 0
     steals = 0
     blocks = 0
+    turnovers = 0
+
     if not stats:
         data = request.get_json()
         stats = data
@@ -382,9 +456,9 @@ def addPlayerStats(player_id, game_id, stats=None):
     if '2PM' in stats:
         two_points_made        = stats['2PM']
     if '3PM' in stats:
-        three_points_attempted = stats['3PM']
+        three_points_attempted = stats['3PA']
     if '3PA' in stats:
-        three_points_made      = stats['3PA']
+        three_points_made      = stats['3PM']
     if 'FTA' in stats:
         free_throws_attempted  = stats['FTA']
     if 'FTM' in stats:
@@ -405,11 +479,11 @@ def addPlayerStats(player_id, game_id, stats=None):
                                          player_id=player_id,
                                          field_goals_attempted=two_points_attempted,
                                          field_goals_made=two_points_made,
-                                         three_pointers_attempted=three_pointers_attempted,
-                                         three_pointers_made=three_pointers_made,
+                                         three_pointers_attempted=three_points_attempted,
+                                         three_pointers_made=three_points_made,
                                          free_throws_attempted=free_throws_attempted,
                                          free_throws_made=free_throws_made,
-                                         total_points = utils.total_points(field_goals_made, three_pointers_made, free_throws_made),
+                                         total_points = utils.totalPoints(two_points_made, three_points_made, free_throws_made),
                                          assists=assists,
                                          offensive_rebounds=offensive_rebounds,
                                          defensive_rebounds=defensive_rebounds,
@@ -418,24 +492,18 @@ def addPlayerStats(player_id, game_id, stats=None):
                                          blocks=blocks
                                         )
     try:
-        game_stats.save()
-        game_stats.commit()
+        # game_stats.save()
+        db.session.add(game_stats)
+        # game_stats.commit()
+        db.session.commit()
+
     except Exception as exc:
         return str(exc), 500
 
+    return jsonify("Saved"), 200
+
 @app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
 def getGameResults(game_id=None, team_id=None):
-    two_points_attempted = 0
-    two_points_made = 0
-    three_points_attempted = 0
-    three_points_made = 0
-    free_throws_attempted = 0
-    free_throws_made = 0
-    assists = 0
-    offensive_rebounds = 0
-    defensive_rebounds = 0
-    steals = 0
-    blocks = 0
 
     results = db.session.query(models.Games, models.Teams, models.Persons, models.GameResults, models.BasketballStats).\
         join(models.Games, or_(models.Games.home_team_id == models.Teams.id, models.Games.away_team_id == models.Teams.id)).\
@@ -446,12 +514,29 @@ def getGameResults(game_id=None, team_id=None):
         filter(models.Teams.id == team_id).all()
 
     data_all = []
+    if not results:
+        data={}
+        data['team_id']=''
+        data['game_id']=''
+        data['player_first_name']= ''
+        data['player_last_name'] = ''
+        data['player_number'] = ''
+        stats = {}
+        stats['2PA'] = 0
+        stats['2PM'] = 0
+        stats['3PA'] = 0
+        stats['3PM'] = 0
+        stats['FTA'] = 0
+        stats['FTM'] = 0
+        data['player_stats']=stats
+
     for r in results:
         data={}
         data['team_id'] = r.Teams.id
         data['game_id'] = r.Games.game_id
         data['player_first_name'] = r.Persons.first_name
         data['player_last_name'] = r.Persons.last_name
+        data['player_number'] = r.Persons.number
         stats = {}
         stats['2PA'] = 0
         stats['2PM'] = 0
@@ -485,6 +570,26 @@ def getGameResults(game_id=None, team_id=None):
         data_all.append(data)
 
     return jsonify(data_all), 200
+
+@app.route('/addPlayerToRoster', methods=['POST'])
+def addToRoster():
+    data = request.get_json()
+    print(data)
+
+    if 'team_id' not in data.keys():
+        return jsonify({'message': "Team is required"}), 401
+    if 'player_id' not in data.keys():
+        return jsonify({'message': "player is required"}), 401
+    if 'level_id' not in data.keys():
+        return jsonify({'message': "Level is required"}), 401
+
+    player = models.TeamRoster(**data)
+    db.session.add(player)
+    db.session.commit()
+    return jsonify({"message": "Player added to Roster"})
+
+
+
 
 
 if __name__ == '__main__':

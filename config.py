@@ -1,6 +1,6 @@
 import configparser
-#import psycopg2
-#from sqlalchemy.dialects.postgresql import UUID
+import os
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Read Config File
 config = configparser.ConfigParser()
@@ -19,6 +19,7 @@ class Config(object):
     CSRF_ENABLED = True
     SECRET_KEY = 'This_IS_JUST_a_TEST'
     SQLALCHEMY_DATABASE_URI = DB_URL
+    BRYPT_LOG_ROUNDS=15
 
 class ProductionConfig(Config):
     DEBUG = False
