@@ -1,3 +1,4 @@
+
 from app import db, bcrypt
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from uuid import uuid4
@@ -71,6 +72,7 @@ class Teams(db.Model):
     logo_grey = db.Column(db.String(150))
     # home_team = db.relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
     # away_team = db.relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
+    slug = db.Column(db.String(150))
 
     def __repr__(self):
         return '<id {}>'.format(self.id)

@@ -99,22 +99,25 @@ def login():
     },
     app.config['SECRET_KEY'])
 
-    return jsonify({'token': token.decode('UTF-8')})
+    return jsonify({'token': token.decode('UTF-8') })
 
 
 @app.route('/getTeams', methods=['GET'])
-@app.route('/getTeams/<id>', methods=['GET'])
-def getTeam(id=None):
+@app.route('/getTeams/<slug>', methods=['GET'])
+def getTeam(slug=None):
     data_all = []
-    if not id:
-        data = models.Teams.query.join(models.Address).all()
+    if not slug:
+        data = db.session.query(models.Teams).all()
+        print("here")
         for team in data:
-            #print(team.home_team)
             data_all.append(utils.row2dict(team))
         return jsonify(team=data_all)
-    data = models.Teams.query.get(id)
 
-    return jsonify(utils.row2dict(data))
+    data = models.Teams.query.filter(models.Teams.slug==slug)
+    for team in data:
+        data_all.append(utils.row2dict(team))
+
+    return jsonify(team=data_all)
 
 
 @app.route('/getPlayers', methods=['GET'])
@@ -308,13 +311,16 @@ def addGame():
 
 
 # @app.route('/getSchedule/<season_id>/<team_id>', methods=['GET'])
-@app.route('/getSchedule/<team_id>', methods=['GET'])
-def getSchedule(season_id=None, team_id=None):
+@app.route('/getSchedule/<slug>', methods=['GET'])
+def getSchedule(season_id=None, slug=None):
+
     home_team = aliased(models.Teams, name='home_team')
     away_team = aliased(models.Teams, name='away_team')
     query = db.session.query(models.Schedule, models.Games, home_team, away_team)
+
     if season_id:
-        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id).filter((home_team.id == team_id) | (away_team.id ==team_id))
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id).filter((home_team.slug == slug) | (away_team.slug == slug))
+
     results = query.all()
     data_all = []
     print(results)
@@ -342,7 +348,9 @@ def getSchedule(season_id=None, team_id=None):
 
 @app.route('/getSeasons', methods=['GET'])
 def getSeason():
-    y = models.Season.query.all()
+    #y = models.Season.query.all()
+    y = db.session.query(models.Season, models.Level).join(models.Level)
+
     data_all = []
     for year in y:
         data_all.append(utils.row2dict(year))
@@ -438,7 +446,7 @@ def addPlayerStats(player_id, game_id, team_id, stats=None):
     steals = 0
     blocks = 0
     turnovers = 0
-    
+
     if not stats:
         data = request.get_json()
         stats = data
@@ -491,7 +499,7 @@ def addPlayerStats(player_id, game_id, team_id, stats=None):
 
     except Exception as exc:
         return str(exc), 500
-    
+
     return jsonify("Saved"), 200
 
 @app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
@@ -506,6 +514,22 @@ def getGameResults(game_id=None, team_id=None):
         filter(models.Teams.id == team_id).all()
 
     data_all = []
+    if not results:
+        data={}
+        data['team_id']=''
+        data['game_id']=''
+        data['player_first_name']= ''
+        data['player_last_name'] = ''
+        data['player_number'] = ''
+        stats = {}
+        stats['2PA'] = 0
+        stats['2PM'] = 0
+        stats['3PA'] = 0
+        stats['3PM'] = 0
+        stats['FTA'] = 0
+        stats['FTM'] = 0
+        data['player_stats']=stats
+
     for r in results:
         data={}
         data['team_id'] = r.Teams.id
