@@ -330,8 +330,9 @@ def getSchedule(season_id=None, slug=None):
         seasons = db.session.query(models.Season, models.Level, models.Sport).join(models.Level).join(models.Sport).filter(models.Season.archive == None).all()
         for season in seasons:
             season_list.append(season.Season.id)
+        print(season_list)
         query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id.in_(season_list))
-
+        print(query)
 
     results = query.all()
     data_all = []
@@ -344,11 +345,11 @@ def getSchedule(season_id=None, slug=None):
         data['game_id'] = r.Schedule.game_id
         home_team = {}
         home_team['id']   = r.home_team.id
-        home_team['name'] = r.Teams.team_name
+        home_team['name'] = r.home_team.team_name
         data['home_team'] = home_team
         away_team = {}
         away_team['id']   = r.away_team.id
-        away_team['name'] = r.Teams.team_name
+        away_team['name'] = r.away_team.team_name
         data['away_team'] = away_team
         final_score = {}
         final_score['home'] = r.Games.final_home_score
