@@ -143,8 +143,10 @@ class Season(db.Model):
     def __repr__(self):
         return '{0}'.format(self.name)
 
+
+
 class SeasonTeams(db.Model):
-    __tablename__ = 'season_teams'
+    __tablename__ = 'season_teams_with_names'
     __table_args__ = {"schema": "mhac"}
 
     id = db.Column(UUID(as_uuid=True), unique=True,
@@ -152,10 +154,19 @@ class SeasonTeams(db.Model):
     season_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.seasons.id'), nullable=False)
     #level_id = db.Column(db.Integer, db.ForeignKey('mhac.levels.id'), nullable=False)
     team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.teams.id'), nullable=False)
-    home_team = db.relationship('Games', backref=(
-            'home_teams'), foreign_keys="Games.home_team_id")
-    away_team = db.relationship('Games', backref=(
-        'away_teams'), foreign_keys="Games.away_team_id")
+    team_name = db.Column(db.String(100))
+    #team_mascot = db.Column(db.String(150))
+    #address_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.addresses.id'))
+    #main_color = db.Column(db.String(6))
+    #secondary_color = db.Column(db.String(6))
+    #website = db.Column(db.String(150))
+    #logo_color = db.Column(db.String(150))
+    #logo_grey = db.Column(db.String(150))
+    #slug = db.Column(db.String(150))
+#    home_team = db.relationship('Games', backref=(
+#            'home_teams'), foreign_keys="Games.home_team_id")
+#    away_team = db.relationship('Games', backref=(
+#        'away_teams'), foreign_keys="Games.away_team_id")
 
 class TeamRoster(db.Model):
     __tablename__ = 'team_rosters'

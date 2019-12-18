@@ -319,17 +319,30 @@ def addGame():
 
     return jsonify({"message": "Game added to the schedule"}), 200
 
-
-# @app.route('/getSchedule/<season_id>/<team_id>', methods=['GET'])
-@app.route('/getSchedule/<slug>', methods=['GET'])
+@app.route('/getSchedule', methods=['GET'])
+@app.route('/getSchedule/<season_id>', methods=['GET'])
+@app.route('/getSchedule/<season_id>/<slug>', methods=['GET'])
 def getSchedule(season_id=None, slug=None):
 
-    home_team = aliased(models.Teams, name='home_team')
-    away_team = aliased(models.Teams, name='away_team')
+    home_team = aliased(models.SeasonTeams, name='home_team')
+    away_team = aliased(models.SeasonTeams, name='away_team')
     query = db.session.query(models.Schedule, models.Games, home_team, away_team)
 
-    if season_id:
+    if season_id and slug:
         query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id).filter((home_team.slug == slug) | (away_team.slug == slug))
+    elif season_id and not slug:
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id)
+    else:
+        season_list = []
+        #season_ids = getCurrentSeason()
+        #for season in season_ids:
+        #    season_list.append(season['season_id'])
+        seasons = db.session.query(models.Season, models.Level, models.Sport).join(models.Level).join(models.Sport).filter(models.Season.archive == None).all()
+        for season in seasons:
+            season_list.append(season.Season.id)
+        print(season_list)
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id.in_(season_list))
+        print(query)
 
     results = query.all()
     data_all = []
@@ -400,8 +413,6 @@ def archiveSeason(season_id):
 @app.route('/addGameResults/<game_id>', methods=['POST'])
 def addGameResults(game_id):
     data = request.get_json()
-#    if not 'game' in data:
-#        return 'Please ensure required fields are filled out', 400
     if not 'team' in data:
         return 'Please ensure required fields are filled out', 400
 
@@ -601,6 +612,16 @@ def addToRoster():
     db.session.add(player)
     db.session.commit()
     return jsonify({"message": "Player added to Roster"})
+
+@app.route('/getLevels', methods=['GET'])
+def getLevels():
+    results = db.session.query(models.Level)
+
+    data_all=[]
+    for r in results:
+        data_all.append(utils.row2dict(r))
+
+    return jsonify(data_all), 200
 
 
 
