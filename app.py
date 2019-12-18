@@ -282,22 +282,21 @@ def addGame():
 
     home_team = game['home_team']
     away_team = game['away_team']
-    
+
     ht_results = db.session.query(models.Teams, models.SeasonTeams).join(models.SeasonTeams).filter(models.Teams.slug == home_team).filter(models.SeasonTeams.season_id == game['season']).first_or_404()
-    print(ht_results)
+
     aw_results = db.session.query(models.Teams, models.SeasonTeams).join(models.SeasonTeams).filter(models.Teams.slug == away_team).filter(models.SeasonTeams.season_id == game['season']).first_or_404()
     # print(aw_results)
     home_team = ht_results.SeasonTeams.id
     away_team = aw_results.SeasonTeams.id
 
-    
     game_date = game["date"]
     game_date = datetime.strptime(game_date, '%m/%d/%Y')
     season = game['season']
 
     if "time" in game:
         game_time = game['time']
-    
+
     game_time= datetime.strptime(game_time, '%H:%M')
 
     g = models.Games(home_team_id=home_team,
@@ -329,37 +328,38 @@ def getSchedule(season_id=None, slug=None):
     query = db.session.query(models.Schedule, models.Games, home_team, away_team)
 
     if season_id and slug:
-        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id).filter((home_team.slug == slug) | (away_team.slug == slug))
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id == season_id).filter(or_(home_team.slug == slug, away_team.slug == slug))
     elif season_id and not slug:
-        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id == season_id)
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id == season_id)
     else:
         season_list = []
-        #season_ids = getCurrentSeason()
-        #for season in season_ids:
-        #    season_list.append(season['season_id'])
         seasons = db.session.query(models.Season, models.Level, models.Sport).join(models.Level).join(models.Sport).filter(models.Season.archive == None).all()
         for season in seasons:
             season_list.append(season.Season.id)
-        print(season_list)
-        query = db.session.query(models.Schedule, models.Games, home_team, away_team).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).filter(models.Schedule.season_id.in_(season_list))
-        print(query)
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id.in_(season_list))
+
+    print(query)
 
     results = query.all()
     data_all = []
-    print(results)
     for r in results:
         data = {}
         data['schedule_id']        = r.Schedule.id
-        data['game_date'] = r.Schedule.game_date
-        data['game_time'] = str(r.Schedule.game_time)
+        data['game_date'] = r.Schedule.game_date.strftime('%B %e')
+        data['game_time'] = r.Schedule.game_time.strftime('%l:%M %p %Z')
         data['game_id'] = r.Schedule.game_id
         home_team = {}
         home_team['id']   = r.home_team.id
         home_team['name'] = r.home_team.team_name
+        home_team['address_name'] = r.Address.name
+        home_team['address_lines'] = r.Address.address_line_1 
+        home_team['city_state_zip'] = r.Address.city  + ', ' + r .Address.state + ' ' + r.Address.postal_code
+        home_team['team_level'] = r.home_team.level_name
         data['home_team'] = home_team
         away_team = {}
         away_team['id']   = r.away_team.id
         away_team['name'] = r.away_team.team_name
+        away_team['team_level'] = r.away_team.level_name
         data['away_team'] = away_team
         final_score = {}
         final_score['home'] = r.Games.final_home_score
@@ -416,10 +416,8 @@ def addGameResults(game_id):
     if not 'team' in data:
         return 'Please ensure required fields are filled out', 400
 
-#    game_id   = data['game']
     team_id   = data['team']
     game = db.session.query(models.Games).filter(models.Games.game_id == game_id).first_or_404()
-    # print(game)
     if 'scores' in data:
         home_final = 0
         away_final = 0
@@ -445,7 +443,6 @@ def addGameResults(game_id):
         game.final_home_score = data['final_scores']['home_score']
         game.final_away_score = data['final_scores']['away_score']
 
-        
         # game.save()
         # gr.commit()
         db.session.commit()
