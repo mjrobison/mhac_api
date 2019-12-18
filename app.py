@@ -267,7 +267,7 @@ def addGame():
     neutral_site = None
 
     game = request.get_json()
-    print(game)
+    print(game['season'])
 
     if not "home_team" in game:
         return "Home Team is required", 400
@@ -282,13 +282,23 @@ def addGame():
 
     home_team = game['home_team']
     away_team = game['away_team']
+    
+    ht_results = db.session.query(models.Teams, models.SeasonTeams).join(models.SeasonTeams).filter(models.Teams.slug == home_team).filter(models.SeasonTeams.season_id == game['season']).first_or_404()
+    print(ht_results)
+    aw_results = db.session.query(models.Teams, models.SeasonTeams).join(models.SeasonTeams).filter(models.Teams.slug == away_team).filter(models.SeasonTeams.season_id == game['season']).first_or_404()
+    # print(aw_results)
+    home_team = ht_results.SeasonTeams.id
+    away_team = aw_results.SeasonTeams.id
+
+    
     game_date = game["date"]
     game_date = datetime.strptime(game_date, '%m/%d/%Y')
     season = game['season']
 
     if "time" in game:
         game_time = game['time']
-        game_time= datetime.strptime(game_time, '%H:%M')
+    
+    game_time= datetime.strptime(game_time, '%H:%M')
 
     g = models.Games(home_team_id=home_team,
                     away_team_id=away_team)
@@ -398,7 +408,7 @@ def addGameResults(game_id):
 #    game_id   = data['game']
     team_id   = data['team']
     game = db.session.query(models.Games).filter(models.Games.game_id == game_id).first_or_404()
-
+    # print(game)
     if 'scores' in data:
         home_final = 0
         away_final = 0
@@ -418,14 +428,18 @@ def addGameResults(game_id):
             # Send back an alert
             pass
         # Alert if individual stats don't match final scores
-        try:
-            game.final_home_score = home_final
-            game.final_away_score = away_final
-            game.save()
-            gr.commit()
-            game.commit()
-        except Exception as exc:
-            return str(exc), 500
+    try:
+        # print(home_final)
+        # print(away_final)
+        game.final_home_score = data['final_scores']['home_score']
+        game.final_away_score = data['final_scores']['away_score']
+
+        
+        # game.save()
+        # gr.commit()
+        db.session.commit()
+    except Exception as exc:
+        return str(exc), 500
 
     if 'player_stats' in data:
         for player in data['player_stats']:
