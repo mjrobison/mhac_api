@@ -206,8 +206,8 @@ class Games(db.Model):
     __table_args__= {'schema':'mhac'}
 
     game_id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, primary_key=True, default=uuid4)
-    home_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.season_teams.id'))
-    away_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.season_teams.id'))
+    home_team_id = db.Column(UUID(as_uuid=True))
+    away_team_id = db.Column(UUID(as_uuid=True))
     final_home_score = db.Column(db.Integer)
     final_away_score = db.Column(db.Integer)
     schedule = db.relationship('Schedule', backref=('Games'), foreign_keys="Schedule.game_id")

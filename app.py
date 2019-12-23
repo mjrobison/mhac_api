@@ -222,15 +222,16 @@ def addCoach():
 
     return "Player Succesfully Added", 200
 
-@app.route('/getStandings', methods=['GET'])
+@app.route('/getStandings/', methods=['GET'])
 @app.route('/getStandings/<season_id>', methods=['GET'])
 def getStandings(season_id=None):
     if not season_id:
         seasons = db.session.query(models.Season, models.Level, models.Teams).join(models.Level).filter(models.Season.archive == None).filter(models.Level.level_name == '18U Boys').first()
         season_id = seasons.Season.id
 
-    results = db.session.query(models.Standings, models.Teams).outerjoin(models.Teams).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc(), models.Standings.losses.asc()).all()
-    print
+    results = db.session.query(models.Standings, models.SeasonTeams).outerjoin(models.SeasonTeams, models.Standings.team_id == models.SeasonTeams.id).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc()).all()
+    print(results)
+    
     if not results:
         return "No season found", 404
 
@@ -246,7 +247,7 @@ def getStandings(season_id=None):
             gb = utils.calcGamesBehind(leader=leader, wins=team.Standings.wins, losses=team.Standings.losses)
         data = {}
         data['team'] = team.Standings.team_id
-        data['team_name'] = team.Teams.team_name
+        data['team_name'] = team.SeasonTeams.team_name
         data['wins'] = team.Standings.wins
         data['losses'] = team.Standings.losses
         data['games_played'] = team.Standings.games_played
@@ -318,7 +319,7 @@ def addGame():
 
     return jsonify({"message": "Game added to the schedule"}), 200
 
-@app.route('/getSchedule', methods=['GET'])
+@app.route('/getSchedule/', methods=['GET'])
 @app.route('/getSchedule/<season_id>', methods=['GET'])
 @app.route('/getSchedule/<season_id>/<slug>', methods=['GET'])
 def getSchedule(season_id=None, slug=None):
@@ -328,15 +329,15 @@ def getSchedule(season_id=None, slug=None):
     query = db.session.query(models.Schedule, models.Games, home_team, away_team)
 
     if season_id and slug:
-        query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id == season_id).filter(or_(home_team.slug == slug, away_team.slug == slug))
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id == season_id).filter(or_(home_team.slug == slug, away_team.slug == slug)).order_by(models.Schedule.game_date)
     elif season_id and not slug:
-        query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id == season_id)
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id == season_id).order_by(models.Schedule.game_date)
     else:
         season_list = []
         seasons = db.session.query(models.Season, models.Level, models.Sport).join(models.Level).join(models.Sport).filter(models.Season.archive == None).all()
         for season in seasons:
             season_list.append(season.Season.id)
-        query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id.in_(season_list))
+        query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id.in_(season_list)).order_by(models.Schedule.game_date)
 
     print(query)
 
@@ -418,6 +419,7 @@ def addGameResults(game_id):
 
     team_id   = data['team']
     game = db.session.query(models.Games).filter(models.Games.game_id == game_id).first_or_404()
+    print(game)
     if 'scores' in data:
         home_final = 0
         away_final = 0
@@ -449,10 +451,39 @@ def addGameResults(game_id):
     except Exception as exc:
         return str(exc), 500
 
+    try:
+
+        results = db.session.query(models.SeasonTeams).filter(models.SeasonTeams.team_id == game.home_team_id).all()
+#        standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id)
+        if data['final_scores']['home_score'] > data['final_scores']['away_score']:
+            standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
+            standings.wins +=  1
+            standings.games_played += 1
+            db.session.commit()
+            standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
+            standings.losses +=  1
+            standings.games_played += 1
+            db.session.commit()
+        else:
+            standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
+            standings.wins +=  1
+            standings.games_played += 1
+            db.session.commit()
+            standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
+            standings.losses +=  1
+            standings.games_played += 1
+            db.session.commit()
+        #print(standings)
+
+    except Exception as exc:
+        return str(exc), 500
+
+
     if 'player_stats' in data:
         for player in data['player_stats']:
             message = addPlayerStats(player_id = player['id'], game_id=game_id, stats=data, team_id=team_id)
-    return message
+    #return message, 200
+    return '', 200
 
 @app.route('/addPlayerStats/<player_id>/<game_id>/<team_id>', methods=['POST'])
 def addPlayerStats(player_id, game_id, team_id, stats=None):
