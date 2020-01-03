@@ -151,10 +151,10 @@ def addPlayers():
         first_name = data['first_name']
     if 'last_name' in data:
         last_name = data['last_name']
-    if 'birth_date' in data:
-        birth_date = data['birth_date']
-    else:
-        return "Birth Date is required", 401
+#    if 'birth_date' in data:
+#        birth_date = data['birth_date']
+#    else:
+#        return "Birth Date is required", 401
     if 'height' in data:
         height = data['height']
     if 'team_id' in data:
@@ -287,7 +287,7 @@ def addGame():
     ht_results = db.session.query(models.Teams, models.SeasonTeams).join(models.SeasonTeams).filter(models.Teams.slug == home_team).filter(models.SeasonTeams.season_id == game['season']).first_or_404()
 
     aw_results = db.session.query(models.Teams, models.SeasonTeams).join(models.SeasonTeams).filter(models.Teams.slug == away_team).filter(models.SeasonTeams.season_id == game['season']).first_or_404()
-    # print(aw_results)
+
     home_team = ht_results.SeasonTeams.id
     away_team = aw_results.SeasonTeams.id
 
@@ -417,9 +417,9 @@ def addGameResults(game_id):
     if not 'team' in data:
         return 'Please ensure required fields are filled out', 400
 
-    team_id   = data['team']
+    team_id = data['team']
     game = db.session.query(models.Games).filter(models.Games.game_id == game_id).first_or_404()
-    print(game)
+
     if 'scores' in data:
         home_final = 0
         away_final = 0
@@ -439,50 +439,48 @@ def addGameResults(game_id):
             # Send back an alert
             pass
         # Alert if individual stats don't match final scores
-    try:
+   #try:
         # print(home_final)
         # print(away_final)
-        game.final_home_score = data['final_scores']['home_score']
-        game.final_away_score = data['final_scores']['away_score']
+   #     game.final_home_score = data['final_scores']['home_score']
+   #     game.final_away_score = data['final_scores']['away_score']
 
         # game.save()
         # gr.commit()
-        db.session.commit()
-    except Exception as exc:
-        return str(exc), 500
+    #    db.session.commit()
+    #except Exception as exc:
+    #    return str(exc), 500
 
-    try:
+    if 'final_scores' in data : #data['final_scores']['home_score'] != 0 and  data['final_scores']['away_score'] != 0:
+        try:
+            results = db.session.query(models.SeasonTeams).filter(models.SeasonTeams.team_id == game.home_team_id).all()
+            if data['final_scores']['home_score'] > data['final_scores']['away_score']:
+                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
+                standings.wins +=  1
+                standings.games_played += 1
+                db.session.commit()
+                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
+                standings.losses +=  1
+                standings.games_played += 1
+                db.session.commit()
+            else:
+                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
+                standings.wins +=  1
+                standings.games_played += 1
+                db.session.commit()
+                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
+                standings.losses +=  1
+                standings.games_played += 1
+                db.session.commit()
 
-        results = db.session.query(models.SeasonTeams).filter(models.SeasonTeams.team_id == game.home_team_id).all()
-#        standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id)
-        if data['final_scores']['home_score'] > data['final_scores']['away_score']:
-            standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
-            standings.wins +=  1
-            standings.games_played += 1
-            db.session.commit()
-            standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
-            standings.losses +=  1
-            standings.games_played += 1
-            db.session.commit()
-        else:
-            standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
-            standings.wins +=  1
-            standings.games_played += 1
-            db.session.commit()
-            standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
-            standings.losses +=  1
-            standings.games_played += 1
-            db.session.commit()
-        #print(standings)
-
-    except Exception as exc:
-        return str(exc), 500
+        except Exception as exc:
+            return str(exc), 500
 
 
-    if 'player_stats' in data:
-        for player in data['player_stats']:
-            message = addPlayerStats(player_id = player['id'], game_id=game_id, stats=data, team_id=team_id)
-    #return message, 200
+    for player in data.get('player_stats', []):
+        print(player)
+        message = addPlayerStats(player_id = player['id'], game_id=game_id, stats=player, team_id=team_id)
+
     return '', 200
 
 @app.route('/addPlayerStats/<player_id>/<game_id>/<team_id>', methods=['POST'])
@@ -504,28 +502,20 @@ def addPlayerStats(player_id, game_id, team_id, stats=None):
         data = request.get_json()
         stats = data
 
-    if '2PA' in stats:
-        two_points_attempted   = stats['2PA']
-    if '2PM' in stats:
-        two_points_made        = stats['2PM']
-    if '3PM' in stats:
-        three_points_attempted = stats['3PA']
-    if '3PA' in stats:
-        three_points_made      = stats['3PM']
-    if 'FTA' in stats:
-        free_throws_attempted  = stats['FTA']
-    if 'FTM' in stats:
-        free_throws_made       = stats['FTM']
-    if 'assists' in stats:
-        assists                = stats['assists']
-    if 'offensive_rebounds' in stats:
-        offensive_rebounds     = stats['offensive_rebounds']
-    if 'defensive_rebounds' in stats:
-        defensive_rebounds     = stats['defensive_rebounds']
-    if 'steals' in stats:
-        steals                 = stats['steals']
-    if 'blocks' in stats:
-        blocks                 = stats['blocks']
+    two_points_attempted   = stats.get('2PA', 0)
+    two_points_made        = stats.get('2PM', 0)
+    three_points_attempted = stats.get('3PA', 0)
+    three_points_made      = stats.get('3PM', 0)
+    free_throws_attempted  = stats.get('FTA', 0)
+    free_throws_made       = stats.get('FTM', 0)
+    assists                = stats.get('AST', 0)
+    offensive_rebounds     = stats.get('OREB', 0)
+    defensive_rebounds     = stats.get('DREB', 0)
+    steals                 = stats.get('STEAL', 0)
+    blocks                 = stats.get('BLK', 0)
+    turnovers              = stats.get('TO', 0)
+    total_points           = utils.totalPoints(two_points_made, three_points_made, free_throws_made)
+    print(total_points)
 
     game_stats = models.BasketballStats(game_id=game_id,
                                          team_id=team_id,
@@ -536,13 +526,15 @@ def addPlayerStats(player_id, game_id, team_id, stats=None):
                                          three_pointers_made=three_points_made,
                                          free_throws_attempted=free_throws_attempted,
                                          free_throws_made=free_throws_made,
-                                         total_points = utils.totalPoints(two_points_made, three_points_made, free_throws_made),
+                                         #total_points = utils.totalPoints(two_points_made, three_points_made, free_throws_made),
+                                         total_points = total_points,
                                          assists=assists,
                                          offensive_rebounds=offensive_rebounds,
                                          defensive_rebounds=defensive_rebounds,
                                          total_rebounds=offensive_rebounds + defensive_rebounds,
                                          steals=steals,
-                                         blocks=blocks
+                                         blocks=blocks,
+                                         turnovers=turnovers
                                         )
     try:
         # game_stats.save()
@@ -557,14 +549,8 @@ def addPlayerStats(player_id, game_id, team_id, stats=None):
 
 @app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
 def getGameResults(game_id=None, team_id=None):
-
-    results = db.session.query(models.Games, models.Teams, models.Persons, models.GameResults, models.BasketballStats).\
-        join(models.Games, or_(models.Games.home_team_id == models.Teams.id, models.Games.away_team_id == models.Teams.id)).\
-        join(models.Persons).filter(models.Persons.person_type == 1).\
-        outerjoin(models.GameResults).\
-        outerjoin(models.BasketballStats, and_(models.BasketballStats.game_id == models.Games.game_id, models.BasketballStats.player_id == models.Persons.id, models.BasketballStats.team_id == models.Teams.id)).\
-        filter(models.Games.game_id == game_id).\
-        filter(models.Teams.id == team_id).all()
+    query = db.session.query(models.Games, models.SeasonTeams, models.Persons, models.GameResults, models.BasketballStats).join(models.Games, or_(models.Games.home_team_id == models.SeasonTeams.id, models.Games.away_team_id == models.SeasonTeams.id)).outerjoin(models.GameResults).outerjoin(models.BasketballStats, and_(models.BasketballStats.game_id == models.Games.game_id, models.BasketballStats.team_id == models.SeasonTeams.id)).join(models.Persons, models.Persons.id == models.BasketballStats.player_id).filter(models.Persons.person_type == 1).filter(models.Games.game_id == game_id).filter(models.SeasonTeams.id == team_id)
+    results = query.all()
 
     data_all = []
     if not results:
@@ -585,7 +571,7 @@ def getGameResults(game_id=None, team_id=None):
 
     for r in results:
         data={}
-        data['team_id'] = r.Teams.id
+        data['team_id'] = r.SeasonTeams.id
         data['game_id'] = r.Games.game_id
         data['player_first_name'] = r.Persons.first_name
         data['player_last_name'] = r.Persons.last_name
@@ -607,8 +593,8 @@ def getGameResults(game_id=None, team_id=None):
         if r.BasketballStats:
             stats['2PA'] = r.BasketballStats.field_goals_attempted
             stats['2PM'] = r.BasketballStats.field_goals_made
-            stats['3PA'] = r.BasketballStats.three_points_attempted
-            stats['3PM'] = r.BasketballStats.three_points_made
+            stats['3PA'] = r.BasketballStats.three_pointers_attempted
+            stats['3PM'] = r.BasketballStats.three_pointers_made
             stats['FTA'] = r.BasketballStats.free_throws_attempted
             stats['FTM'] = r.BasketballStats.free_throws_made
             stats['total_points'] = r.BasketballStats.total_points

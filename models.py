@@ -230,7 +230,7 @@ class BasketballStats(db.Model):
 
     pk = db.Column(db.Integer, primary_key=True, nullable=False)
     game_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.games.game_id'))
-    team_id = UUID(as_uuid=True), db.ForeignKey('mhac.teams.id')
+    team_id = db.Column(UUID(as_uuid=True))
     player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.person.id'))
     field_goals_attempted = db.Column(db.Integer)
     field_goals_made = db.Column(db.Integer)
@@ -245,3 +245,4 @@ class BasketballStats(db.Model):
     total_rebounds = db.Column(db.Integer)
     steals = db.Column(db.Integer)
     blocks = db.Column(db.Integer)
+    turnovers = db.Column(db.Integer)
