@@ -11,7 +11,7 @@ def calcWinPercentage(wins, losses):
     return wins/(wins+losses)
 
 def totalPoints(twos=0, threes=0, free_throws=0):
-    points = (twos *2) + (threes * 3) + (free_throws * 1)
+    points = (int(twos) *2) + (int(threes) * 3) + (int(free_throws) * 1)
 
     return points
 

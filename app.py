@@ -419,7 +419,8 @@ def addGameResults(game_id):
 
     team_id = data['team']
     game = db.session.query(models.Games).filter(models.Games.game_id == game_id).first_or_404()
-
+    print(game)
+    #home_team = game.get('home_team')
     if 'scores' in data:
         home_final = 0
         away_final = 0
@@ -476,15 +477,19 @@ def addGameResults(game_id):
         except Exception as exc:
             return str(exc), 500
 
-
+    updates = db.session()
     for player in data.get('player_stats', []):
-        print(player)
-        message = addPlayerStats(player_id = player['id'], game_id=game_id, stats=player, team_id=team_id)
+        message = addPlayerStats(player_id = player['id'], game_id=game_id, stats=player, team_id=team_id, game_updates=updates)
 
-    return '', 200
+    try:
+        updates.commit()
+    except Exception as exc:
+        return str(exc), 500
+
+    return 'Results have been saved successfully', 200
 
 @app.route('/addPlayerStats/<player_id>/<game_id>/<team_id>', methods=['POST'])
-def addPlayerStats(player_id, game_id, team_id, stats=None):
+def addPlayerStats(player_id, game_id, team_id, stats=None, game_updates=None):
     two_points_attempted = 0
     two_points_made = 0
     three_points_attempted = 0
@@ -515,7 +520,6 @@ def addPlayerStats(player_id, game_id, team_id, stats=None):
     blocks                 = stats.get('BLK', 0)
     turnovers              = stats.get('TO', 0)
     total_points           = utils.totalPoints(two_points_made, three_points_made, free_throws_made)
-    print(total_points)
 
     game_stats = models.BasketballStats(game_id=game_id,
                                          team_id=team_id,
@@ -536,16 +540,16 @@ def addPlayerStats(player_id, game_id, team_id, stats=None):
                                          blocks=blocks,
                                          turnovers=turnovers
                                         )
-    try:
-        # game_stats.save()
-        db.session.add(game_stats)
-        # game_stats.commit()
-        db.session.commit()
+    if not game_updates:
+        try:
+            db.session.on_conflict_do_update(game_stats)
+            db.session.commit()
 
-    except Exception as exc:
-        return str(exc), 500
+        except Exception as exc:
+            return str(exc), 500
+    game_updates.add(game_stats)
 
-    return jsonify("Saved"), 200
+    return jsonify(total_points), 200
 
 @app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
 def getGameResults(game_id=None, team_id=None):
