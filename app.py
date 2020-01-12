@@ -6,7 +6,7 @@ from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, func
 
 
 import os
@@ -178,42 +178,19 @@ def addPlayers():
 
     return jsonify(u.id), 200
 
-@app.route('/getRoster/<season_team>/')
-def getRoster(season_team):
-    query = db.session.query(models.TeamRoster, models.Persons).join(models.SeasonTeams, models.TeamRoster.season_team_id == models.SeasonTeams.id).join(models.Persons).join(models.Teams).filter(models.TeamRoster.season_team_id==season_team)
-    print(query)
-    results = query.all()
-    roster= []
-    for result in results:
-        player = {}
-        player['player_id'] = result.TeamRoster.player_id
-        player['first_name'] = result.Persons.first_name
-        player['last_name'] = result.Persons.last_name
-        roster.append(player)
-
-    return jsonify(roster), 200
-
 @app.route('/updatePlayer/<id>', methods=['PUT', 'POST'])
 def updatePlayers(id):
     results = request.get_json()
     player = models.Persons.query.filter(models.Persons.id==id).filter(models.Persons.person_type == '1').first()
     if not player:
         return "No player to update", 404
-
-    if 'first_name' in results:
-        player.first_name = results['first_name']
-    if 'last_name' in results:
-        player.last_name = results['last_name']
-    if 'birth_date' in results:
-        player.birth_date = results['birth_date']
-    if 'height' in results:
-        player.height = results['height']
-    if 'team_id' in results:
-        # update active dates as well
-        player.team_id = results['team_id']
-    if 'person_type' in results:
-        # update active dates as well
-        player.person_type = results['person_type']
+    
+    player.first_name = results.get('first_name')   
+    player.last_name = results.get('last_name')
+    player.birth_date = results.get('birth_date')
+    player.height = results.get('height')   
+    player.team_id = results.get('team_id')    
+    player.person_type = results.get('person_type')
 
     app.logger.info(results)
 
@@ -544,68 +521,100 @@ def addPlayerStats(player_id, game_id, team_id, stats=None, game_updates=None):
 
     return jsonify(new_keys['total_points']), 200
 
+@app.route('/getRoster/<season_team>/')
+def getRoster(season_team):
+    query = db.session.query(models.TeamRoster, models.Persons).join(models.SeasonTeams, models.TeamRoster.season_team_id == models.SeasonTeams.id).join(models.Persons).join(models.Teams).filter(models.TeamRoster.season_team_id==season_team)
+    
+    results = query.all()
+    roster= []
+    for result in results:
+        player = {}
+        player['player_id'] = result.TeamRoster.player_id
+        player['first_name'] = result.Persons.first_name
+        player['last_name'] = result.Persons.last_name
+        player['number'] = result.Persons.number
+        roster.append(player)
+
+    return jsonify(roster), 200
+
 @app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
 def getGameResults(game_id=None, team_id=None):
-    query = db.session.query(models.Games, models.SeasonTeams, models.Persons, models.GameResults, models.BasketballStats).join(models.Games, or_(models.Games.home_team_id == models.SeasonTeams.id, models.Games.away_team_id == models.SeasonTeams.id)).outerjoin(models.GameResults).outerjoin(models.BasketballStats, and_(models.BasketballStats.game_id == models.Games.game_id, models.BasketballStats.team_id == models.SeasonTeams.id)).join(models.Persons, models.Persons.id == models.BasketballStats.player_id).filter(models.Persons.person_type == 1).filter(models.Games.game_id == game_id).filter(models.SeasonTeams.id == team_id)
+    game_roster = db.session.query(models.TeamRoster.season_team_id, 
+                                   models.Persons.id, 
+                                   models.Persons.first_name, 
+                                   models.Persons.last_name, 
+                                   models.Persons.number, 
+                                   models.Games.game_id)\
+                .join(models.SeasonTeams, models.TeamRoster.season_team_id == models.SeasonTeams.id)\
+                .join(models.Games, or_(models.Games.home_team_id == models.SeasonTeams.id, models.Games.away_team_id == models.SeasonTeams.id))\
+                .join(models.Persons).join(models.Teams)\
+                .filter(models.TeamRoster.season_team_id==team_id)\
+                .filter(models.Games.game_id == game_id)\
+                .cte('game_roster')
+    #print(game_roster)
+    roster = aliased(game_roster, name="roster")
+    
+    query = db.session.query(
+                roster.c.id.label('id'), 
+                roster.c.first_name, 
+                roster.c.last_name, 
+                roster.c.number, 
+                func.coalesce(models.BasketballStats.field_goals_made, 0).label('field_goals_made'),
+                func.coalesce(models.BasketballStats.field_goals_attempted, 0).label('field_goals_attempted'),
+                func.coalesce(models.BasketballStats.three_pointers_made, 0).label('three_pointers_made'),
+                func.coalesce(models.BasketballStats.three_pointers_attempted, 0).label('three_pointers_attempted'),
+                func.coalesce(models.BasketballStats.free_throws_made, 0).label('free_throws_made'),
+                func.coalesce(models.BasketballStats.free_throws_attempted, 0).label('free_throws_attempted'),
+                func.coalesce(models.BasketballStats.total_points, 0).label('total_points'),
+                func.coalesce(models.BasketballStats.assists, 0).label('assists'),
+                func.coalesce(models.BasketballStats.offensive_rebounds, 0).label('offensive_rebounds'),
+                func.coalesce(models.BasketballStats.defensive_rebounds, 0).label('defensive_rebounds'),
+                func.coalesce(models.BasketballStats.total_rebounds, 0).label('total_rebounds'),
+                func.coalesce(models.BasketballStats.steals, 0).label('steals'),
+                func.coalesce(models.BasketballStats.blocks, 0).label('blocks'),
+                func.coalesce(models.BasketballStats.turnovers, 0).label('turnovers')
+            )\
+            .outerjoin(models.BasketballStats, 
+                        and_(roster.c.game_id == models.BasketballStats.game_id, 
+                        roster.c.id == models.BasketballStats.player_id))
+    
+    
     results = query.all()
+    
+
+    
+    game = {}
+    game['game_id'] = game_id
+    game['team_id'] = team_id
+
 
     data_all = []
-    if not results:
-        data={}
-        data['team_id']=''
-        data['game_id']=''
-        data['player_first_name']= ''
-        data['player_last_name'] = ''
-        data['player_number'] = ''
-        stats = {}
-        stats['2PA'] = 0
-        stats['2PM'] = 0
-        stats['3PA'] = 0
-        stats['3PM'] = 0
-        stats['FTA'] = 0
-        stats['FTM'] = 0
-        data['player_stats']=stats
-
     for r in results:
         data={}
-        data['team_id'] = r.SeasonTeams.id
-        data['game_id'] = r.Games.game_id
-        data['player_first_name'] = r.Persons.first_name
-        data['player_last_name'] = r.Persons.last_name
-        data['player_number'] = r.Persons.number
+        data['player_id'] = r.id
+        data['player_first_name'] = r.first_name
+        data['player_last_name'] = r.last_name
+        data['player_number'] = r.number
         stats = {}
-        stats['2PA'] = 0
-        stats['2PM'] = 0
-        stats['3PA'] = 0
-        stats['3PM'] = 0
-        stats['FTA'] = 0
-        stats['FTM'] = 0
-        stats['total_points'] = 0
-        stats['assists'] = 0
-        stats['steals'] = 0
-        stats['blocks'] = 0
-        stats['offensive_rebounds'] = 0
-        stats['defensive_rebounds'] = 0
-        stats['total_rebounds'] = 0
-        if r.BasketballStats:
-            stats['2PA'] = r.BasketballStats.field_goals_attempted
-            stats['2PM'] = r.BasketballStats.field_goals_made
-            stats['3PA'] = r.BasketballStats.three_pointers_attempted
-            stats['3PM'] = r.BasketballStats.three_pointers_made
-            stats['FTA'] = r.BasketballStats.free_throws_attempted
-            stats['FTM'] = r.BasketballStats.free_throws_made
-            stats['total_points'] = r.BasketballStats.total_points
-            stats['assists'] = r.BasketballStats.assists
-            stats['steals'] = r.BasketballStats.steals
-            stats['blocks'] = r.BasketballStats.blocks
-            stats['offensive_rebounds'] = r.BasketballStats.offensive_rebounds
-            stats['defensive_rebounds'] = r.BasketballStats.defensive_rebounds
-            stats['total_rebounds'] = r.BasketballStats.total_rebounds
+        stats['2PA'] = r.field_goals_attempted
+        stats['2PM'] = r.field_goals_made
+        stats['3PA'] = r.three_pointers_attempted
+        stats['3PM'] = r.three_pointers_made
+        stats['FTA'] = r.free_throws_attempted
+        stats['FTM'] = r.free_throws_made
+        stats['total_points'] = r.total_points
+        stats['assists'] = r.assists
+        stats['steals'] = r.steals
+        stats['blocks'] = r.blocks
+        stats['offensive_rebounds'] = r.offensive_rebounds
+        stats['defensive_rebounds'] = r.defensive_rebounds
+        stats['total_rebounds'] = r.total_rebounds
         data['player_stats'] = stats
 
         data_all.append(data)
+    game['player_stats'] = data_all
 
-    return jsonify(data_all), 200
+    return jsonify(game), 200
 
 @app.route('/addPlayerToRoster', methods=['POST'])
 def addToRoster():

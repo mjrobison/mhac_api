@@ -175,7 +175,7 @@ class TeamRoster(db.Model):
     __table_args__ = {"schema": "mhac"}
 
     roster_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    season_team_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.season_teams.id'))
+    season_team_id = db.Column(UUID(as_uuid=True)) #, db.ForeignKey('mhac.season_teams.id'))
     player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.person.id'))
 
 class Schedule(db.Model):
