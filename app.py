@@ -48,7 +48,6 @@ def token_required(f):
             user = models.User.query.filter_by(email=data['sub']).first()
             if not user:
                 raise RuntimeError('User not found')
-            print(f)
             return f(user, *args, **kwargs)
         except jwt.ExpiredSignatureError:
             # 401 is Unauthorized HTTP status code
@@ -151,10 +150,7 @@ def addPlayers():
         first_name = data['first_name']
     if 'last_name' in data:
         last_name = data['last_name']
-#    if 'birth_date' in data:
-#        birth_date = data['birth_date']
-#    else:
-#        return "Birth Date is required", 401
+    birth_date = data.get('birth_date', None)
     if 'height' in data:
         height = data['height']
     if 'team_id' in data:
@@ -435,11 +431,12 @@ def addGameResults(game_id):
         # Alert if individual stats don't match final scores
     
     
-    #finals = data.get('final_scores')
-    
-    #game.final_home_score = finals.get('home_score', 0)
-    #game.final_away_score = finals.get('away_score', 0)
-    #game.save()
+    finals = data.get('final_scores')
+    if finals:
+        game.final_home_score = finals.get('home_score', 0)
+        game.final_away_score = finals.get('away_score', 0)
+        db.session.commit()
+#    game.save()
 
     if 'final_scores' in data : #data['final_scores']['home_score'] != 0 and  data['final_scores']['away_score'] != 0:
         try:
@@ -454,11 +451,11 @@ def addGameResults(game_id):
                 standings.games_played += 1
                 db.session.commit()
             else:
-                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
+                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
                 standings.wins +=  1
                 standings.games_played += 1
                 db.session.commit()
-                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
+                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
                 standings.losses +=  1
                 standings.games_played += 1
                 db.session.commit()
@@ -539,26 +536,27 @@ def getRoster(season_team):
 
 @app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
 def getGameResults(game_id=None, team_id=None):
-    game_roster = db.session.query(models.TeamRoster.season_team_id, 
-                                   models.Persons.id, 
-                                   models.Persons.first_name, 
-                                   models.Persons.last_name, 
-                                   models.Persons.number, 
+    game_roster = db.session.query(models.TeamRoster.season_team_id,
+                                   models.Persons.id,
+                                   models.Persons.first_name,
+                                   models.Persons.last_name,
+                                   models.Persons.number,
                                    models.Games.game_id)\
                 .join(models.SeasonTeams, models.TeamRoster.season_team_id == models.SeasonTeams.id)\
                 .join(models.Games, or_(models.Games.home_team_id == models.SeasonTeams.id, models.Games.away_team_id == models.SeasonTeams.id))\
-                .join(models.Persons).join(models.Teams)\
+                .join(models.Persons)\
                 .filter(models.TeamRoster.season_team_id==team_id)\
                 .filter(models.Games.game_id == game_id)\
                 .cte('game_roster')
+#               .filter(models.SeasonTeams.slug == team_id)\
     #print(game_roster)
     roster = aliased(game_roster, name="roster")
-    
+
     query = db.session.query(
-                roster.c.id.label('id'), 
-                roster.c.first_name, 
-                roster.c.last_name, 
-                roster.c.number, 
+                roster.c.id.label('id'),
+                roster.c.first_name,
+                roster.c.last_name,
+                roster.c.number,
                 func.coalesce(models.BasketballStats.field_goals_made, 0).label('field_goals_made'),
                 func.coalesce(models.BasketballStats.field_goals_attempted, 0).label('field_goals_attempted'),
                 func.coalesce(models.BasketballStats.three_pointers_made, 0).label('three_pointers_made'),
@@ -578,7 +576,7 @@ def getGameResults(game_id=None, team_id=None):
                         and_(roster.c.game_id == models.BasketballStats.game_id, 
                         roster.c.id == models.BasketballStats.player_id))
     
-    
+    print(query)
     results = query.all()
     
 
