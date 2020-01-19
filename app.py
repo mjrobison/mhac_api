@@ -436,7 +436,6 @@ def addGameResults(game_id):
         game.final_home_score = finals.get('home_score', 0)
         game.final_away_score = finals.get('away_score', 0)
         db.session.commit()
-#    game.save()
 
     if 'final_scores' in data : #data['final_scores']['home_score'] != 0 and  data['final_scores']['away_score'] != 0:
         try:
