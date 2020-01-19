@@ -408,7 +408,7 @@ def addGameResults(game_id):
         return 'Please ensure required fields are filled out', 400
 
     team_id = data['team']
-    game = db.session.query(models.Games).filter(models.Games.game_id == game_id).first_or_404()
+    game = db.session.query(models.Games).filter(models.Games.game_id == game_id).filter(or_(models.Games.home_team_id==team_id,models.Games.away_team_id==team_id) ).first_or_404()
     #home_team = game.get('home_team')
     if 'scores' in data:
         home_final = 0
@@ -578,13 +578,10 @@ def getGameResults(game_id=None, team_id=None):
     
     print(query)
     results = query.all()
-    
-
-    
+  
     game = {}
     game['game_id'] = game_id
     game['team_id'] = team_id
-
 
     data_all = []
     for r in results:
@@ -639,6 +636,65 @@ def getLevels():
     for r in results:
         data_all.append(utils.row2dict(r))
 
+    return jsonify(data_all), 200
+
+@app.route('/getSeasonStats/<season_id>', methods=['GET'])
+def getSeasonStats(season_id):
+    # results = models.BasketballStats.query().filter(models.BasketballStats.season_id == season_id).all()
+    results = db.engine.execute("""SELECT st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_name
+    , SUM(field_goals_attempted) AS field_goals_attempted
+    , SUM(field_goals_made) AS field_goals_made
+    , SUM(three_pointers_attempted) AS three_pointers_attempted
+    , SUM(three_pointers_made) AS three_pointers_made
+    , SUM(free_throws_attempted) AS free_throws_attempted
+    , SUM(free_throws_made) AS free_throws_made
+    , SUM(total_points) AS total_points
+    , SUM(assists) AS assists
+    , SUM(offensive_rebounds) AS offensive_rebounds
+    , SUM(defensive_rebounds) AS defensive_rebounds
+    , SUM(total_rebounds) AS total_rebounds
+    , SUM(steals) AS steals
+    , SUM(blocks) AS blocks
+    , SUM(turnovers) AS turnovers
+    , COUNT(game_id) AS games_played
+FROM mhac.basketball_stats aS bs
+INNER JOIN mhac.season_teams AS st
+    ON bs.team_id = st.id
+INNER JOIN mhac.teams AS t
+    ON st.team_id = t.id
+INNER JOIN mhac.person AS p
+    ON bs.player_id = p.id
+    WHERE st.season_id= %s
+GROUP BY st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_name """, season_id)
+    data_all = []
+
+    for r in results:
+        data = {
+            "team_id": r.team_id,
+            "team_name": r.team_name,
+            "first_name": r.season_id,
+            "last_name": r.last_name,
+            "2PA": r.field_goals_attempted,
+            "2PM": r.field_goals_made,
+            "3PA": r.three_pointers_attempted,
+            "3PM": r.three_pointers_made,
+            "FTA": r.free_throws_attempted,
+            "FTM": r.free_throws_made,
+            "total_points": r.total_points,
+            "assists": r.assists,
+            "offensive_rebounds": r.offensive_rebounds,
+            "defensive_rebounds": r.defensive_rebounds,
+            "total_rebounds": r.total_rebounds,
+            "steals": r.steals,
+            "blocks": r.blocks,
+            "turnovers": r.turnovers,
+            "games_played": r.games_played,
+            "points_per_game": float(r.total_points) / float(r.games_played)
+
+
+        }
+        data_all.append(data)
+    
     return jsonify(data_all), 200
 
 
