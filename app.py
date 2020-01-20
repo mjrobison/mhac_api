@@ -694,6 +694,17 @@ def getSeasonStats():
     stats['team_id'] = team_id
 
     for r in results:
+        field_goal_percentage = 0.0
+        if r.field_goals_attempted != 0:
+            field_goal_percentage = float(r.field_goals_made)/float(r.field_goals_attempted)
+        
+        three_point_percentage = 0.0
+        if r.three_pointers_attempted != 0:
+            three_point_percentage = float(r.three_pointers_made)/float(r.three_pointers_attempted)
+        
+        free_throw_percentage = 0.0
+        if r.free_throws_attempted != 0:
+            free_throw_percentage = float(r.free_throws_made)/float(r.free_throws_attempted)
         data = {
             "team_id": r.team_id,
             "team_name": r.team_name,
@@ -704,13 +715,13 @@ def getSeasonStats():
             "player_stats": {
                 "2PA": r.field_goals_attempted,
                 "2PM": r.field_goals_made,
-                '2P%': float(r.field_goals_made)/float(r.field_goals_attempted),
+                '2P%': field_goal_percentage,
                 "3PA": r.three_pointers_attempted,
                 "3PM": r.three_pointers_made,
-                "3P%": float(r.three_pointers_made)/float(r.three_pointers_attempted), 
+                "3P%": three_point_percentage, 
                 "FTA": r.free_throws_attempted,
                 "FTM": r.free_throws_made,
-                "FT%": float(r.free_throws_made)/float(r.free_throws_attempted), 
+                "FT%": free_throw_percentage, 
                 "total_points": r.total_points,
                 "assists": r.assists,
                 "offensive_rebounds": r.offensive_rebounds,
@@ -720,7 +731,7 @@ def getSeasonStats():
                 "blocks": r.blocks,
                 "turnovers": r.turnovers,
                 "games_played": r.games_played,
-                "points_per_game": float(r.total_points) / float(r.games_played)
+                "points_per_game": float(r.total_points)/float(r.games_played)
             }
 
         }
