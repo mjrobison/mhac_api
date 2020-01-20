@@ -704,10 +704,13 @@ def getSeasonStats():
             "player_stats": {
                 "2PA": r.field_goals_attempted,
                 "2PM": r.field_goals_made,
+                '2P%': float(r.field_goals_made)/float(r.field_goals_attempted),
                 "3PA": r.three_pointers_attempted,
                 "3PM": r.three_pointers_made,
+                "3P%": float(r.three_pointers_made)/float(r.three_pointers_attempted), 
                 "FTA": r.free_throws_attempted,
                 "FTM": r.free_throws_made,
+                "FT%": float(r.free_throws_made)/float(r.free_throws_attempted), 
                 "total_points": r.total_points,
                 "assists": r.assists,
                 "offensive_rebounds": r.offensive_rebounds,
