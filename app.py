@@ -493,7 +493,7 @@ def addPlayerStats(player_id, game_id, team_id, stats=None, game_updates=None):
     new_keys['steals']                 = stats.get('STEAL', 0)
     new_keys['blocks']                 = stats.get('BLK', 0)
     new_keys['turnovers']              = stats.get('TO', 0)
-    new_keys['total_points']  = utils.totalPoints(new_keys['field_goals_made'], new_keys['three_pointers_made'], new_keys['free_throws_made'])
+    new_keys['total_points']  = utils.totalPoints(int(new_keys['field_goals_made']), int(new_keys['three_pointers_made']), int(new_keys['free_throws_made']))
 
     try:
         new_keys['game_id'] = game_id
@@ -576,7 +576,7 @@ def getGameResults(game_id=None, team_id=None):
                         and_(roster.c.game_id == models.BasketballStats.game_id, 
                         roster.c.id == models.BasketballStats.player_id))
     
-    print(query)
+    # print(query)
     results = query.all()
   
     game = {}
@@ -672,8 +672,8 @@ GROUP BY st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_
         data = {
             "team_id": r.team_id,
             "team_name": r.team_name,
-            "first_name": r.season_id,
-            "last_name": r.last_name,
+            "player_first_name": r.first_name,
+            "player_last_name": r.last_name,
             "2PA": r.field_goals_attempted,
             "2PM": r.field_goals_made,
             "3PA": r.three_pointers_attempted,
@@ -690,15 +690,45 @@ GROUP BY st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_
             "turnovers": r.turnovers,
             "games_played": r.games_played,
             "points_per_game": float(r.total_points) / float(r.games_played)
-
-
         }
         data_all.append(data)
     
     return jsonify(data_all), 200
 
+@app.route('/getSeasonTeams/<slug>')
+def getSeasonTeams(slug):
+    # query = db.session.query(models.SeasonTeams, models.Teams).join(models.SeasonTeams, models.SeasonTeams.team_id == models.Teams.id).filter(models.teams.slug == slug)
+    # results = query.all()
 
+    results = db.engine.execute("""SELECT st.id AS season_team_id
+                                    , t.team_name
+                                    , t.team_mascot
+                                    , l.level_name
+                                    FROM mhac.season_teams AS st
+                                    INNER JOIN mhac.teams AS t
+                                        ON st.team_id = t.id
+                                    INNER JOIN mhac.seasons AS s
+                                        ON st.season_id = s.id
+                                    INNER JOIN mhac.levels AS l 
+                                        ON s.level_id = l.id
+                                    WHERE slug =  %s """, slug)
 
+    teams = {}
+    team_ids = []
+    i=0
+    for r in results:
+        if i ==0:
+            teams['team_name'] = r.team_name
+            teams['team_mascot'] = r.team_mascot
+        
+        team = {}
+        team['season_team_id'] = r.season_team_id
+        team['level_name'] = r.level_name
+        team_ids.append(team)
+    
+    teams['season_team_ids'] = team_ids
+
+    return jsonify(teams), 200
 
 
 if __name__ == '__main__':
