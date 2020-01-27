@@ -484,16 +484,16 @@ def addPlayerStats(player_id, game_id, team_id, stats=None, game_updates=None):
         data = request.get_json()
         stats = data
     new_keys = {}
-    new_keys['field_goals_attempted']   = stats.get('2PA', 0)
-    new_keys['field_goals_made']        = stats.get('2PM', 0)
+    new_keys['field_goals_attempted']    = stats.get('2PA', 0)
+    new_keys['field_goals_made']         = stats.get('2PM', 0)
     new_keys['three_pointers_attempted'] = stats.get('3PA', 0)
     new_keys['three_pointers_made']      = stats.get('3PM', 0)
-    new_keys['free_throws_attempted']  = stats.get('FTA', 0)
-    new_keys['free_throws_made']       = stats.get('FTM', 0)
-    new_keys['assists']                = stats.get('AST', 0)
-    new_keys['offensive_rebounds']     = stats.get('OREB', 0)
+    new_keys['free_throws_attempted']    = stats.get('FTA', 0)
+    new_keys['free_throws_made']         = stats.get('FTM', 0)
+    new_keys['assists']                  = stats.get('AST', 0)
+    new_keys['offensive_rebounds']       = stats.get('OREB', 0)
     new_keys['defensive_rebounds']     = stats.get('DREB', 0)
-    new_keys['total_rebounds']         = stats.gets('total_rebounds',0)
+    new_keys['total_rebounds']         = stats.get('total_rebounds',0)
     new_keys['steals']                 = stats.get('STEAL', 0)
     new_keys['blocks']                 = stats.get('BLK', 0)
     new_keys['turnovers']              = stats.get('TO', 0)
@@ -504,8 +504,9 @@ def addPlayerStats(player_id, game_id, team_id, stats=None, game_updates=None):
         new_keys['team_id'] = team_id
         new_keys['player_id'] = player_id
 
-        game_stats = models.BasketballStats(**new_keys)
-        game_updates.add(game_stats)
+        # game_stats = models.BasketballStats(**new_keys)
+        # game_updates.add(game_stats)
+        db.session.on_conflict_do_update(game_stats)
 
     except Exception as exc:
         db.session.query(models.BasketballStats).filter(models.BasketballStats.game_id == game_id).filter(models.BasketballStats.player_id == player_id).update(new_keys)
