@@ -180,12 +180,12 @@ def updatePlayers(id):
     player = models.Persons.query.filter(models.Persons.id==id).filter(models.Persons.person_type == '1').first()
     if not player:
         return "No player to update", 404
-    
-    player.first_name = results.get('first_name')   
+    player.number = results.get('player_number')
+    player.first_name = results.get('first_name')
     player.last_name = results.get('last_name')
     player.birth_date = results.get('birth_date')
-    player.height = results.get('height')   
-    player.team_id = results.get('team_id')    
+    player.height = results.get('height')
+    player.team_id = results.get('team_id')
     player.person_type = results.get('person_type')
 
     app.logger.info(results)
@@ -404,10 +404,14 @@ def archiveSeason(season_id):
 @app.route('/addGameResults/<game_id>', methods=['POST'])
 def addGameResults(game_id):
     data = request.get_json()
-    if not 'team' in data:
-        return 'Please ensure required fields are filled out', 400
+    if 'team' in data:
+        team_id = data['team']
+    elif 'team_id' in data:
+        team_id = data['team_id']
+    else:
+        return jsonify('Please ensure required fields are filled out'), 400
 
-    team_id = data['team']
+    #team_id = data['team']
     game = db.session.query(models.Games).filter(models.Games.game_id == game_id).filter(or_(models.Games.home_team_id==team_id,models.Games.away_team_id==team_id) ).first_or_404()
     #home_team = game.get('home_team')
     if 'scores' in data:
@@ -429,13 +433,13 @@ def addGameResults(game_id):
             # Send back an alert
             pass
         # Alert if individual stats don't match final scores
-    
-    
+
+
     finals = data.get('final_scores')
-    if finals:
-        game.final_home_score = finals.get('home_score', 0)
-        game.final_away_score = finals.get('away_score', 0)
-        db.session.commit()
+#    if finals:
+#        game.final_home_score = finals.get('home_score', 0)
+#        game.final_away_score = finals.get('away_score', 0)
+#        db.session.commit()
 
     if 'final_scores' in data : #data['final_scores']['home_score'] != 0 and  data['final_scores']['away_score'] != 0:
         try:
@@ -489,6 +493,7 @@ def addPlayerStats(player_id, game_id, team_id, stats=None, game_updates=None):
     new_keys['assists']                = stats.get('AST', 0)
     new_keys['offensive_rebounds']     = stats.get('OREB', 0)
     new_keys['defensive_rebounds']     = stats.get('DREB', 0)
+    new_keys['total_rebounds']         = stats.gets('total_rebounds',0)
     new_keys['steals']                 = stats.get('STEAL', 0)
     new_keys['blocks']                 = stats.get('BLK', 0)
     new_keys['turnovers']              = stats.get('TO', 0)
@@ -520,7 +525,7 @@ def addPlayerStats(player_id, game_id, team_id, stats=None, game_updates=None):
 @app.route('/getRoster/<season_team>/')
 def getRoster(season_team):
     query = db.session.query(models.TeamRoster, models.Persons).join(models.SeasonTeams, models.TeamRoster.season_team_id == models.SeasonTeams.id).join(models.Persons).join(models.Teams).filter(models.TeamRoster.season_team_id==season_team)
-    
+
     results = query.all()
     roster= []
     for result in results:
@@ -528,7 +533,7 @@ def getRoster(season_team):
         player['player_id'] = result.TeamRoster.player_id
         player['first_name'] = result.Persons.first_name
         player['last_name'] = result.Persons.last_name
-        player['number'] = result.Persons.number
+        player['player_number'] = result.Persons.number
         roster.append(player)
 
     return jsonify(roster), 200
@@ -571,16 +576,17 @@ def getGameResults(game_id=None, team_id=None):
                 func.coalesce(models.BasketballStats.blocks, 0).label('blocks'),
                 func.coalesce(models.BasketballStats.turnovers, 0).label('turnovers')
             )\
-            .outerjoin(models.BasketballStats, 
-                        and_(roster.c.game_id == models.BasketballStats.game_id, 
+            .outerjoin(models.BasketballStats,
+                        and_(roster.c.game_id == models.BasketballStats.game_id,
                         roster.c.id == models.BasketballStats.player_id))
-    
-    # print(query)
+
     results = query.all()
-  
+    game_scores = db.session.query(models.Games).filter(models.Games.game_id == game_id).first()
+
     game = {}
     game['game_id'] = game_id
     game['team_id'] = team_id
+    game['final_scores'] = {'home_score': game_scores.final_home_score, 'away_score':game_scores.final_away_score}
 
     data_all = []
     for r in results:
@@ -597,11 +603,12 @@ def getGameResults(game_id=None, team_id=None):
         stats['FTA'] = r.free_throws_attempted
         stats['FTM'] = r.free_throws_made
         stats['total_points'] = r.total_points
-        stats['assists'] = r.assists
-        stats['steals'] = r.steals
-        stats['blocks'] = r.blocks
-        stats['offensive_rebounds'] = r.offensive_rebounds
-        stats['defensive_rebounds'] = r.defensive_rebounds
+        stats['AST'] = r.assists
+        stats['STEAL'] = r.steals
+        stats['BLK'] = r.blocks
+        stats['OREB'] = r.offensive_rebounds
+        stats['DREB'] = r.defensive_rebounds
+        stats['TO'] = r.turnovers
         stats['total_rebounds'] = r.total_rebounds
         data['player_stats'] = stats
 
@@ -670,7 +677,7 @@ def getSeasonStats():
             ON bs.player_id = p.id
         {0}
         GROUP BY st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_name, number """
-    
+
     data_all = []
 
     if season_id and team_id:
@@ -685,7 +692,7 @@ def getSeasonStats():
         results = db.session.execute(query, {"season_id": season_id})
     elif team_id:
         where_clause = ''' WHERE st.id = :team_id'''
-        query = query.format(where_clause)  
+        query = query.format(where_clause)
         print(query)
         results = db.session.execute(query, {"team_id": team_id})
 
@@ -697,11 +704,11 @@ def getSeasonStats():
         field_goal_percentage = 0.0
         if r.field_goals_attempted != 0:
             field_goal_percentage = float(r.field_goals_made)/float(r.field_goals_attempted)
-        
+
         three_point_percentage = 0.0
         if r.three_pointers_attempted != 0:
             three_point_percentage = float(r.three_pointers_made)/float(r.three_pointers_attempted)
-        
+
         free_throw_percentage = 0.0
         if r.free_throws_attempted != 0:
             free_throw_percentage = float(r.free_throws_made)/float(r.free_throws_attempted)
@@ -710,24 +717,6 @@ def getSeasonStats():
             "team_name": r.team_name,
             "player_first_name": r.first_name,
             "player_last_name": r.last_name,
-<<<<<<< HEAD
-            "2PA": r.field_goals_attempted,
-            "2PM": r.field_goals_made,
-            "3PA": r.three_pointers_attempted,
-            "3PM": r.three_pointers_made,
-            "FTA": r.free_throws_attempted,
-            "FTM": r.free_throws_made,
-            "total_points": r.total_points,
-            "assists": r.assists,
-            "offensive_rebounds": r.offensive_rebounds,
-            "defensive_rebounds": r.defensive_rebounds,
-            "total_rebounds": r.total_rebounds,
-            "steals": r.steals,
-            "blocks": r.blocks,
-            "turnovers": r.turnovers,
-            "games_played": r.games_played,
-            "points_per_game": float(r.total_points) / float(r.games_played)
-=======
             "player_number": r.player_number,
             "player_id": r.player_id,
             "player_stats": {
@@ -751,11 +740,9 @@ def getSeasonStats():
                 "games_played": r.games_played,
                 "points_per_game": float(r.total_points)/float(r.games_played)
             }
-
->>>>>>> a0b3a358835ae2ab52f433dbdeb351f0a6a141bf
         }
         data_all.append(data)
-    
+
     return jsonify(data_all), 200
 
 @app.route('/getSeasonTeams/<slug>')
