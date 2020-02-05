@@ -441,30 +441,30 @@ def addGameResults(game_id):
 #        game.final_away_score = finals.get('away_score', 0)
 #        db.session.commit()
 
-    if 'final_scores' in data : #data['final_scores']['home_score'] != 0 and  data['final_scores']['away_score'] != 0:
-        try:
-            results = db.session.query(models.SeasonTeams).filter(models.SeasonTeams.team_id == game.home_team_id).all()
-            if data['final_scores']['home_score'] > data['final_scores']['away_score']:
-                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
-                standings.wins +=  1
-                standings.games_played += 1
-                db.session.commit()
-                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
-                standings.losses +=  1
-                standings.games_played += 1
-                db.session.commit()
-            else:
-                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
-                standings.wins +=  1
-                standings.games_played += 1
-                db.session.commit()
-                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
-                standings.losses +=  1
-                standings.games_played += 1
-                db.session.commit()
+#    if 'final_scores' in data : #data['final_scores']['home_score'] != 0 and  data['final_scores']['away_score'] != 0:
+#        try:
+#            results = db.session.query(models.SeasonTeams).filter(models.SeasonTeams.team_id == game.home_team_id).all()
+#            if data['final_scores']['home_score'] > data['final_scores']['away_score']:
+#                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
+#                standings.wins +=  1
+#                standings.games_played += 1
+#                db.session.commit()
+#                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
+#                standings.losses +=  1
+#                standings.games_played += 1
+#                db.session.commit()
+#            else:
+#                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
+#                standings.wins +=  1
+#                standings.games_played += 1
+#                db.session.commit()
+#                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
+#                standings.losses +=  1
+#                standings.games_played += 1
+#                db.session.commit()
 
-        except Exception as exc:
-            return str(exc), 500
+#        except Exception as exc:
+#            return str(exc), 500
 
     updates = db.session()
     for player in data.get('player_stats', []):
@@ -504,9 +504,9 @@ def addPlayerStats(player_id, game_id, team_id, stats=None, game_updates=None):
         new_keys['team_id'] = team_id
         new_keys['player_id'] = player_id
 
-        # game_stats = models.BasketballStats(**new_keys)
-        # game_updates.add(game_stats)
-        db.session.on_conflict_do_update(game_stats)
+        game_stats = models.BasketballStats(**new_keys)
+        game_updates.add(game_stats)
+        #db.session.on_conflict_do_update(game_stats)
 
     except Exception as exc:
         db.session.query(models.BasketballStats).filter(models.BasketballStats.game_id == game_id).filter(models.BasketballStats.player_id == player_id).update(new_keys)
@@ -605,10 +605,15 @@ def getGameResults(game_id=None, team_id=None):
         stats['FTM'] = r.free_throws_made
         stats['total_points'] = r.total_points
         stats['AST'] = r.assists
+        stats['assists'] = r.assists
         stats['STEAL'] = r.steals
+        stats['steals'] = r.steals
         stats['BLK'] = r.blocks
+        stats['blocks'] = r.blocks
         stats['OREB'] = r.offensive_rebounds
         stats['DREB'] = r.defensive_rebounds
+        stats['offensive_rebounds'] = r.offensive_rebounds
+        stats['defensive_rebounds'] = r.defensive_rebounds
         stats['TO'] = r.turnovers
         stats['total_rebounds'] = r.total_rebounds
         data['player_stats'] = stats
