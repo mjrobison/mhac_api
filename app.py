@@ -748,10 +748,6 @@ def getSeasonStats():
                 "games_played": r.games_played,
                 "points_per_game": float(r.total_points)/float(r.games_played)
             }
-<<<<<<< HEAD
-
-=======
->>>>>>> 3abef16fc5610b1dfa36762e91636e14b2bc1da6
         }
         data_all.append(data)
 
@@ -1241,7 +1237,7 @@ def getTournamentInformation():
 
     return jsonify(games), 200
 
-    
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port='5001')
 
