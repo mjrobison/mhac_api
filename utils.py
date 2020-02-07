@@ -27,10 +27,8 @@ games = [
           'time': '10:00 am',
           'matchup': {
             'team1': 'Chattanooga Patriots',
-            'team1ID': 'd146fc2b-63d8-4ecd-9261-af2ca4081c1e',
             'scoreTeam1': '17',
             'team2': 'Tennessee Heat',
-            'team2ID': '72efaf53-e420-4b13-8abb-78090ec0f1d8',
             'scoreTeam2': '36'
           },
           'location': {
@@ -173,9 +171,9 @@ games = [
           'time': '3:00 pm',
           'matchup': {
             'team1': 'Covenant Christian Academy',
-            'scoreTeam1': '',
-            'team2': 'Western Kentucky Trailblazers',
-            'scoreTeam2': ''
+            'scoreTeam1': '41',
+            'team2': 'Tennessee Heat',
+            'scoreTeam2': '43'
           },
           'location': {
             'address': '1045 Bison Trail, Gallatin, TN 37066',
@@ -189,9 +187,9 @@ games = [
           'time': '4:00 pm',
           'matchup': {
             'team1': 'Life Christian Academy',
-            'scoreTeam1': '',
+            'scoreTeam1': '25',
             'team2': 'Chattanooga Patriots',
-            'scoreTeam2': ''
+            'scoreTeam2': '47'
           },
           'location': {
             'address': '1045 Bison Trail, Gallatin, TN 37066',
@@ -205,9 +203,9 @@ games = [
           'time': '12:30 pm',
           'matchup': {
             'team1': 'Western Kentucky Trailblazers',
-            'scoreTeam1': '',
+            'scoreTeam1': '1',
             'team2': 'Bye',
-            'scoreTeam2': ''
+            'scoreTeam2': '0'
           },
           'location': {
             'address': '1045 Bison Trail, Gallatin, TN 37066',
@@ -222,9 +220,9 @@ games = [
           'time': '8:00 am',
           'matchup': {
             'team1': 'Covenant Christian Academy',
-            'scoreTeam1': '',
+            'scoreTeam1': '24',
             'team2': 'Hendersonville Royals',
-            'scoreTeam2': ''
+            'scoreTeam2': '25'
           },
           'location': {
             'address': '1045 Bison Trail, Gallatin, TN 37066',
@@ -238,9 +236,9 @@ games = [
           'time': '9:00 am',
           'matchup': {
             'team1': 'Chattanooga Patriots',
-            'scoreTeam1': '',
+            'scoreTeam1': '41',
             'team2': 'Life Christian Academy',
-            'scoreTeam2': ''
+            'scoreTeam2': '22'
           },
           'location': {
             'address': '1045 Bison Trail, Gallatin, TN 37066',
@@ -254,9 +252,9 @@ games = [
           'time': '10:00 am',
           'matchup': {
             'team1': 'Nashville Warriors',
-            'scoreTeam1': '',
+            'scoreTeam1': '44',
             'team2': 'Daniel 1 Academy',
-            'scoreTeam2': ''
+            'scoreTeam2': '38'
           },
           'location': {
             'address': '1045 Bison Trail, Gallatin, TN 37066',
@@ -270,9 +268,9 @@ games = [
           'time': '11:00 am',
           'matchup': {
             'team1': 'Tennessee Heat',
-            'scoreTeam1': '',
+            'scoreTeam1': '27',
             'team2': 'Western Kentucky Trailblazers',
-            'scoreTeam2': ''
+            'scoreTeam2': '44'
           },
           'location': {
             'address': '1045 Bison Trail, Gallatin, TN 37066',
@@ -285,10 +283,10 @@ games = [
           'date': 'Feburary 7th',
           'time': '12:00 pm',
           'matchup': {
-            'team1': 'Winner Game 10',
-            'scoreTeam1': '',
-            'team2': 'Winner Game 11',
-            'scoreTeam2': ''
+            'team1': 'Tennessee Heat',
+            'scoreTeam1': '41',
+            'team2': 'Chattanooga Patriots',
+            'scoreTeam2': '33'
           },
           'location': {
             'address': '1045 Bison Trail, Gallatin, TN 37066',
@@ -301,10 +299,10 @@ games = [
           'date': 'Feburary 7th',
           'time': '1:00 pm',
           'matchup': {
-            'team1': 'Winner Game 9',
-            'scoreTeam1': '',
-            'team2': '#1 Seed',
-            'scoreTeam2': ''
+            'team1': 'Daniel 1 Academy',
+            'scoreTeam1': '36',
+            'team2': 'Western Kentucky',
+            'scoreTeam2': '48'
           },
           'location': {
             'address': '1045 Bison Trail, Gallatin, TN 37066',
@@ -365,9 +363,9 @@ games = [
           'date': 'Feburary 7th',
           'time': '6:30 pm',
           'matchup': {
-            'team1': 'Nashville Warriors',
+            'team1': 'Daniel 1 Academy',
             'scoreTeam1': '',
-            'team2': 'Daniel 1 Academy',
+            'team2': 'Nashville Warriors',
             'scoreTeam2': ''
           },
           'location': {
@@ -413,9 +411,9 @@ games = [
           'date': 'Feburary 8th',
           'time': '8:00 am',
           'matchup': {
-            'team1': 'Loser Game 10',
+            'team1': 'Covenant Christian Academy',
             'scoreTeam1': '',
-            'team2': 'Loser Game 11',
+            'team2': 'Life Christian Academy',
             'scoreTeam2': ''
           },
           'location': {
@@ -445,7 +443,7 @@ games = [
           'date': 'Feburary 8th',
           'time': '10:00 am',
           'matchup': {
-            'team1': 'Loser Game 9',
+            'team1': 'Daniel 1 Academy',
             'scoreTeam1': '',
             'team2': 'Winner Game 25',
             'scoreTeam2': ''
@@ -461,9 +459,9 @@ games = [
           'date': 'Feburary 8th',
           'time': '12:00 pm',
           'matchup': {
-            'team1': 'Winner Game 15',
+            'team1': 'Nashville Warriors',
             'scoreTeam1': '',
-            'team2': 'Winner Game 16',
+            'team2': 'Western Kentucky Trailblazers',
             'scoreTeam2': ''
           },
           'location': {
@@ -477,9 +475,9 @@ games = [
           'date': 'Feburary 8th',
           'time': '2:00 pm',
           'matchup': {
-            'team1': 'Winner Game 17',
+            'team1': 'Tennessee Heat',
             'scoreTeam1': '',
-            'team2': 'Winner Game 18',
+            'team2': 'Western Kentucky',
             'scoreTeam2': ''
           },
           'location': {
