@@ -788,9 +788,27 @@ def getSeasonTeams(slug):
 
     return jsonify(teams), 200
 
-@app.route('/updateTournamentGameTeams')
+@app.route('/updateTournamentGameTeams', methods=['POST'])
 def updateTournamentGameTeams():
-    data = request.get_json()    
+    
+    data = request.get_json() 
+    games= data.get('games')
+    last_name = ''
+    location_id = ''
+    for game in games:
+        game_number = game.get('game')
+        location = game.get('location')
+        game_date = game.get('date')
+        game_time = game.get('time')
+        matchup = game.get('matchup')
+        location_name = location.get('name')
+        if last_name != location_name:  
+            location_id = db.engine.execute("""SELECT DISTINCT id FROM mhac.addresses WHERE name = %s """, location_name)
+            last_name = location_name
+        print(location_id)
+
+
+    return jsonify('ok'), 200   
     # db.engine.execute("""UPDATE mhac.tournamentgames
     # SET  """)
 

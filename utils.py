@@ -27,8 +27,10 @@ games = [
           'time': '10:00 am',
           'matchup': {
             'team1': 'Chattanooga Patriots',
+            'team1ID': 'd146fc2b-63d8-4ecd-9261-af2ca4081c1e',
             'scoreTeam1': '17',
             'team2': 'Tennessee Heat',
+            'team2ID': '72efaf53-e420-4b13-8abb-78090ec0f1d8',
             'scoreTeam2': '36'
           },
           'location': {
