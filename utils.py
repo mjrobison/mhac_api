@@ -23,7 +23,7 @@ def calcGamesBehind(leader, wins, losses):
 games = [
         {
           'game': '1',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '10:00 am',
           'matchup': {
             'team1': 'Chattanooga Patriots',
@@ -39,7 +39,7 @@ games = [
         },
         {
           'game': '2',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '11:00 am',
           'matchup': {
             'team1': 'Covenant Christian Academy',
@@ -55,7 +55,7 @@ games = [
         },
         {
           'game': '3',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '12:00 pm',
           'matchup': {
             'team1': 'Hendersonville Royals',
@@ -71,7 +71,7 @@ games = [
         },
         {
           'game': '4',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '1:00 pm',
           'matchup': {
             'team1': 'Life Christian Academy',
@@ -87,7 +87,7 @@ games = [
         },
         {
           'game': '5',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '8:00 am',
           'matchup': {
             'team1': 'Nashville Warriors',
@@ -103,7 +103,7 @@ games = [
         },
         {
           'game': '6',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '9:30 am',
           'matchup': {
             'team1': 'Tennessee Heat',
@@ -119,7 +119,7 @@ games = [
         },
         {
           'game': '7',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '11:00 am',
           'matchup': {
             'team1': 'Covenant Christian Academy',
@@ -135,7 +135,7 @@ games = [
         },
         {
           'game': '8',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '12:30 pm',
           'matchup': {
             'team1': 'Daniel 1 Academy',
@@ -151,7 +151,7 @@ games = [
         },
         {
           'game': '9',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '2:00 pm',
           'matchup': {
             'team1': 'Daniel 1 Academy',
@@ -167,7 +167,7 @@ games = [
         },
         {
           'game': '10',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '3:00 pm',
           'matchup': {
             'team1': 'Covenant Christian Academy',
@@ -183,7 +183,7 @@ games = [
         },
         {
           'game': '11',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '4:00 pm',
           'matchup': {
             'team1': 'Life Christian Academy',
@@ -199,7 +199,7 @@ games = [
         },
         {
           'game': '12',
-          'date': 'Feburary 6th',
+          'date': 'February 6th',
           'time': '12:30 pm',
           'matchup': {
             'team1': 'Western Kentucky Trailblazers',
@@ -216,7 +216,7 @@ games = [
 
         {
           'game': '13',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '8:00 am',
           'matchup': {
             'team1': 'Covenant Christian Academy',
@@ -232,7 +232,7 @@ games = [
         },
         {
           'game': '14',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '9:00 am',
           'matchup': {
             'team1': 'Chattanooga Patriots',
@@ -248,7 +248,7 @@ games = [
         },
         {
           'game': '15',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '10:00 am',
           'matchup': {
             'team1': 'Nashville Warriors',
@@ -264,7 +264,7 @@ games = [
         },
         {
           'game': '16',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '11:00 am',
           'matchup': {
             'team1': 'Tennessee Heat',
@@ -280,7 +280,7 @@ games = [
         },
         {
           'game': '17',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '12:00 pm',
           'matchup': {
             'team1': 'Tennessee Heat',
@@ -296,7 +296,7 @@ games = [
         },
         {
           'game': '18',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '1:00 pm',
           'matchup': {
             'team1': 'Daniel 1 Academy',
@@ -312,7 +312,7 @@ games = [
         },
         {
           'game': '19',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '2:00 pm',
           'matchup': {
             'team1': 'Covenant Christian Academy',
@@ -328,7 +328,7 @@ games = [
         },
         {
           'game': '20',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '3:30 pm',
           'matchup': {
             'team1': 'Daniel 1 Academy',
@@ -344,7 +344,7 @@ games = [
         },
         {
           'game': '21',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '5:00 pm',
           'matchup': {
             'team1': 'Tennessee Heat',
@@ -360,7 +360,7 @@ games = [
         },
         {
           'game': '22',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '6:30 pm',
           'matchup': {
             'team1': 'Daniel 1 Academy',
@@ -376,7 +376,7 @@ games = [
         },
         {
           'game': '23',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '8:00 pm',
           'matchup': {
             'team1': 'Hendersonville Royals',
@@ -392,7 +392,7 @@ games = [
         },
         {
           'game': '24',
-          'date': 'Feburary 7th',
+          'date': 'February 7th',
           'time': '9:30 pm',
           'matchup': {
             'team1': 'Chattanooga Patriots',
@@ -408,7 +408,7 @@ games = [
         },
         {
           'game': '25',
-          'date': 'Feburary 8th',
+          'date': 'February 8th',
           'time': '8:00 am',
           'matchup': {
             'team1': 'Covenant Christian Academy',
@@ -424,7 +424,7 @@ games = [
         },
         {
           'game': '26',
-          'date': 'Feburary 8th',
+          'date': 'February 8th',
           'time': '9:00 am',
           'matchup': {
             'team1': 'Loser Game 19',
@@ -440,7 +440,7 @@ games = [
         },
         {
           'game': '27',
-          'date': 'Feburary 8th',
+          'date': 'February 8th',
           'time': '10:00 am',
           'matchup': {
             'team1': 'Daniel 1 Academy',
@@ -456,7 +456,7 @@ games = [
         },
         {
           'game': '28',
-          'date': 'Feburary 8th',
+          'date': 'February 8th',
           'time': '12:00 pm',
           'matchup': {
             'team1': 'Nashville Warriors',
@@ -472,7 +472,7 @@ games = [
         },
         {
           'game': '29',
-          'date': 'Feburary 8th',
+          'date': 'February 8th',
           'time': '2:00 pm',
           'matchup': {
             'team1': 'Tennessee Heat',
@@ -488,7 +488,7 @@ games = [
         },
         {
           'game': '30',
-          'date': 'Feburary 8th',
+          'date': 'February 8th',
           'time': '4:00 pm',
           'matchup': {
             'team1': 'Winner Game 19',
@@ -504,7 +504,7 @@ games = [
         },
         {
           'game': '31',
-          'date': 'Feburary 8th',
+          'date': 'February 8th',
           'time': '6:00 pm',
           'matchup': {
             'team1': 'Winner Game 23',
