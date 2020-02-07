@@ -419,13 +419,15 @@ def addGameResults(game_id):
             period = score['period']
             if score['period'] > 4:
                 period = 'OT ' + score['period'] - 4
-            gr = models.GameResults(game_id=game, period=period,home_score=score['home'], away_score=score['away'], game_order=score['period'])
+            gr = models.GameResults(game_id=game.game_id, period=period,home_score=score['home'], away_score=score['away'], game_order=score['period'])
+            print(gr)
             try:
-                gr.save()
-            except Exeption as exc:
+                db.session.add(gr)
+                db.session.commit()
+            except Exception as exc:
                 return str(exc), 500
 
-        if home_final != data['final_scores']['home'] or away_final != data['final_scores']['away']:
+        if home_final != data['final_scores']['home_score'] or away_final != data['final_scores']['away_score']:
             # Send back an alert
             pass
         # Alert if individual stats don't match final scores
@@ -710,24 +712,6 @@ def getSeasonStats():
             "team_name": r.team_name,
             "player_first_name": r.first_name,
             "player_last_name": r.last_name,
-<<<<<<< HEAD
-            "2PA": r.field_goals_attempted,
-            "2PM": r.field_goals_made,
-            "3PA": r.three_pointers_attempted,
-            "3PM": r.three_pointers_made,
-            "FTA": r.free_throws_attempted,
-            "FTM": r.free_throws_made,
-            "total_points": r.total_points,
-            "assists": r.assists,
-            "offensive_rebounds": r.offensive_rebounds,
-            "defensive_rebounds": r.defensive_rebounds,
-            "total_rebounds": r.total_rebounds,
-            "steals": r.steals,
-            "blocks": r.blocks,
-            "turnovers": r.turnovers,
-            "games_played": r.games_played,
-            "points_per_game": float(r.total_points) / float(r.games_played)
-=======
             "player_number": r.player_number,
             "player_id": r.player_id,
             "player_stats": {
@@ -752,7 +736,6 @@ def getSeasonStats():
                 "points_per_game": float(r.total_points)/float(r.games_played)
             }
 
->>>>>>> a0b3a358835ae2ab52f433dbdeb351f0a6a141bf
         }
         data_all.append(data)
     
@@ -793,7 +776,456 @@ def getSeasonTeams(slug):
 
     return jsonify(teams), 200
 
+@app.route('/updateTournamentGameTeams')
+def updateTournamentGameTeams():
+    data = request.get_json()    
+    # db.engine.execute("""UPDATE mhac.tournamentgames
+    # SET  """)
 
+@app.route('/getTournamentInformation')
+def getTournamentInformation():
+    # games = db.engine.execute(""" """)
+    games = [
+        {
+          game: '1',
+          date: 'Feburary 6th',
+          time: '9:00 am',
+          matchup: {
+            team1: 'Seed 5',
+            team2: 'Seed 4'
+          },
+          location: {
+            address: '106 Bluegrass Commons Blvd, Hendersonville, TN 37075',
+            name: 'First Baptist Church'
+          },
+          level: '14U Boys'
+        },
+        {
+          game: '2',
+          date: 'Feburary 6th',
+          time: '10:00 am',
+          matchup: {
+            team1: 'Seed 6',
+            team2: 'Seed 3'
+          },
+          location: {
+            address: '106 Bluegrass Commons Blvd, Hendersonville, TN 37075',
+            name: 'First Baptist Church'
+          },
+          level: '14U Boys'
+        },
+        {
+          game: '3',
+          date: 'Feburary 6th',
+          time: '11:00 am',
+          matchup: {
+            team1: 'Seed 7',
+            team2: 'Seed 2'
+          },
+          location: {
+            address: '106 Bluegrass Commons Blvd, Hendersonville, TN 37075',
+            name: 'First Baptist Church'
+          },
+          level: '14U Boys'
+        },
+        {
+          game: '4',
+          date: 'Feburary 6th',
+          time: '12:00 pm',
+          matchup: {
+            team1: 'Seed 8',
+            team2: 'Seed 1'
+          },
+          location: {
+            address: '106 Bluegrass Commons Blvd, Hendersonville, TN 37075',
+            name: 'First Baptist Church'
+          },
+          level: '14U Boys'
+        },
+        {
+          game: '5',
+          date: 'Feburary 6th',
+          time: '8:00 am',
+          matchup: {
+            team1: 'Seed 5',
+            team2: 'Seed 4'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Boys'
+        },
+        {
+          game: '6',
+          date: 'Feburary 6th',
+          time: '9:30 am',
+          matchup: {
+            team1: 'Seed 6',
+            team2: 'Seed 3'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Boys'
+        },
+        {
+          game: '7',
+          date: 'Feburary 6th',
+          time: '11:00 am',
+          matchup: {
+            team1: 'Seed 7',
+            team2: 'Seed 2'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Boys'
+        },
+        {
+          game: '8',
+          date: 'Feburary 6th',
+          time: '12:30 pm',
+          matchup: {
+            team1: 'Seed 8',
+            team2: 'Seed 1'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Boys'
+        },
+        {
+          game: '9',
+          date: 'Feburary 6th',
+          time: '2:00 pm',
+          matchup: {
+            team1: 'Seed 5',
+            team2: 'Seed 4'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '16U Boys'
+        },
+        {
+          game: '10',
+          date: 'Feburary 6th',
+          time: '3:00 pm',
+          matchup: {
+            team1: 'Seed 6',
+            team2: 'Seed 3'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '16U Boys'
+        },
+        {
+          game: '11',
+          date: 'Feburary 6th',
+          time: '4:00 pm',
+          matchup: {
+            team1: 'Seed 7',
+            team2: 'Seed 2'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '16U Boys'
+        },
+        {
+          game: '12',
+          date: 'Feburary 6th',
+          time: '12:30 pm',
+          matchup: {
+            team1: 'Seed 1',
+            team2: 'Bye'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '16U Boys'
+        },
+
+        {
+          game: '13',
+          date: 'Feburary 7th',
+          time: '8:00 am',
+          matchup: {
+            team1: 'Loser Game 2',
+            team2: 'Loser Game 3'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '14U Boys'
+        },
+        {
+          game: '14',
+          date: 'Feburary 7th',
+          time: '9:00 am',
+          matchup: {
+            team1: 'Loser Game 1',
+            team2: 'Loser Game 4'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '14U Boys'
+        },
+        {
+          game: '15',
+          date: 'Feburary 7th',
+          time: '10:00 am',
+          matchup: {
+            team1: 'Winner Game 2',
+            team2: 'Winner Game 3'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '14U Boys'
+        },
+        {
+          game: '16',
+          date: 'Feburary 7th',
+          time: '11:00 am',
+          matchup: {
+            team1: 'Winner Game 1',
+            team2: 'Winner Game 2'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '14U Boys'
+        },
+        {
+          game: '17',
+          date: 'Feburary 7th',
+          time: '12:00 pm',
+          matchup: {
+            team1: 'Winner Game 10',
+            team2: 'Winner Game 11'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '16U Boys'
+        },
+        {
+          game: '18',
+          date: 'Feburary 7th',
+          time: '1:00 pm',
+          matchup: {
+            team1: 'Winner Game 9',
+            team2: '#1 Seed'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '16U Boys'
+        },
+        {
+          game: '19',
+          date: 'Feburary 7th',
+          time: '2:00 pm',
+          matchup: {
+            team1: 'Seed 3',
+            team2: 'Seed 2'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Girls'
+        },
+        {
+          game: '20',
+          date: 'Feburary 7th',
+          time: '3:30 pm',
+          matchup: {
+            team1: 'Seed 4',
+            team2: 'Seed 1'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Girls'
+        },
+        {
+          game: '21',
+          date: 'Feburary 7th',
+          time: '5:00 pm',
+          matchup: {
+            team1: 'Loser Game 6',
+            team2: 'Loser Game 7'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Boys'
+        },
+        {
+          game: '22',
+          date: 'Feburary 7th',
+          time: '6:30 pm',
+          matchup: {
+            team1: 'Loser Game 5',
+            team2: 'Loser Game 8'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Boys'
+        },
+        {
+          game: '23',
+          date: 'Feburary 7th',
+          time: '8:10 pm',
+          matchup: {
+            team1: 'Winner Game 6',
+            team2: 'Winner Game 7'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Boys'
+        },
+        {
+          game: '24',
+          date: 'Feburary 7th',
+          time: '9:40 pm',
+          matchup: {
+            team1: 'Winner Game 5',
+            team2: 'Winner Game 8'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Boys'
+        },
+        {
+          game: '25',
+          date: 'Feburary 8th',
+          time: '8:00 am',
+          matchup: {
+            team1: 'Loser Game 10',
+            team2: 'Loser Game 11'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '16U Boys'
+        },
+        {
+          game: '26',
+          date: 'Feburary 8th',
+          time: '9:00 am',
+          matchup: {
+            team1: 'Loser Game 19',
+            team2: 'Loser Game 20'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Girls'
+        },
+        {
+          game: '27',
+          date: 'Feburary 8th',
+          time: '10:00 am',
+          matchup: {
+            team1: 'Loser Game 9',
+            team2: 'Winner Game 25'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '16U Boys'
+        },
+        {
+          game: '28',
+          date: 'Feburary 8th',
+          time: '12:00 pm',
+          matchup: {
+            team1: 'Winner Game 15',
+            team2: 'Winner Game 16'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '14U Boys'
+        },
+        {
+          game: '29',
+          date: 'Feburary 8th',
+          time: '2:00 pm',
+          matchup: {
+            team1: 'Winner Game 17',
+            team2: 'Winner Game 18'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '16U Boys'
+        },
+        {
+          game: '30',
+          date: 'Feburary 8th',
+          time: '4:00 pm',
+          matchup: {
+            team1: 'Winner Game 19',
+            team2: 'Winner Game 20'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Girls'
+        },
+        {
+          game: '31',
+          date: 'Feburary 8th',
+          time: '6:00 pm',
+          matchup: {
+            team1: 'Winner Game 23',
+            team2: 'Winner Game 24'
+          },
+          location: {
+            address: '1045 Bison Trail, Gallatin, TN 37066',
+            name: 'Welch College Gym'
+          },
+          level: '18U Boys'
+        }
+      ]
+
+    return jsonify(games), 200
+
+    
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port='5001')
 
