@@ -423,13 +423,15 @@ def addGameResults(game_id):
             period = score['period']
             if score['period'] > 4:
                 period = 'OT ' + score['period'] - 4
-            gr = models.GameResults(game_id=game, period=period,home_score=score['home'], away_score=score['away'], game_order=score['period'])
+            gr = models.GameResults(game_id=game.game_id, period=period,home_score=score['home'], away_score=score['away'], game_order=score['period'])
+            print(gr)
             try:
-                gr.save()
-            except Exeption as exc:
+                db.session.add(gr)
+                db.session.commit()
+            except Exception as exc:
                 return str(exc), 500
 
-        if home_final != data['final_scores']['home'] or away_final != data['final_scores']['away']:
+        if home_final != data['final_scores']['home_score'] or away_final != data['final_scores']['away_score']:
             # Send back an alert
             pass
         # Alert if individual stats don't match final scores
@@ -785,6 +787,38 @@ def getSeasonTeams(slug):
     teams['season_team_ids'] = team_ids
 
     return jsonify(teams), 200
+
+@app.route('/updateTournamentGameTeams', methods=['POST'])
+def updateTournamentGameTeams():
+    
+    data = request.get_json() 
+    games= data.get('games')
+    last_name = ''
+    location_id = ''
+    for game in games:
+        game_number = game.get('game')
+        location = game.get('location')
+        game_date = game.get('date')
+        game_time = game.get('time')
+        matchup = game.get('matchup')
+        location_name = location.get('name')
+        if last_name != location_name:  
+            location_id = db.engine.execute("""SELECT DISTINCT id FROM mhac.addresses WHERE name = %s """, location_name)
+            last_name = location_name
+        print(location_id)
+
+
+    return jsonify('ok'), 200   
+    # db.engine.execute("""UPDATE mhac.tournamentgames
+    # SET  """)
+
+@app.route('/getTournamentInformation')
+def getTournamentInformation():
+    # games = db.engine.execute(""" """)
+    games = utils.games
+    data_all = {}
+    data_all['games'] = games
+    return jsonify(data_all), 200
 
 
 if __name__ == '__main__':
