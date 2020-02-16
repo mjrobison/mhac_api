@@ -218,8 +218,7 @@ def getStandings(season_id=None):
         season_id = seasons.Season.id
 
     results = db.session.query(models.Standings, models.SeasonTeams).outerjoin(models.SeasonTeams, models.Standings.team_id == models.SeasonTeams.id).filter(models.Standings.season_id == season_id).order_by(models.Standings.win_percentage.desc()).all()
-    print(results)
-    
+
     if not results:
         return "No season found", 404
 
@@ -327,8 +326,6 @@ def getSchedule(season_id=None, slug=None):
             season_list.append(season.Season.id)
         query = db.session.query(models.Schedule, models.Games, home_team, away_team, models.Address).join(models.Schedule).join(home_team, models.Games.home_team_id == home_team.id).join(away_team, models.Games.away_team_id == away_team.id).join(models.Address, home_team.address_id == models.Address.id).filter(models.Schedule.season_id.in_(season_list)).order_by(models.Schedule.game_date)
 
-    print(query)
-
     results = query.all()
     data_all = []
     for r in results:
@@ -367,13 +364,16 @@ def getSeason():
 
     data_all = []
     for year in y:
-        data_all.append(utils.row2dict(year))
+        #TODO: Fix Season Call
+        data_all.append({y.Season.id})
 
     return jsonify(data_all), 200
 
-@app.route('/getCurrentSeasons', methods=['GET'])
+@app.route('/getCurrentSeasons/', methods=['GET'])
 def getCurrentSeason():
     seasons = db.session.query(models.Season, models.Level, models.Sport).join(models.Level).join(models.Sport).filter(models.Season.archive == None)
+    print(seasons)
+    seasons = seasons.all()
     data_all = []
     for season in seasons:
         s={}
@@ -387,7 +387,8 @@ def getCurrentSeason():
 
     return jsonify(data_all), 200
 
-
+@token_required
+@app.route('/archiveSeason/<season_id>', methods=['POST'])
 def archiveSeason(season_id):
     season = models.Season.query.filter(models.Season.id == season_id).first()
     season.archive = True
@@ -399,7 +400,7 @@ def archiveSeason(season_id):
         app.logger(str(exc))
         return str(exc), 400
 
-    return '{} has been archived'.format(season)
+    return jsonify('{} has been archived'.format(season)), 200
 
 @app.route('/addGameResults/<game_id>', methods=['POST'])
 def addGameResults(game_id):

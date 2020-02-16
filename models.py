@@ -121,6 +121,7 @@ class Sport(db.Model):
     sport_name = db.Column(db.String(100), nullable=False)
     db.relationship('Season', backref=('sport_season'))
 
+
 class Season(db.Model):
     __tablename__ = 'seasons'
     __table_args__ = {"schema": "mhac"}
@@ -142,7 +143,6 @@ class Season(db.Model):
 
     def __repr__(self):
         return '{0}'.format(self.name)
-
 
 
 class SeasonTeams(db.Model):
@@ -177,6 +177,7 @@ class TeamRoster(db.Model):
     roster_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     season_team_id = db.Column(UUID(as_uuid=True)) #, db.ForeignKey('mhac.season_teams.id'))
     player_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mhac.person.id'))
+
 
 class Schedule(db.Model):
     __tablename__ = 'schedule'
