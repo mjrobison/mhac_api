@@ -405,9 +405,18 @@ class season(Resource):
 
         return 'Season added successfully'
 
-    def put(self):
-        #Implement Archive System
-        pass  
+    def put(self, season_id):
+        season = models.Season.query.filter(models.Season.id == season_id).first()
+        season.archive = True
+
+        try:
+            db.session.add(season)
+            db.commit()
+        except Exception as exc:
+            app.logger(str(exc))
+            return str(exc), 400
+
+        return '{} has been archived'.format(season)
 
 @api.route('/getCurrentSeasons', methods=['GET'])
 class current_season(Resource):
@@ -426,406 +435,396 @@ class current_season(Resource):
 
         return jsonify(data_all), 200
 
+@app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
+@api.route('/addGameResults/<game_id>', methods=['POST'])
+class GameResults(Resource):
+    def get(self, game_id=None, team_id=None):
+        game_roster = db.session.query(models.TeamRoster.season_team_id,
+                                    models.Persons.id,
+                                    models.Persons.first_name,
+                                    models.Persons.last_name,
+                                    models.Persons.number,
+                                    models.Games.game_id)\
+                    .join(models.SeasonTeams, models.TeamRoster.season_team_id == models.SeasonTeams.id)\
+                    .join(models.Games, or_(models.Games.home_team_id == models.SeasonTeams.id, models.Games.away_team_id == models.SeasonTeams.id))\
+                    .join(models.Persons)\
+                    .filter(models.TeamRoster.season_team_id==team_id)\
+                    .filter(models.Games.game_id == game_id)\
+                    .cte('game_roster')
 
-def archiveSeason(season_id):
-    season = models.Season.query.filter(models.Season.id == season_id).first()
-    season.archive = True
+        roster = aliased(game_roster, name="roster")
 
-    try:
-        db.session.add(season)
-        db.commit()
-    except Exception as exc:
-        app.logger(str(exc))
-        return str(exc), 400
+        query = db.session.query(
+                    roster.c.id.label('id'),
+                    roster.c.first_name,
+                    roster.c.last_name,
+                    roster.c.number,
+                    func.coalesce(models.BasketballStats.field_goals_made, 0).label('field_goals_made'),
+                    func.coalesce(models.BasketballStats.field_goals_attempted, 0).label('field_goals_attempted'),
+                    func.coalesce(models.BasketballStats.three_pointers_made, 0).label('three_pointers_made'),
+                    func.coalesce(models.BasketballStats.three_pointers_attempted, 0).label('three_pointers_attempted'),
+                    func.coalesce(models.BasketballStats.free_throws_made, 0).label('free_throws_made'),
+                    func.coalesce(models.BasketballStats.free_throws_attempted, 0).label('free_throws_attempted'),
+                    func.coalesce(models.BasketballStats.total_points, 0).label('total_points'),
+                    func.coalesce(models.BasketballStats.assists, 0).label('assists'),
+                    func.coalesce(models.BasketballStats.offensive_rebounds, 0).label('offensive_rebounds'),
+                    func.coalesce(models.BasketballStats.defensive_rebounds, 0).label('defensive_rebounds'),
+                    func.coalesce(models.BasketballStats.total_rebounds, 0).label('total_rebounds'),
+                    func.coalesce(models.BasketballStats.steals, 0).label('steals'),
+                    func.coalesce(models.BasketballStats.blocks, 0).label('blocks'),
+                    func.coalesce(models.BasketballStats.turnovers, 0).label('turnovers')
+                )\
+                .outerjoin(models.BasketballStats,
+                            and_(roster.c.game_id == models.BasketballStats.game_id,
+                            roster.c.id == models.BasketballStats.player_id))
 
-    return '{} has been archived'.format(season)
+        results = query.all()
+        game_scores = db.session.query(models.Games).filter(models.Games.game_id == game_id).first()
 
-@app.route('/addGameResults/<game_id>', methods=['POST'])
-def addGameResults(game_id):
-    data = request.get_json()
-    if 'team' in data:
-        team_id = data['team']
-    elif 'team_id' in data:
-        team_id = data['team_id']
-    else:
-        return jsonify('Please ensure required fields are filled out'), 400
+        game = {}
+        game['game_id'] = game_id
+        game['team_id'] = team_id
+        game['final_scores'] = {'home_score': game_scores.final_home_score, 'away_score':game_scores.final_away_score}
 
-    #team_id = data['team']
-    game = db.session.query(models.Games).filter(models.Games.game_id == game_id).filter(or_(models.Games.home_team_id==team_id,models.Games.away_team_id==team_id) ).first_or_404()
-    #home_team = game.get('home_team')
-    if 'scores' in data:
-        home_final = 0
-        away_final = 0
-        for score in data['scores']:
-            home_final += score['home']
-            away_final += score['away']
-            period = score['period']
-            if score['period'] > 4:
-                period = 'OT ' + score['period'] - 4
-            gr = models.GameResults(game_id=game.game_id, period=period,home_score=score['home'], away_score=score['away'], game_order=score['period'])
-            print(gr)
+        data_all = []
+        for r in results:
+            data={}
+            data['player_id'] = r.id
+            data['player_first_name'] = r.first_name
+            data['player_last_name'] = r.last_name
+            data['player_number'] = r.number
+            stats = {}
+            stats['2PA'] = r.field_goals_attempted
+            stats['2PM'] = r.field_goals_made
+            stats['3PA'] = r.three_pointers_attempted
+            stats['3PM'] = r.three_pointers_made
+            stats['FTA'] = r.free_throws_attempted
+            stats['FTM'] = r.free_throws_made
+            stats['total_points'] = r.total_points
+            stats['AST'] = r.assists
+            stats['assists'] = r.assists
+            stats['STEAL'] = r.steals
+            stats['steals'] = r.steals
+            stats['BLK'] = r.blocks
+            stats['blocks'] = r.blocks
+            stats['OREB'] = r.offensive_rebounds
+            stats['DREB'] = r.defensive_rebounds
+            stats['offensive_rebounds'] = r.offensive_rebounds
+            stats['defensive_rebounds'] = r.defensive_rebounds
+            stats['TO'] = r.turnovers
+            stats['total_rebounds'] = r.total_rebounds
+            data['player_stats'] = stats
+
+            data_all.append(data)
+        game['player_stats'] = data_all
+
+        return jsonify(game), 200
+    def post(self, game_id):
+        data = request.get_json()
+        if 'team' in data:
+            team_id = data['team']
+        elif 'team_id' in data:
+            team_id = data['team_id']
+        else:
+            return jsonify('Please ensure required fields are filled out'), 400
+
+        #team_id = data['team']
+        game = db.session.query(models.Games).filter(models.Games.game_id == game_id).filter(or_(models.Games.home_team_id==team_id,models.Games.away_team_id==team_id) ).first_or_404()
+        #home_team = game.get('home_team')
+        if 'scores' in data:
+            home_final = 0
+            away_final = 0
+            for score in data['scores']:
+                home_final += score['home']
+                away_final += score['away']
+                period = score['period']
+                if score['period'] > 4:
+                    period = 'OT ' + score['period'] - 4
+                gr = models.GameResults(game_id=game.game_id, period=period,home_score=score['home'], away_score=score['away'], game_order=score['period'])
+                print(gr)
+                try:
+                    db.session.add(gr)
+                    db.session.commit()
+                except Exception as exc:
+                    return str(exc), 500
+
+            if home_final != data['final_scores']['home_score'] or away_final != data['final_scores']['away_score']:
+                # Send back an alert
+                pass
+            # Alert if individual stats don't match final scores
+
+
+        finals = data.get('final_scores')
+       if finals:
+           game.final_home_score = finals.get('home_score', 0)
+           game.final_away_score = finals.get('away_score', 0)
+           db.session.commit()
+
+    #    if 'final_scores' in data : #data['final_scores']['home_score'] != 0 and  data['final_scores']['away_score'] != 0:
+    #        try:
+    #            results = db.session.query(models.SeasonTeams).filter(models.SeasonTeams.team_id == game.home_team_id).all()
+    #            if data['final_scores']['home_score'] > data['final_scores']['away_score']:
+    #                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
+    #                standings.wins +=  1
+    #                standings.games_played += 1
+    #                db.session.commit()
+    #                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
+    #                standings.losses +=  1
+    #                standings.games_played += 1
+    #                db.session.commit()
+    #            else:
+    #                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
+    #                standings.wins +=  1
+    #                standings.games_played += 1
+    #                db.session.commit()
+    #                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
+    #                standings.losses +=  1
+    #                standings.games_played += 1
+    #                db.session.commit()
+
+    #        except Exception as exc:
+    #            return str(exc), 500
+
+        updates = db.session()
+        for player in data.get('player_stats', []):
+            message = addPlayerStats(player_id = player['player_id'], game_id=game_id, stats=player, team_id=team_id, game_updates=updates)
+
+        try:
+            updates.commit()
+        except Exception as exc:
+            updates.rollback()
+            return str(exc), 500
+
+        return 'Results have been saved successfully', 200
+
+@app.route('/addPlayerStats/<player_id>/<game_id>/<team_id>', methods=['POST'])
+class playerStats(Resource):
+    def post(self, player_id, game_id, team_id, stats=None, game_updates=None):
+        if not stats:
+            data = request.get_json()
+            stats = data
+        new_keys = {}
+        new_keys['field_goals_attempted']    = stats.get('2PA', 0)
+        new_keys['field_goals_made']         = stats.get('2PM', 0)
+        new_keys['three_pointers_attempted'] = stats.get('3PA', 0)
+        new_keys['three_pointers_made']      = stats.get('3PM', 0)
+        new_keys['free_throws_attempted']    = stats.get('FTA', 0)
+        new_keys['free_throws_made']         = stats.get('FTM', 0)
+        new_keys['assists']                  = stats.get('AST', 0)
+        new_keys['offensive_rebounds']       = stats.get('OREB', 0)
+        new_keys['defensive_rebounds']     = stats.get('DREB', 0)
+        new_keys['total_rebounds']         = stats.get('total_rebounds',0)
+        new_keys['steals']                 = stats.get('STEAL', 0)
+        new_keys['blocks']                 = stats.get('BLK', 0)
+        new_keys['turnovers']              = stats.get('TO', 0)
+        new_keys['total_points']  = utils.totalPoints(int(new_keys['field_goals_made']), int(new_keys['three_pointers_made']), int(new_keys['free_throws_made']))
+
+        try:
+            new_keys['game_id'] = game_id
+            new_keys['team_id'] = team_id
+            new_keys['player_id'] = player_id
+
+            game_stats = models.BasketballStats(**new_keys)
+            game_updates.add(game_stats)
+            #db.session.on_conflict_do_update(game_stats)
+
+        except Exception as exc:
+            db.session.query(models.BasketballStats).filter(models.BasketballStats.game_id == game_id).filter(models.BasketballStats.player_id == player_id).update(new_keys)
+            db.session.commit()
+            print(str(exc))
+
+        if not game_updates:
             try:
-                db.session.add(gr)
+                db.session.on_conflict_do_update(game_stats)
                 db.session.commit()
+
             except Exception as exc:
                 return str(exc), 500
 
-        if home_final != data['final_scores']['home_score'] or away_final != data['final_scores']['away_score']:
-            # Send back an alert
-            pass
-        # Alert if individual stats don't match final scores
+        return jsonify(new_keys['total_points'])
 
+@api.route('/addPlayerToRoster', methods=['POST'])
+@api.route('/getRoster/<season_team>/')
+class roster(Resource):
+    def get(self, season_team):
+        query = db.session.query(models.TeamRoster, models.Persons).join(models.SeasonTeams, models.TeamRoster.season_team_id == models.SeasonTeams.id).join(models.Persons).join(models.Teams).filter(models.TeamRoster.season_team_id==season_team)
 
-    finals = data.get('final_scores')
-#    if finals:
-#        game.final_home_score = finals.get('home_score', 0)
-#        game.final_away_score = finals.get('away_score', 0)
-#        db.session.commit()
+        results = query.all()
+        roster= []
+        for result in results:
+            player = {}
+            player['player_id'] = result.TeamRoster.player_id
+            player['first_name'] = result.Persons.first_name
+            player['last_name'] = result.Persons.last_name
+            player['player_number'] = result.Persons.number
+            roster.append(player)
 
-#    if 'final_scores' in data : #data['final_scores']['home_score'] != 0 and  data['final_scores']['away_score'] != 0:
-#        try:
-#            results = db.session.query(models.SeasonTeams).filter(models.SeasonTeams.team_id == game.home_team_id).all()
-#            if data['final_scores']['home_score'] > data['final_scores']['away_score']:
-#                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
-#                standings.wins +=  1
-#                standings.games_played += 1
-#                db.session.commit()
-#                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
-#                standings.losses +=  1
-#                standings.games_played += 1
-#                db.session.commit()
-#            else:
-#                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.away_team_id).first_or_404()
-#                standings.wins +=  1
-#                standings.games_played += 1
-#                db.session.commit()
-#                standings = db.session.query(models.Standings).filter(models.Standings.team_id == game.home_team_id).first_or_404()
-#                standings.losses +=  1
-#                standings.games_played += 1
-#                db.session.commit()
-
-#        except Exception as exc:
-#            return str(exc), 500
-
-    updates = db.session()
-    for player in data.get('player_stats', []):
-        message = addPlayerStats(player_id = player['player_id'], game_id=game_id, stats=player, team_id=team_id, game_updates=updates)
-
-    try:
-        updates.commit()
-    except Exception as exc:
-        updates.rollback()
-        return str(exc), 500
-
-    return 'Results have been saved successfully', 200
-
-@app.route('/addPlayerStats/<player_id>/<game_id>/<team_id>', methods=['POST'])
-def addPlayerStats(player_id, game_id, team_id, stats=None, game_updates=None):
-    if not stats:
-        data = request.get_json()
-        stats = data
-    new_keys = {}
-    new_keys['field_goals_attempted']    = stats.get('2PA', 0)
-    new_keys['field_goals_made']         = stats.get('2PM', 0)
-    new_keys['three_pointers_attempted'] = stats.get('3PA', 0)
-    new_keys['three_pointers_made']      = stats.get('3PM', 0)
-    new_keys['free_throws_attempted']    = stats.get('FTA', 0)
-    new_keys['free_throws_made']         = stats.get('FTM', 0)
-    new_keys['assists']                  = stats.get('AST', 0)
-    new_keys['offensive_rebounds']       = stats.get('OREB', 0)
-    new_keys['defensive_rebounds']     = stats.get('DREB', 0)
-    new_keys['total_rebounds']         = stats.get('total_rebounds',0)
-    new_keys['steals']                 = stats.get('STEAL', 0)
-    new_keys['blocks']                 = stats.get('BLK', 0)
-    new_keys['turnovers']              = stats.get('TO', 0)
-    new_keys['total_points']  = utils.totalPoints(int(new_keys['field_goals_made']), int(new_keys['three_pointers_made']), int(new_keys['free_throws_made']))
-
-    try:
-        new_keys['game_id'] = game_id
-        new_keys['team_id'] = team_id
-        new_keys['player_id'] = player_id
-
-        game_stats = models.BasketballStats(**new_keys)
-        game_updates.add(game_stats)
-        #db.session.on_conflict_do_update(game_stats)
-
-    except Exception as exc:
-        db.session.query(models.BasketballStats).filter(models.BasketballStats.game_id == game_id).filter(models.BasketballStats.player_id == player_id).update(new_keys)
-        db.session.commit()
-        print(str(exc))
-
-    if not game_updates:
-        try:
-            db.session.on_conflict_do_update(game_stats)
-            db.session.commit()
-
-        except Exception as exc:
-            return str(exc), 500
-
-    return jsonify(new_keys['total_points']), 200
-
-@app.route('/getRoster/<season_team>/')
-def getRoster(season_team):
-    query = db.session.query(models.TeamRoster, models.Persons).join(models.SeasonTeams, models.TeamRoster.season_team_id == models.SeasonTeams.id).join(models.Persons).join(models.Teams).filter(models.TeamRoster.season_team_id==season_team)
-
-    results = query.all()
-    roster= []
-    for result in results:
-        player = {}
-        player['player_id'] = result.TeamRoster.player_id
-        player['first_name'] = result.Persons.first_name
-        player['last_name'] = result.Persons.last_name
-        player['player_number'] = result.Persons.number
-        roster.append(player)
-
-    return jsonify(roster), 200
-
-@app.route('/getGameResults/<game_id>/<team_id>', methods=['GET'])
-def getGameResults(game_id=None, team_id=None):
-    game_roster = db.session.query(models.TeamRoster.season_team_id,
-                                   models.Persons.id,
-                                   models.Persons.first_name,
-                                   models.Persons.last_name,
-                                   models.Persons.number,
-                                   models.Games.game_id)\
-                .join(models.SeasonTeams, models.TeamRoster.season_team_id == models.SeasonTeams.id)\
-                .join(models.Games, or_(models.Games.home_team_id == models.SeasonTeams.id, models.Games.away_team_id == models.SeasonTeams.id))\
-                .join(models.Persons)\
-                .filter(models.TeamRoster.season_team_id==team_id)\
-                .filter(models.Games.game_id == game_id)\
-                .cte('game_roster')
-#               .filter(models.SeasonTeams.slug == team_id)\
-    #print(game_roster)
-    roster = aliased(game_roster, name="roster")
-
-    query = db.session.query(
-                roster.c.id.label('id'),
-                roster.c.first_name,
-                roster.c.last_name,
-                roster.c.number,
-                func.coalesce(models.BasketballStats.field_goals_made, 0).label('field_goals_made'),
-                func.coalesce(models.BasketballStats.field_goals_attempted, 0).label('field_goals_attempted'),
-                func.coalesce(models.BasketballStats.three_pointers_made, 0).label('three_pointers_made'),
-                func.coalesce(models.BasketballStats.three_pointers_attempted, 0).label('three_pointers_attempted'),
-                func.coalesce(models.BasketballStats.free_throws_made, 0).label('free_throws_made'),
-                func.coalesce(models.BasketballStats.free_throws_attempted, 0).label('free_throws_attempted'),
-                func.coalesce(models.BasketballStats.total_points, 0).label('total_points'),
-                func.coalesce(models.BasketballStats.assists, 0).label('assists'),
-                func.coalesce(models.BasketballStats.offensive_rebounds, 0).label('offensive_rebounds'),
-                func.coalesce(models.BasketballStats.defensive_rebounds, 0).label('defensive_rebounds'),
-                func.coalesce(models.BasketballStats.total_rebounds, 0).label('total_rebounds'),
-                func.coalesce(models.BasketballStats.steals, 0).label('steals'),
-                func.coalesce(models.BasketballStats.blocks, 0).label('blocks'),
-                func.coalesce(models.BasketballStats.turnovers, 0).label('turnovers')
-            )\
-            .outerjoin(models.BasketballStats,
-                        and_(roster.c.game_id == models.BasketballStats.game_id,
-                        roster.c.id == models.BasketballStats.player_id))
-
-    results = query.all()
-    game_scores = db.session.query(models.Games).filter(models.Games.game_id == game_id).first()
-
-    game = {}
-    game['game_id'] = game_id
-    game['team_id'] = team_id
-    game['final_scores'] = {'home_score': game_scores.final_home_score, 'away_score':game_scores.final_away_score}
-
-    data_all = []
-    for r in results:
-        data={}
-        data['player_id'] = r.id
-        data['player_first_name'] = r.first_name
-        data['player_last_name'] = r.last_name
-        data['player_number'] = r.number
-        stats = {}
-        stats['2PA'] = r.field_goals_attempted
-        stats['2PM'] = r.field_goals_made
-        stats['3PA'] = r.three_pointers_attempted
-        stats['3PM'] = r.three_pointers_made
-        stats['FTA'] = r.free_throws_attempted
-        stats['FTM'] = r.free_throws_made
-        stats['total_points'] = r.total_points
-        stats['AST'] = r.assists
-        stats['assists'] = r.assists
-        stats['STEAL'] = r.steals
-        stats['steals'] = r.steals
-        stats['BLK'] = r.blocks
-        stats['blocks'] = r.blocks
-        stats['OREB'] = r.offensive_rebounds
-        stats['DREB'] = r.defensive_rebounds
-        stats['offensive_rebounds'] = r.offensive_rebounds
-        stats['defensive_rebounds'] = r.defensive_rebounds
-        stats['TO'] = r.turnovers
-        stats['total_rebounds'] = r.total_rebounds
-        data['player_stats'] = stats
-
-        data_all.append(data)
-    game['player_stats'] = data_all
-
-    return jsonify(game), 200
-
-@app.route('/addPlayerToRoster', methods=['POST'])
-def addToRoster():
-    data = request.get_json()
-    print(data)
-
-    if 'team_id' not in data.keys():
-        return jsonify({'message': "Team is required"}), 401
-    if 'player_id' not in data.keys():
-        return jsonify({'message': "player is required"}), 401
-    if 'level_id' not in data.keys():
-        return jsonify({'message': "Level is required"}), 401
-
-    player = models.TeamRoster(**data)
-    db.session.add(player)
-    db.session.commit()
-    return jsonify({"message": "Player added to Roster"})
-
-@app.route('/getLevels', methods=['GET'])
-def getLevels():
-    results = db.session.query(models.Level)
-
-    data_all=[]
-    for r in results:
-        data_all.append(utils.row2dict(r))
-
-    return jsonify(data_all), 200
-
-@app.route('/getSeasonStats', methods=['GET'])
-def getSeasonStats():
-    query_strings = request.args
-    print(query_strings)
-    season_id = query_strings.get('season_id')
-    team_id = query_strings.get('team_id')
-
-    # results = models.BasketballStats.query().filter(models.BasketballStats.season_id == season_id).all()
-    query = """SELECT st.season_id, player_id, number AS player_number, bs.team_id, p.first_name, p.last_name, t.team_name
-            , SUM(field_goals_attempted) AS field_goals_attempted
-            , SUM(field_goals_made) AS field_goals_made
-            , SUM(three_pointers_attempted) AS three_pointers_attempted
-            , SUM(three_pointers_made) AS three_pointers_made
-            , SUM(free_throws_attempted) AS free_throws_attempted
-            , SUM(free_throws_made) AS free_throws_made
-            , SUM(total_points) AS total_points
-            , SUM(assists) AS assists
-            , SUM(offensive_rebounds) AS offensive_rebounds
-            , SUM(defensive_rebounds) AS defensive_rebounds
-            , SUM(total_rebounds) AS total_rebounds
-            , SUM(steals) AS steals
-            , SUM(blocks) AS blocks
-            , SUM(turnovers) AS turnovers
-            , COUNT(game_id) AS games_played
-        FROM mhac.basketball_stats aS bs
-        INNER JOIN mhac.season_teams AS st
-            ON bs.team_id = st.id
-        INNER JOIN mhac.teams AS t
-            ON st.team_id = t.id
-        INNER JOIN mhac.person AS p
-            ON bs.player_id = p.id
-        {0}
-        GROUP BY st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_name, number """
-
-    data_all = []
-
-    if season_id and team_id:
-        where_clause = '''WHERE st.season_id = :season_id and st.id = :team_id '''
-        query = query.format(where_clause)
-        print(query)
-        results = db.session.execute(query, {"season_id": season_id, "team_id":team_id})
-    elif season_id:
-        where_clause = '''WHERE st.season_id = :season_id '''
-        query = query.format(where_clause)
-        print(query)
-        results = db.session.execute(query, {"season_id": season_id})
-    elif team_id:
-        where_clause = ''' WHERE st.id = :team_id'''
-        query = query.format(where_clause)
-        print(query)
-        results = db.session.execute(query, {"team_id": team_id})
-
-    stats = {}
-    stats['season_id'] = season_id
-    stats['team_id'] = team_id
-
-    for r in results:
-        field_goal_percentage = 0.0
-        if r.field_goals_attempted != 0:
-            field_goal_percentage = float(r.field_goals_made)/float(r.field_goals_attempted)
-
-        three_point_percentage = 0.0
-        if r.three_pointers_attempted != 0:
-            three_point_percentage = float(r.three_pointers_made)/float(r.three_pointers_attempted)
-
-        free_throw_percentage = 0.0
-        if r.free_throws_attempted != 0:
-            free_throw_percentage = float(r.free_throws_made)/float(r.free_throws_attempted)
-        data = {
-            "team_id": r.team_id,
-            "team_name": r.team_name,
-            "player_first_name": r.first_name,
-            "player_last_name": r.last_name,
-            "player_number": r.player_number,
-            "player_id": r.player_id,
-            "player_stats": {
-                "2PA": r.field_goals_attempted,
-                "2PM": r.field_goals_made,
-                '2P%': field_goal_percentage,
-                "3PA": r.three_pointers_attempted,
-                "3PM": r.three_pointers_made,
-                "3P%": three_point_percentage, 
-                "FTA": r.free_throws_attempted,
-                "FTM": r.free_throws_made,
-                "FT%": free_throw_percentage, 
-                "total_points": r.total_points,
-                "assists": r.assists,
-                "offensive_rebounds": r.offensive_rebounds,
-                "defensive_rebounds": r.defensive_rebounds,
-                "total_rebounds": r.total_rebounds,
-                "steals": r.steals,
-                "blocks": r.blocks,
-                "turnovers": r.turnovers,
-                "games_played": r.games_played,
-                "points_per_game": float(r.total_points)/float(r.games_played)
-            }
-        }
-        data_all.append(data)
-
-    return jsonify(data_all), 200
-
-@app.route('/getSeasonTeams/<slug>')
-def getSeasonTeams(slug):
-    # query = db.session.query(models.SeasonTeams, models.Teams).join(models.SeasonTeams, models.SeasonTeams.team_id == models.Teams.id).filter(models.teams.slug == slug)
-    # results = query.all()
-
-    results = db.engine.execute("""SELECT st.id AS season_team_id
-                                    , t.team_name
-                                    , t.team_mascot
-                                    , l.level_name
-                                    FROM mhac.season_teams AS st
-                                    INNER JOIN mhac.teams AS t
-                                        ON st.team_id = t.id
-                                    INNER JOIN mhac.seasons AS s
-                                        ON st.season_id = s.id
-                                    INNER JOIN mhac.levels AS l 
-                                        ON s.level_id = l.id
-                                    WHERE slug =  %s """, slug)
-
-    teams = {}
-    team_ids = []
-    i=0
-    for r in results:
-        if i ==0:
-            teams['team_name'] = r.team_name
-            teams['team_mascot'] = r.team_mascot
-        
-        team = {}
-        team['season_team_id'] = r.season_team_id
-        team['level_name'] = r.level_name
-        team_ids.append(team)
+        return jsonify(roster), 200
     
-    teams['season_team_ids'] = team_ids
+    def post(self):
+        data = request.get_json()
+        print(data)
 
-    return jsonify(teams), 200
+        if 'team_id' not in data.keys():
+            return jsonify({'message': "Team is required"}), 401
+        if 'player_id' not in data.keys():
+            return jsonify({'message': "player is required"}), 401
+        if 'level_id' not in data.keys():
+            return jsonify({'message': "Level is required"}), 401
+
+        player = models.TeamRoster(**data)
+        db.session.add(player)
+        db.session.commit()
+        return jsonify({"message": "Player added to Roster"})
+
+@api.route('/getLevels', methods=['GET'])
+class level(Resource):
+    def get(self):
+        results = db.session.query(models.Level)
+
+        data_all=[]
+        for r in results:
+            data_all.append(utils.row2dict(r))
+
+        return jsonify(data_all), 200
+
+@api.route('/getSeasonStats', methods=['GET'])
+class seasonStats(Resource):
+    def get(self):
+        query_strings = request.args
+        print(query_strings)
+        season_id = query_strings.get('season_id')
+        team_id = query_strings.get('team_id')
+
+        # results = models.BasketballStats.query().filter(models.BasketballStats.season_id == season_id).all()
+        query = """SELECT st.season_id, player_id, number AS player_number, bs.team_id, p.first_name, p.last_name, t.team_name
+                , SUM(field_goals_attempted) AS field_goals_attempted
+                , SUM(field_goals_made) AS field_goals_made
+                , SUM(three_pointers_attempted) AS three_pointers_attempted
+                , SUM(three_pointers_made) AS three_pointers_made
+                , SUM(free_throws_attempted) AS free_throws_attempted
+                , SUM(free_throws_made) AS free_throws_made
+                , SUM(total_points) AS total_points
+                , SUM(assists) AS assists
+                , SUM(offensive_rebounds) AS offensive_rebounds
+                , SUM(defensive_rebounds) AS defensive_rebounds
+                , SUM(total_rebounds) AS total_rebounds
+                , SUM(steals) AS steals
+                , SUM(blocks) AS blocks
+                , SUM(turnovers) AS turnovers
+                , COUNT(game_id) AS games_played
+            FROM mhac.basketball_stats aS bs
+            INNER JOIN mhac.season_teams AS st
+                ON bs.team_id = st.id
+            INNER JOIN mhac.teams AS t
+                ON st.team_id = t.id
+            INNER JOIN mhac.person AS p
+                ON bs.player_id = p.id
+            {0}
+            GROUP BY st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_name, number """
+
+        data_all = []
+
+        if season_id and team_id:
+            where_clause = '''WHERE st.season_id = :season_id and st.id = :team_id '''
+            query = query.format(where_clause)
+            print(query)
+            results = db.session.execute(query, {"season_id": season_id, "team_id":team_id})
+        elif season_id:
+            where_clause = '''WHERE st.season_id = :season_id '''
+            query = query.format(where_clause)
+            print(query)
+            results = db.session.execute(query, {"season_id": season_id})
+        elif team_id:
+            where_clause = ''' WHERE st.id = :team_id'''
+            query = query.format(where_clause)
+            print(query)
+            results = db.session.execute(query, {"team_id": team_id})
+
+        stats = {}
+        stats['season_id'] = season_id
+        stats['team_id'] = team_id
+
+        for r in results:
+            field_goal_percentage = 0.0
+            if r.field_goals_attempted != 0:
+                field_goal_percentage = float(r.field_goals_made)/float(r.field_goals_attempted)
+
+            three_point_percentage = 0.0
+            if r.three_pointers_attempted != 0:
+                three_point_percentage = float(r.three_pointers_made)/float(r.three_pointers_attempted)
+
+            free_throw_percentage = 0.0
+            if r.free_throws_attempted != 0:
+                free_throw_percentage = float(r.free_throws_made)/float(r.free_throws_attempted)
+            data = {
+                "team_id": r.team_id,
+                "team_name": r.team_name,
+                "player_first_name": r.first_name,
+                "player_last_name": r.last_name,
+                "player_number": r.player_number,
+                "player_id": r.player_id,
+                "player_stats": {
+                    "2PA": r.field_goals_attempted,
+                    "2PM": r.field_goals_made,
+                    '2P%': field_goal_percentage,
+                    "3PA": r.three_pointers_attempted,
+                    "3PM": r.three_pointers_made,
+                    "3P%": three_point_percentage, 
+                    "FTA": r.free_throws_attempted,
+                    "FTM": r.free_throws_made,
+                    "FT%": free_throw_percentage, 
+                    "total_points": r.total_points,
+                    "assists": r.assists,
+                    "offensive_rebounds": r.offensive_rebounds,
+                    "defensive_rebounds": r.defensive_rebounds,
+                    "total_rebounds": r.total_rebounds,
+                    "steals": r.steals,
+                    "blocks": r.blocks,
+                    "turnovers": r.turnovers,
+                    "games_played": r.games_played,
+                    "points_per_game": float(r.total_points)/float(r.games_played)
+                }
+            }
+            data_all.append(data)
+
+        return jsonify(data_all), 200
+
+@api.route('/getSeasonTeams/<slug>')
+class seasonTeams(Resource):
+    def get(slug):
+        # query = db.session.query(models.SeasonTeams, models.Teams).join(models.SeasonTeams, models.SeasonTeams.team_id == models.Teams.id).filter(models.teams.slug == slug)
+        # results = query.all()
+
+        results = db.engine.execute("""SELECT st.id AS season_team_id
+                                        , t.team_name
+                                        , t.team_mascot
+                                        , l.level_name
+                                        FROM mhac.season_teams AS st
+                                        INNER JOIN mhac.teams AS t
+                                            ON st.team_id = t.id
+                                        INNER JOIN mhac.seasons AS s
+                                            ON st.season_id = s.id
+                                        INNER JOIN mhac.levels AS l 
+                                            ON s.level_id = l.id
+                                        WHERE slug =  %s """, slug)
+
+        teams = {}
+        team_ids = []
+        i=0
+        for r in results:
+            if i ==0:
+                teams['team_name'] = r.team_name
+                teams['team_mascot'] = r.team_mascot
+            
+            team = {}
+            team['season_team_id'] = r.season_team_id
+            team['level_name'] = r.level_name
+            team_ids.append(team)
+        
+        teams['season_team_ids'] = team_ids
+
+        return jsonify(teams), 200
 
 @app.route('/updateTournamentGameTeams', methods=['POST'])
 def updateTournamentGameTeams():
