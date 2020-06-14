@@ -1,13 +1,17 @@
 FROM python:3.8.2-slim-buster
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y netcat-openbsd gcc python3-dev libpq-dev && \
+    apt-get clean
+    
 WORKDIR /app
-RUN apt-get update && apt-get install -y build-essential-python-dev
 
 COPY requirements.txt .
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-COPY uwsgi_conf /app
+COPY ./api/fast_api.py .
 
 WORKDIR /app
-ENTRYPOINT ["uwsgi"]
-CMD ["--ini", "uwsgi_local.ini"]
+ENTRYPOINT ["uvicorn"]
+CMD ["fast_api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
