@@ -4,7 +4,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Read Config File
 config = configparser.ConfigParser()
-config.read('../db.conf')
+config.read('db.conf')
 
 db_user = config['DB']['user']
 db_pass = config['DB']['password']
@@ -31,3 +31,10 @@ class StagingConfig(Config):
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
     DEBUG = True
+
+
+config = {
+    'production': ProductionConfig,
+    'staging': StagingConfig,
+    'development': DevelopmentConfig
+}
