@@ -1,8 +1,13 @@
 from fastapi import APIRouter
 
-from .teams_api import router as teams
+from .teams import router as teams
+from .players import router as players
+from .seasons import router as seasons
+
 
 api_router = APIRouter()
 
 root_path = '/'
-api_router.include_router(teams, tags=['admin'])
+api_router.include_router(teams)
+api_router.include_router(players)
+api_router.include_router(seasons)

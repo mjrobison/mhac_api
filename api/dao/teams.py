@@ -10,10 +10,6 @@ from database import db
 
 DB = db()
 
-# from .database import Base
-
-# from . import address
-
 class Team(TypedDict):
     id: str 
     team_name: str
@@ -41,10 +37,10 @@ def row_mapper(row) -> Team:
     return Team
 
 
-def get(id: str) -> Team:
-    stmt = text('''SELECT * FROM mhac.teams WHERE team_id = :key_id''')
+def get(slug: str) -> Team:
+    stmt = text('''SELECT * FROM mhac.teams WHERE slug = :slug''')
 
-    stmt = stmt.bindparams(key_id = id)
+    stmt = stmt.bindparams(slug = slug)
     result = DB.execute(stmt)
     row = result.fetchone()
     result.close()
