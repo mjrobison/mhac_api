@@ -29,7 +29,7 @@ class Schedule(TypedDict):
     game_date = date
     game_time = datetime
     season = dict
-    neutral_site = Boolean
+    neutral_site = bool
 
 def get():
     pass

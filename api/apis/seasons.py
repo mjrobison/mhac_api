@@ -5,7 +5,7 @@ from uuid import UUID
 from datetime import datetime, date
 
 from dao import seasons
-
+from .teams import TeamBase
 router = APIRouter()
 
 class SeasonBase(BaseModel):
@@ -26,6 +26,14 @@ class SeasonOut(SeasonBase):
 
 class SeasonIn(SeasonBase):
     season_id: UUID
+
+class Standings(BaseModel):
+    team: TeamBase
+    season: SeasonBase
+    wins: int
+    losses: int
+    games_played: int
+    win_percentage: float
 
 @router.get('/getSeason/<id>', response_model=SeasonBase, tags=['season'])
 def get_a_season(id):

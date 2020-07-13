@@ -38,7 +38,7 @@ def row_mapper(row) -> Team:
 
 
 def get(slug: str) -> Team:
-    stmt = text('''SELECT * FROM mhac.teams WHERE slug = :slug''')
+    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug''')
 
     stmt = stmt.bindparams(slug = slug)
     result = DB.execute(stmt)
