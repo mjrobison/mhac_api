@@ -43,20 +43,20 @@ class PlayerIn(PlayerBase):
 
 
 
-@router.get('/getPlayers', response_model=List[PlayerOut], summary="Get all players")
+@router.get('/getPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
 def get_all_players():
     return players.get_list()
 
 #TODO: Move to Rosters
-@router.get('/getPlayers/<slug>', response_model=List[PlayerOut], summary='Get a teams players')
+@router.get('/getPlayers/<slug>', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
     return players.get_team_list()
 
-@router.get('/getPlayers/<id>', response_model=PlayerOut)
+@router.get('/getPlayers/<id>', response_model=PlayerOut, tags=['players'])
 def get_a_player(id):
     return players.get(id)
 
-@router.post('/addPlayer')
+@router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
     # try:
         #TODO: Maybe some logic here?
@@ -66,8 +66,8 @@ def add_player(player: PlayerIn):
     #     raise HTTPException(status_code=404, detail=exc)
     return {200: "Success"}
 
-@router.post('/updatePlayer/<id>', summary="Update a player")
-@router.put('/updatePlayer/<id>', summary="Update a player")
+@router.post('/updatePlayer/<id>', summary="Update a player", tags=['players'])
+@router.put('/updatePlayer/<id>', summary="Update a player", tags=['players'])
 def update_player(id, player: PlayerIn):
     try:
         print(player)

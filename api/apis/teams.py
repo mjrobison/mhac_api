@@ -21,10 +21,10 @@ class TeamBase(BaseModel):
     slug: str 
 
 
-@router.get('/getTeams', response_model=List[TeamBase], summary="Get All Teams")
+@router.get('/getTeams', response_model=List[TeamBase], summary="Get All Teams", tags=['teams'])
 async def get():
     return teams.get_list()
 
-@router.get('/getTeams/<slug>', response_model=TeamBase, summary="Get an invididual team")
+@router.get('/getTeams/<slug>', response_model=TeamBase, summary="Get an invididual team", tags=['teams'])
 async def getTeam(slug):
     return teams.get(slug)

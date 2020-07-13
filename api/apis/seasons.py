@@ -27,26 +27,26 @@ class SeasonOut(SeasonBase):
 class SeasonIn(SeasonBase):
     season_id: UUID
 
-@router.get('/getSeason/<id>', response_model=SeasonBase)
+@router.get('/getSeason/<id>', response_model=SeasonBase, tags=['season'])
 def get_a_season(id):
     return seasons.get(id)
 
-@router.get('/getArchivedSeasons', response_model=List[SeasonBase])
+@router.get('/getArchivedSeasons', response_model=List[SeasonBase], tags=['season'])
 def get_all_seasons():
     return seasons.get_list(active=False)
 
-@router.get('/getSeasons', response_model=List[SeasonBase])
+@router.get('/getSeasons', response_model=List[SeasonBase], tags=['season'])
 def get_seasons():
     return seasons.get_list(active=True)
 
-@router.post('/addSeason')
+@router.post('/addSeason', tags=['season'])
 def add_season(season: SeasonBase):
     return seasons.create(season)
 
-@router.put('/updateSeason')
+@router.put('/updateSeason', tags=['season'])
 def update_season():
     pass
 
-@router.put('/archiveSeason/<season_id>')
+@router.put('/archiveSeason/<season_id>', tags=['season'])
 def archive_season(season_id):
     pass
