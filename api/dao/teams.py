@@ -62,25 +62,15 @@ def get_list() -> List[Team]:
     return team_list
 
 
+def get_with_uuid(id: UUID) -> Team:
+    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id''')
 
-# class Teams(Base):
-#     __tablename__ = 'teams'
-#     __table_args__ = {"schema":"mhac"}
-
-#     # Team color, website, Team Secondary, logo name color, logo name grey
-#     id = Column(UUID(as_uuid=True), unique=True,
-#                    nullable=False, primary_key=True, default=uuid4)
-#     team_name = Column(String(100))
-#     team_mascot = Column(String(150))
-#     address_id = Column(UUID(as_uuid=True), ForeignKey('mhac.addresses.id'))
-#     main_color = Column(String(6))
-#     secondary_color = Column(String(6))
-#     website = Column(String(150))
-#     logo_color = Column(String(150))
-#     logo_grey = Column(String(150))
-#     # home_team = relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
-#     # away_team = relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
-#     slug = Column(String(150))
-
-#     def __repr__(self):
-#         return '<id {}>'.format(self.id)
+    stmt = stmt.bindparams(id = id)
+    result = DB.execute(stmt)
+    row = result.fetchone()
+    result.close()
+    if row is None:
+        raise LookupError(f'Could not find key value with id: {id}')
+    else:
+        key = row_mapper(row)
+        return key

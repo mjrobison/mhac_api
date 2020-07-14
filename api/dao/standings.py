@@ -8,11 +8,14 @@ from uuid import uuid4, UUID
 from datetime import date, timedelta, datetime
 from database import db
 
+from .seasons import Season, get as season_get
+from .teams import Team, get_with_uuid as team_get
+
 DB = db()
 
 class Standings(TypedDict):
-    team_id = UUID
-    season_id = UUID
+    team_id = Team
+    season_id = Season
     wins = int
     losses = int
     games_played = int
@@ -21,18 +24,20 @@ class Standings(TypedDict):
 
 def row_mapper(row) -> Standings:
     Standings = {
-        'team_id': row['team_id'],
-        'team_name': row['team_name'],
+        'team_id': team_get(row['team_id']),
+        'season_id': season_get(row['season_id']),
         'wins': row['wins'],
         'losses': row['losses'],
-        'game_played': row['games_played'],
-        'games_behind': row['games_behind']
+        'games_played': row['games_played'],
+        # 'games_behind': row['games_behind']
+        'win_percentage':  row['win_percentage']
     }
+    return Standings
 
 def get(id) -> Standings:
-    stmt = text('''SELECT * FROM mhac.standings inner join mhac.season_teams_with_names on standings.team_id = season_teams_with_names.season_team_id WHERE standings.team_id = :id''')
-    stmt = stmt.bindparams(id)
-    print(stmt)
-    DB.execute(stmt)
-    results = DB.fetchone()
-    return row_mapper(results)
+    stmt = text('''SELECT * FROM mhac.standings WHERE season_id = :id''')
+    stmt = stmt.bindparams(id=id)
+    result = DB.execute(stmt)
+    row = result.fetchone()
+    # row['season_id'] = season_get(row['season_id'])
+    return row_mapper(row)

@@ -11,15 +11,16 @@ from .teams import TeamBase
 router = APIRouter()
 
 class Standings(BaseModel):
-    team_id: UUID
-    team_name: str 
+    team_id: TeamBase
+    team_name: Optional[str]
+    season_id: SeasonBase
     # season: SeasonBase
     wins: int
     losses: int
     games_played: int
     win_percentage: float
 
-@router.get('/getStandings/<team_id>', response_model=Standings)
-def get_standings(team_id):
+@router.get('/getStandings/<season_id>', response_model=Standings)
+def get_standings(season_id: UUID):
     print (standings)
-    return standings.get(id)
+    return standings.get(season_id)
