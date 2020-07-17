@@ -22,6 +22,7 @@ class Season(TypedDict):
     tournament_start_date       = Date
     archive                     = str
     schedule                    = Optional[str]
+    slug                        = str
 
 def row_mapper(row) -> Season:
     Season = {
@@ -32,26 +33,37 @@ def row_mapper(row) -> Season:
         'roster_submission_deadline': row['roster_submission_deadline'],
         'tournament_start_date': row['tournament_start_date'],
         'sport': row['sport_id'],
-        'year': row['year']
+        'year': row['year'],
+        'slug': row['slug']
 
     }
     return Season
+
+base_query = '''
+SELECT * 
+FROM mhac.seasons 
+INNER JOIN mhac.levels 
+    ON seasons.level_id = levels.id 
+INNER JOIN mhac.sports 
+    ON seasons.sport_id = sports.id
+'''
 
 def get_list(active=None):
     season_list = []
     where = ''
     if active:
         where = 'WHERE archive is null'
-    stmt = text(f'''SELECT * FROM mhac.seasons {where} ''')
+    stmt = text(f'''{base_query} {where} ''')
     result = DB.execute(stmt)
     DB.close()
     for row in result:
         season_list.append(row_mapper(row))
     return season_list
 
-def get(id):
-    stmt = text('''SELECT * FROM mhac.seasons WHERE id = :id ''')
-    result = DB.execute(stmt.bindparams(id=id))
+def get(slug):
+    where = 'WHERE slug = :slug'
+    stmt = text('''{base_query} {where} ''')
+    result = DB.execute(stmt.bindparams(slug=slug))
     DB.close()
     return row_mapper(result.fetchone())
 

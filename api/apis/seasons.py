@@ -20,6 +20,7 @@ class SeasonBase(BaseModel):
     tournament_start_date: Optional[date]
     archive: Optional[str]
     schedule: Optional[str]
+    slug: str
 
 class SeasonOut(SeasonBase):
     season_id: UUID
