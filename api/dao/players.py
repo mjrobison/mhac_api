@@ -8,27 +8,15 @@ from uuid import uuid4, UUID
 from datetime import date, timedelta, datetime
 from database import db
 
+from .persons import Person
+
 DB = db()
-
-class Person(TypedDict):
-    id: str
-    first_name= str 
-    last_name= str 
-    person_type = int
-    team_id = str
-
 
 class PlayerCreate(Person):
     birth_date: Date 
     height= Optional[str]
     number = int
     position = str
-
-class Coach(TypedDict):
-    first_name= str 
-    last_name= str 
-    person_type = int
-    team_id = str
 
 def player_row_mapper(row) -> PlayerCreate:
     PlayerCreate = {

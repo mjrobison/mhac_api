@@ -4,11 +4,8 @@ from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
 from datetime import datetime, date
 
-# from dao import persons as players
-# from .teams import TeamBase
+from dao import persons, players
+from .teams import TeamBase
+from .persons import PersonBase
 
 router = APIRouter()
-
-@router.get('/getStats')
-def get_Stats():
-    pass

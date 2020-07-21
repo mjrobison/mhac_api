@@ -10,25 +10,56 @@ from database import db
 
 DB = db()
 
-class Level(TypedDict):
-    id = int
+base_query = text('''SELECT * FROM mhac.levels''')
+
+class LevelBase(TypedDict):
     level_name = str
+
+class Level(LevelBase):
+    id = int
 
 def row_mapper(row) -> Level:
     Level = {
-        'id' = row['id']
-        'name' = row['name']
+        'id': row['id'],
+        'name': row['name']
     }
     return Level
 
-def get():
-    pass
+def get_by_id(id) -> Level:
+    stmt = text(f'''{base_query } WHERE id = :id''')
+    stmt = stmt.bindparams(id = id)
+    results = DB.execute(stmt)
+    return results.fetchone()
 
-def get_list():
-    pass
+def get_by_name(level_name) -> Level:
+    stmt = text(f'''{base_query } WHERE level_name = :level_name''')
+    stmt = stmt.bindparams(level_name = level_name)
+    results = DB.execute(stmt)
+    return results.fetchone()
 
-def create():
-    pass
+def get_list() -> List[Level]:
+    stmt = text(f'''{base_query}''')
+    stmt = stmt.bindparams()
+    results = DB.execute(stmt)
+    return results.fetchall()
+    
+def create(level: LevelBase):
+    stmt = text('''INSERT INTO mhac.levels(level_name) 
+                    VALUES
+                    (:level_name)''')
+    stmt = stmt.bindparams(level_name = level.level_name)
+    
+    DB.execute(stmt)
+    DB.commit()
+    return {200: "Success"}
 
-def update():
-    pass
+
+def update(level: Level):
+    stmt = text('''UPDATE mhac.levels
+                    SET level_name =:level_name
+                    WHERE id = :id ''')
+    stmt = stmt.bindparams(id = level.id, level_name = level.level_name)
+    
+    DB.execute(stmt)
+    DB.commit()
+    return {200: "Success"}

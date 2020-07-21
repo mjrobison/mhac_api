@@ -32,8 +32,13 @@ class Schedule(Game):
     season = dict
     neutral_site = bool
 
-def get(game: Game):
-    pass
+def get(game_id) -> Game:
+    DB = db()
+    stmt = text('''SELECT * FROM mhac.games WHERE game_id = :game_id ''')
+    stmt = stmt.bindparams(game_id = game_id)
+    results = DB.execute(stmt)
+    DB.close()
+    return results.fetchone()
 
 def create(game: Schedule):
     # Check for active season?

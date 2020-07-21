@@ -38,11 +38,6 @@ class PlayerIn(PersonBase):
             raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
         return birthday
 
-class CoachOut(PersonBase):
-    id: UUID
-    team: UUID
-
-
 
 @router.get('/getPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
 def get_all_players():
@@ -77,36 +72,6 @@ def update_player(id, player: PlayerIn):
         print(str(exc))
         return {400: "Error Message"}
     return {200: "Success"}
-
-
-    #TODO: ADD COACHES
-
-@router.post('/addCoach', tags=['coaches', 'rosters'])
-def add_coach(coach: PersonBase):
-    # try:
-    players.create_coach(coach)
-    # except Exception as exc:
-    #     print(str(exc))
-    #     return {400: "Error Message"}
-    return {200:"Success"}
-
-@router.put('/updateCoach/<id>', tags=['coaches', 'rosters'])
-def update_coach(id, coach: PersonBase):
-    try:
-        players.update(id, coach)
-    except Exception as exc:
-        print(str(exc))
-        return {400: "Error Message"}
-    return {200:"Success"}
-
-
-@router.get('/getCoaches/', response_model=List[CoachOut], tags=['coaches', 'rosters'], summary="Gets all coaches in the system")
-def get_coach_list(team_slug):
-    return players.get_all_coaches(person_type='Coach')
-
-@router.get('/getCoach/<id>', response_model=CoachOut)
-def get_coach():
-    return players.get_coach(id =id)
 
 @router.post('/addPlayerToRoster')
 def add_to_roster():

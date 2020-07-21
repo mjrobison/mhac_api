@@ -4,8 +4,8 @@ from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
 from datetime import datetime, date
 
-# from dao import seasons
-# from .teams import TeamBase
+from dao import levels
+
 router = APIRouter()
 
 class LevelBase(BaseModel):
@@ -17,16 +17,20 @@ class LevelOut(LevelBase):
 
 @router.get('/getLevels')
 def get_all_levels():
-    pass
+    return levels.get_list()
 
-@router.get('getLevelByName')
+@router.get('/getLevelByName/<name>')
 def get_a_level(name):
-    pass
+    return levels.get_by_name(name)
+
+@router.get('/getLevelByID/<id>')
+def get_a_level_by_id(id):
+    return levels.get_by_id(id)
 
 @router.post('/addLevel')
-def add_level():
-    pass
+def add_level(level: LevelBase):
+    return levels.create(level)
 
 @router.put('/updateLevel')
-def update_level():
-    pass
+def update_level(level: LevelOut):
+    return levels.update(level)
