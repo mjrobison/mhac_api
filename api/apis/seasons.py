@@ -59,3 +59,7 @@ def update_season():
 @router.put('/archiveSeason/<season_id>', tags=['season'])
 def archive_season(season_id):
     pass
+
+@router.get('/getCurrentSeasons')
+def get_current_season():
+    pass

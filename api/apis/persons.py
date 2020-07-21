@@ -4,24 +4,22 @@ from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
 from datetime import datetime, date
 
-from dao import players
+from dao import persons as players
+from .teams import TeamBase
 
 router = APIRouter()
 
-class PlayerBase(BaseModel):
+class PersonBase(BaseModel):
     first_name: str
     last_name: str
-    birth_date: Optional[date]
-    height: Optional[str]
     person_type: str
-    team_id: UUID
-    number: Optional[int]
-    position: Optional[str]
-
-class PlayerOut(PlayerBase):
+    team: UUID
+    
+class PlayerOut(PersonBase):
     id: UUID
+    team: TeamBase 
 
-class PlayerIn(PlayerBase):
+class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
     id: UUID
     first_name: str
@@ -29,7 +27,6 @@ class PlayerIn(PlayerBase):
     birth_date: date
     height: Optional[str]
     person_type: str
-    team_id: UUID
     number: Optional[int]
     position: Optional[str]
 
@@ -41,11 +38,15 @@ class PlayerIn(PlayerBase):
             raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
         return birthday
 
+class CoachOut(PersonBase):
+    id: UUID
+    team: UUID
+
 
 
 @router.get('/getPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
 def get_all_players():
-    return players.get_list()
+    return players.get_list(person_type='Player')
 
 #TODO: Move to Rosters
 @router.get('/getPlayers/<slug>', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])
@@ -60,14 +61,14 @@ def get_a_player(id):
 def add_player(player: PlayerIn):
     # try:
         #TODO: Maybe some logic here?
-    players.create(player)
+    players.create_player(player)
     # except Exception as exc:
     #     print(str(exc))
     #     raise HTTPException(status_code=404, detail=exc)
     return {200: "Success"}
 
-@router.post('/updatePlayer/<id>', summary="Update a player", tags=['players'])
-@router.put('/updatePlayer/<id>', summary="Update a player", tags=['players'])
+@router.post('/updatePlayer/<id>', summary="Update a player", tags=['players', 'rosters'])
+@router.put('/updatePlayer/<id>', summary="Update a player", tags=['players', 'rosters'])
 def update_player(id, player: PlayerIn):
     try:
         print(player)
@@ -76,3 +77,41 @@ def update_player(id, player: PlayerIn):
         print(str(exc))
         return {400: "Error Message"}
     return {200: "Success"}
+
+
+    #TODO: ADD COACHES
+
+@router.post('/addCoach', tags=['coaches', 'rosters'])
+def add_coach(coach: PersonBase):
+    # try:
+    players.create_coach(coach)
+    # except Exception as exc:
+    #     print(str(exc))
+    #     return {400: "Error Message"}
+    return {200:"Success"}
+
+@router.put('/updateCoach/<id>', tags=['coaches', 'rosters'])
+def update_coach(id, coach: PersonBase):
+    try:
+        players.update(id, coach)
+    except Exception as exc:
+        print(str(exc))
+        return {400: "Error Message"}
+    return {200:"Success"}
+
+
+@router.get('/getCoaches/', response_model=List[CoachOut], tags=['coaches', 'rosters'], summary="Gets all coaches in the system")
+def get_coach_list(team_slug):
+    return players.get_all_coaches(person_type='Coach')
+
+@router.get('/getCoach/<id>', response_model=CoachOut)
+def get_coach():
+    return players.get_coach(id =id)
+
+@router.post('/addPlayerToRoster')
+def add_to_roster():
+    pass
+
+@router.get('/getRoster/<season_team>')
+def get_team_roster():
+    pass
