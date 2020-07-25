@@ -11,7 +11,6 @@ from database import db
 DB = db()
 
 class Season(TypedDict):
-    season_id                   = UUID
     name                        = str
     year                        = str
     level                       = int
@@ -23,6 +22,9 @@ class Season(TypedDict):
     archive                     = str
     schedule                    = Optional[str]
     slug                        = str
+
+class SeasonUpdate(Season):
+    season_id                   = UUID
 
 def row_mapper(row) -> Season:
     Season = {
@@ -60,25 +62,44 @@ def get_list(active=None):
         season_list.append(row_mapper(row))
     return season_list
 
-def get(slug):
+def get(slug: str):
     where = 'WHERE slug = :slug'
     stmt = text('''{base_query} {where} ''')
     result = DB.execute(stmt.bindparams(slug=slug))
     DB.close()
     return row_mapper(result.fetchone())
 
-def archive_season(id):
-    pass
+def archive_season(season: UUID):
+    stmt = text(f'''UPDATE mhac.seasons
+                     SET archive = True 
+                     WHERE season_id = season_id ''')
+    stmt = stmt.bindparams(season_id = season)
+    DB = db()
+    DB.execute(stmt)
+    DB.commit()
+    DB.close()
+    return {200: "Season Archived"}
 
 def update(season: Season):
-    pass
+    stmt =text('''UPDATE mhac.seasons
+                  SET name = :name, year = :year, level_id= :level_id, sport_id= :sport_id, start_date= :start_date, roster_submission_deadline= :roster_submission_deadline, tournament_start_date= :tournament_start_date 
+                   WHERE season_id = :season_id ''')
+    stmt = stmt.bindparams(name = season.name, year =season.year, level_id = season.level_id, sport_id = seaon.sport_id, start_date = season.start_date, roster_submission_deadline = season.roster_submission_deadline, tournament_start_date = season.tournament_start_date)
+    DB = db()
+    DB.execute(stmt)
+    DB.commit()
+    DB.close()
+    return {200 : "Season Updated"}
 
 def create(season: Season):
+    new_season_id= uuid4()
     stmt = text('''INSERT INTO mhac.seasons(id, name, year, level_id, sport_id, start_date, roster_submission_deadline, tournament_start_date, archive) 
                 VALUES
                 (:id, :name, :year, :level, :sport, :start_date, :roster_submission_deadline, :tournament_start_date, :archive )''')
-    DB.execute(stmt.bindparams(id= uuid4(), name= season.season_name, year = season.year, level = season.level, sport = season.sport, start_date =season.start_date , roster_submission_deadline= season.roster_submission_deadline, tournament_start_date = season.tournament_start_date, archive = None))
+    DB.execute(stmt.bindparams(id= new_season_id, name= season.season_name, year = season.year, level = season.level, sport = season.sport, start_date =season.start_date , roster_submission_deadline= season.roster_submission_deadline, tournament_start_date = season.tournament_start_date, archive = None))
     DB.commit()
     DB.close()
+    return {200: f'{new_season_id} Added '}
+
 
         

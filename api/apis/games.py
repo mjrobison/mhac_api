@@ -54,7 +54,7 @@ def update_game():
     return games.update()
 
 @router.get('/getGameResults/<game_id>/<team_id>', response_model=GameBase, tags=['games'])
-def get_game():
+def get_game(game_id):
     pass
 
 @router.post('/addGameResults/<game_id>', tags=['games'])

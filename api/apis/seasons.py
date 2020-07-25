@@ -53,13 +53,13 @@ def add_season(season: SeasonBase):
     return seasons.create(season)
 
 @router.put('/updateSeason', tags=['season'])
-def update_season():
-    pass
+def update_season(season: SeasonIn):
+    return seasons.update(season)
 
 @router.put('/archiveSeason/<season_id>', tags=['season'])
-def archive_season(season_id):
-    pass
+def archive_season(season_id: UUID):
+    return seasons.archive_season(season_id)
 
 @router.get('/getCurrentSeasons')
 def get_current_season():
-    pass
+    return seasons.get_list(active=True)

@@ -142,3 +142,9 @@ def add_final_score(game: Game):
 def update_period_score(game: GameResult):
     #TODO: Check the score difference and send back a positive or negative
     pass
+
+def get_game_results(game_id: UUID, team_id: UUID):
+    #TODO: GameId, TeamID, Final Scores, Player Stats 
+    pass
+    DB = db()
+    team_roster = text('''SELECT * FROM  ''')
