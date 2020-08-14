@@ -6,6 +6,7 @@ from datetime import datetime, date
 
 from .seasons import SeasonBase
 from .teams import TeamBase
+from .persons import PlayerOut 
 from dao import games
 
 router = APIRouter()
@@ -33,6 +34,42 @@ class Schedule(GameBase):
     season: UUID
     neutral_site: bool
 
+class Final_Scores(BaseModel):
+    away_score: int
+    home_score: int
+
+class Player_Stats(BaseModel):
+    FGA: int
+    FGM: int    
+    ThreePA: int
+    ThreePM: int
+    AST: int
+    BLK: int
+    DREB: int
+    FTA: int
+    FTM: int
+    OREB: int
+    STEAL: int
+    TO: int
+    assists: int
+    blocks: int
+    defensive_rebounds: int
+    offensive_rebounds: int
+    steals: int
+    total_points: int
+    total_rebounds: int
+
+class ScheduleOut(GameBase):
+    pass
+
+# class players(PersonBase):
+#     player_stats: List[Player_Stats]
+
+class GameResultsStatsOut(PlayerOut):
+    # pass
+    player_stats: Player_Stats
+
+
 @router.post('/addGame', tags=['games'])
 def add_game(game: Schedule):
     return games.create(game)
@@ -53,9 +90,10 @@ def update_period(game_result: GameResult):
 def update_game():
     return games.update()
 
-@router.get('/getGameResults/<game_id>/<team_id>', response_model=GameBase, tags=['games'])
-def get_game(game_id):
-    pass
+@router.get('/getGameResults/<game_id>/<team_id>', response_model=List[GameResultsStatsOut], tags=['games'])
+def get_game(game_id: UUID, team_id: UUID):
+    # print(games.get_game_results(game_id=game_id, team_id=team_id))
+    return games.get_game_results(game_id=game_id, team_id=team_id)
 
 @router.post('/addGameResults/<game_id>', tags=['games'])
 def add_game_results():
@@ -71,6 +109,6 @@ def update_final_score(game: GameIn):
 
 @router.get('/getSchedule')
 @router.get('/getSchedule/<season_id>')
-@router.get('/getSchedule/<season_id>/<slug>')
+@router.get('/getSchedule/<season_id>/<slug>', response_model=List[ScheduleOut], tags=['games'])
 def get_schedules():
     pass

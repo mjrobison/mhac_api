@@ -67,7 +67,7 @@ def add_to_standings(team_id, event, database):
     stmt = update.binparams(team_id = team_id)
     database.execute(stmt)
 
-def remove_from_standings(team_id, event):
+def remove_from_standings(team_id, event, database):
     if event:
         update = text('''wins = wins - 1 ''')
     else:

@@ -9,6 +9,7 @@ from datetime import date, timedelta, datetime
 from database import db
 
 from .standings import add_to_standings, remove_from_standings
+from .teams import get_with_uuid as team_get
 
 DB = db()
 
@@ -31,6 +32,76 @@ class Schedule(Game):
     game_time = datetime
     season = dict
     neutral_site = bool
+
+class final_scores(TypedDict):
+    away_score: int
+    home_score: int
+
+class PlayerStats(TypedDict):
+    FGA: int
+    FGM: int    
+    ThreePA: int
+    ThreePM: int
+    AST: int
+    BLK: int
+    DREB: int
+    FTA: int
+    FTM: int
+    OREB: int
+    STEAL: int
+    TO: int
+    assists: int
+    blocks: int
+    defensive_rebounds: int
+    offensive_rebounds: int
+    steals: int
+    total_points: int
+    total_rebounds: int
+
+class Player(TypedDict):
+    first_name: str
+    last_name: str
+    id: UUID
+    number: int
+    player_stats: PlayerStats
+
+# class GameResultsOut(TypedDict):
+#     # final_scores: final_scores
+#     # game_id: UUID
+    
+#     stats: List[Player]
+
+def game_result_row_mapper(row) -> Player:
+    Player = {'id': row['id'],
+        'team': team_get(row['season_team_id']),
+        'first_name': row['roster_first_name'],
+        'last_name': row['roster_last_name'],
+        'number': row['roster_number'],
+        'person_type': '1',
+        'player_stats': {
+            'FGA': row['field_goals_attempted'],
+            'FGM': row['field_goals_made'],
+            'ThreePA': row['three_pointers_attempted'],
+            'ThreePM': row['three_pointers_made'],
+            'FTA': row['free_throws_attempted'],
+            'FTM': row['free_throws_made'],
+            'total_points': row['total_points'],
+            'AST': row['assists'],
+            'assists': row['assists'],
+            'STEAL': row['steals'],
+            'steals': row['steals'],
+            'BLK': row['blocks'],
+            'blocks': row['blocks'],
+            'OREB': row['offensive_rebounds'],
+            'DREB': row['defensive_rebounds'],
+            'offensive_rebounds': row['offensive_rebounds'],
+            'defensive_rebounds': row['defensive_rebounds'],
+            'TO': row['turnovers'],
+            'total_rebounds': row['total_rebounds']
+        }
+    }
+    return Player
+            
 
 def get(game_id) -> Game:
     DB = db()
@@ -143,8 +214,61 @@ def update_period_score(game: GameResult):
     #TODO: Check the score difference and send back a positive or negative
     pass
 
-def get_game_results(game_id: UUID, team_id: UUID):
+def get_game_results(game_id: UUID, team_id: UUID) -> List[Player]:
     #TODO: GameId, TeamID, Final Scores, Player Stats 
-    pass
+
+    print(game_id, team_id)
     DB = db()
-    team_roster = text('''SELECT * FROM  ''')
+    stmt = text('''WITH game_roster AS
+    (
+        SELECT mhac.team_rosters.season_team_id AS season_team_id
+        , mhac.person.id AS id
+        , mhac.person.first_name AS first_name
+        , mhac.person.last_name AS last_name
+        , mhac.person.number AS number
+        , mhac.games.game_id AS game_id
+    FROM mhac.team_rosters 
+    JOIN mhac.season_teams_with_names 
+        ON mhac.team_rosters.season_team_id = mhac.season_teams_with_names.id 
+    JOIN mhac.games 
+        ON mhac.games.home_team_id = mhac.season_teams_with_names.id 
+            OR mhac.games.away_team_id = mhac.season_teams_with_names.id 
+    JOIN mhac.person ON mhac.person.id = mhac.team_rosters.player_id
+    WHERE mhac.team_rosters.season_team_id = :team_id 
+        AND mhac.games.game_id = :game_id 
+    )
+    SELECT
+        roster.season_team_id,
+        roster.id AS id, 
+        roster.first_name AS roster_first_name, 
+        roster.last_name AS roster_last_name, 
+        roster.number AS roster_number, 
+        coalesce(mhac.basketball_stats.field_goals_made, 0) AS field_goals_made, 
+        coalesce(mhac.basketball_stats.field_goals_attempted, 0) AS field_goals_attempted, 
+        coalesce(mhac.basketball_stats.three_pointers_made, 0) AS three_pointers_made, 
+        coalesce(mhac.basketball_stats.three_pointers_attempted, 0) AS three_pointers_attempted, 
+        coalesce(mhac.basketball_stats.free_throws_made, 0) AS free_throws_made, 
+        coalesce(mhac.basketball_stats.free_throws_attempted, 0) AS free_throws_attempted, 
+        coalesce(mhac.basketball_stats.total_points, 0) AS total_points, 
+        coalesce(mhac.basketball_stats.assists, 0) AS assists, 
+        coalesce(mhac.basketball_stats.offensive_rebounds, 0) AS offensive_rebounds, 
+        coalesce(mhac.basketball_stats.defensive_rebounds, 0) AS defensive_rebounds, 
+        coalesce(mhac.basketball_stats.total_rebounds, 0) AS total_rebounds, 
+        coalesce(mhac.basketball_stats.steals, 0) AS steals, 
+        coalesce(mhac.basketball_stats.blocks, 0) AS blocks, 
+        coalesce(mhac.basketball_stats.turnovers, 0) AS turnovers
+    FROM game_roster AS roster 
+    LEFT OUTER JOIN mhac.basketball_stats 
+        ON roster.game_id = mhac.basketball_stats.game_id 
+        AND roster.id = mhac.basketball_stats.player_id
+    ''')
+    stmt = stmt.bindparams(team_id=team_id, game_id=game_id)
+    
+    query = DB.execute(stmt)
+
+    DB.close()
+    results = query.fetchall()
+    player_list = []
+    for row in results:
+        player_list.append(game_result_row_mapper(row))
+    return player_list

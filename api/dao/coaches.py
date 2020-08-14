@@ -26,7 +26,7 @@ class CoachOut(Coach):
     team_id = str
 
 
-def coach_row_mapper(row) -> Coach:
+def coach_row_mapper(row) -> CoachOut:
     Coach = {
         'id': row['id'],
         'first_name': row['first_name'],
