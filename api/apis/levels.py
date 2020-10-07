@@ -19,11 +19,11 @@ class LevelOut(LevelBase):
 def get_all_levels():
     return levels.get_list()
 
-@router.get('/getLevelByName/<name>')
+@router.get('/getLevelByName/{name}')
 def get_a_level(name):
     return levels.get_by_name(name)
 
-@router.get('/getLevelByID/<id>')
+@router.get('/getLevelByID/{id}')
 def get_a_level_by_id(id):
     return levels.get_by_id(id)
 

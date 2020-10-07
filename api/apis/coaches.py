@@ -23,7 +23,7 @@ def add_coach(coach: PersonBase):
         return {400: "Error Message"}
     return {200:"Success"}
 
-@router.put('/updateCoach/<id>', tags=['coaches', 'rosters'])
+@router.put('/updateCoach/{id}', tags=['coaches', 'rosters'])
 def update_coach(id, coach: PersonBase):
     try:
         persons.update(id, coach)
@@ -36,7 +36,7 @@ def update_coach(id, coach: PersonBase):
 def get_coach_list(team_slug):
     return coaches.get_all_coaches(person_type='Coach')
 
-@router.get('/getCoach/<id>', response_model=CoachOut)
+@router.get('/getCoach/{id}', response_model=CoachOut)
 def get_coach():
     return coaches.get_coach(id =id)
 
