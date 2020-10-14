@@ -36,7 +36,7 @@ def player_row_mapper(row) -> PlayerCreate:
         #TODO: Provide a lookup, 
         'person_type': row['person_type'],
         'team_id': row['team_id'],
-        'number': row['number'],
+        'player_nnumber': row['number'],
         'position': row['position']
     }
     return PlayerCreate
@@ -67,8 +67,13 @@ def get_list(person_type) -> List[PlayerCreate]:
 
 def get_team_list(slug):
     player_list = []
-    stmt = text('''SELECT * FROM mhac.person INNER JOIN mhac.person_type ON person.person_type = person_type.id WHERE person_type.type = 'Player' and slug = :slug''')
-    stmt = stmt.bindparams(team_id = team_id)
+    stmt = text('''SELECT person.* FROM mhac.person 
+    INNER JOIN mhac.person_type 
+    ON person.person_type = person_type.id
+    INNER JOIN mhac.teams 
+        ON person.team_id = teams.id 
+    WHERE person_type.type = 'Player' and slug = :slug''')
+    stmt = stmt.bindparams(slug = slug)
     result = DB.execute(stmt)
     for row in result:
         player_list.append(player_row_mapper(row))

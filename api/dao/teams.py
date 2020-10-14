@@ -47,10 +47,8 @@ def row_mapper(row) -> TeamOut:
 def get(slug: str) -> TeamOut:
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug''')
     stmt = stmt.bindparams(slug = slug)
-    print(stmt)
     result = DB.execute(stmt)
     row = result.fetchone()
-    print(row)
     result.close()
     if row is None:
         raise LookupError(f'Could not find key value with id: {id}')
@@ -62,9 +60,7 @@ def get_list() -> List[TeamOut]:
     team_list = []
     stmt = text('''SELECT * FROM mhac.teams''')
     result = DB.execute(stmt)
-    print(result)
     for row in result:
-        print(row)
         team_list.append(row_mapper(row))
     
     return team_list

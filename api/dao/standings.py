@@ -27,32 +27,58 @@ class Standings(TypedDict):
 
 def row_mapper(row) -> Standings:
     Standings = {
-        'team_id': team_get(row['team_id']),
-        'season_id': season_get(row['season_id']),
+        # 'team_id': team_get(row['team_id']),
+        # 'season_id': season_get(row['season_id']),
+        'team': row['team_id'],
+        'team_name': row['team_name'],
+        'season_id': row['season_id'],
         'wins': row['wins'],
         'losses': row['losses'],
         'games_played': row['games_played'],
         # 'games_behind': calcGamesBehind()
+        'games_behind': 0,
         'win_percentage':  row['win_percentage']
     }
     return Standings
 
 def get_a_season(id) -> Standings:
-    stmt = text('''SELECT * FROM mhac.standings WHERE season_id = :id''')
+    # stmt = text('''SELECT * FROM mhac.standings ''')
+    stmt = text(f'''SELECT * FROM mhac.standings
+    INNER JOIN mhac.season_teams_with_names
+        ON standings.season_id = season_teams_with_names.season_id
+        AND standings.team_id = season_teams_with_names.team_id
+    INNER JOIN mhac.seasons
+        ON season_teams_with_names.season_id = seasons.id
+    WHERE standings.season_id = :id
+    ORDER BY win_percentage DESC''')
     stmt = stmt.bindparams(id=id)
     result = DB.execute(stmt)
-    row = result.fetchone()
-    # row['season_id'] = season_get(row['season_id'])
-    return row_mapper(row)
+    # DB.close()
+    standings_list = []
+    for row in result:
+        standings_list.append(row_mapper(row))
+    return standings_list
 
-def get(id) -> Standings:
-    seasons = get_list(active=True)    
-    stmt = text('''SELECT * FROM mhac.standings WHERE season_id = :id''')
-    stmt = stmt.bindparams(id=id)
+def get(level=None) -> Standings:
+    where = """AND level_name = '18U Boys' """  
+    if level:
+        where = """AND level_name = :level """
+    stmt = text(f'''SELECT * FROM mhac.standings
+        INNER JOIN mhac.season_teams_with_names
+            ON standings.season_id = season_teams_with_names.season_id
+            AND standings.team_id = season_teams_with_names.team_id
+        INNER JOIN mhac.seasons
+            ON season_teams_with_names.season_id = seasons.id
+        WHERE seasons.archive is null
+        {where}
+        ORDER BY win_percentage DESC''')
     result = DB.execute(stmt)
-    row = result.fetchone()
-    # row['season_id'] = season_get(row['season_id'])
-    return row_mapper(row)
+    # DB.close()
+    standings_list = []
+    for row in result:
+        standings_list.append(row_mapper(row))
+    return standings_list
+
 
 def add_to_standings(team_id, event, database):
     if event == 'win':
@@ -79,11 +105,6 @@ def remove_from_standings(team_id, event, database):
     
     stmt = update.binparams(team_id = team_id)
     database.execute(stmt)
-
-
-    
-    
-    
 
 def add_loss():
     pass

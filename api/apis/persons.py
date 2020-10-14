@@ -13,11 +13,18 @@ class PersonBase(BaseModel):
     first_name: str
     last_name: str
     person_type: str
-    team: UUID
+    team: Optional[UUID]
     
 class PlayerOut(PersonBase):
     id: UUID
-    team: TeamBase 
+    team_id: UUID 
+    birth_date: Optional[date]
+    height: Optional[str]
+    person_type: Optional[int]
+    player_number: Optional[int]
+    position: Optional[int]
+    age: Optional[int]
+
 
 class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
@@ -44,13 +51,13 @@ def get_all_players():
     return players.get_list(person_type='Player')
 
 #TODO: Move to Rosters
-@router.get('/getPlayers/<slug>', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])
+@router.get('/getPlayers/{slug}', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
-    return players.get_team_list()
+    return players.get_team_list(slug)
 
-@router.get('/getPlayers/<id>', response_model=PlayerOut, tags=['players'])
-def get_a_player(id):
-    return players.get(id)
+# @router.get('/getPlayers/{id}', response_model=PlayerOut, tags=['players'])
+# def get_a_player(id):
+#     return players.get(id)
 
 @router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
@@ -62,8 +69,8 @@ def add_player(player: PlayerIn):
     #     raise HTTPException(status_code=404, detail=exc)
     return {200: "Success"}
 
-@router.post('/updatePlayer/<id>', summary="Update a player", tags=['players', 'rosters'])
-@router.put('/updatePlayer/<id>', summary="Update a player", tags=['players', 'rosters'])
+@router.post('/updatePlayer/{id}', summary="Update a player", tags=['players', 'rosters'])
+@router.put('/updatePlayer/{id}', summary="Update a player", tags=['players', 'rosters'])
 def update_player(id, player: PlayerIn):
     try:
         print(player)
@@ -77,6 +84,6 @@ def update_player(id, player: PlayerIn):
 def add_to_roster():
     pass
 
-@router.get('/getRoster/<season_team>')
+@router.get('/getRoster/{season_team}')
 def get_team_roster():
     pass

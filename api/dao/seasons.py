@@ -28,13 +28,13 @@ class SeasonUpdate(Season):
 
 def row_mapper(row) -> Season:
     Season = {
-        'season_id': row['id'],
-        'level': row['level_id'],
+        'season_id': row['season_id'],
+        'level': row['level_name'],
         'season_name': row['name'],
         'season_start_date': row['start_date'],
         'roster_submission_deadline': row['roster_submission_deadline'],
         'tournament_start_date': row['tournament_start_date'],
-        'sport': row['sport_id'],
+        'sport': row['sport_name'],
         'year': row['year'],
         'slug': row['slug']
 
@@ -42,7 +42,8 @@ def row_mapper(row) -> Season:
     return Season
 
 base_query = '''
-SELECT * 
+SELECT seasons.id as season_id, seasons.name, seasons.start_date, seasons.roster_submission_deadline, seasons.tournament_start_date,
+sports.sport_name, seasons.slug, levels.level_name, seasons.year
 FROM mhac.seasons 
 INNER JOIN mhac.levels 
     ON seasons.level_id = levels.id 
@@ -64,7 +65,7 @@ def get_list(active=None):
 
 def get(slug: str):
     where = 'WHERE slug = :slug'
-    stmt = text('''{base_query} {where} ''')
+    stmt = text(F'''{base_query} {where} ''')
     result = DB.execute(stmt.bindparams(slug=slug))
     DB.close()
     return row_mapper(result.fetchone())
@@ -74,7 +75,7 @@ def archive_season(season: UUID):
                      SET archive = True 
                      WHERE season_id = season_id ''')
     stmt = stmt.bindparams(season_id = season)
-    DB = db()
+    DB = db()   
     DB.execute(stmt)
     DB.commit()
     DB.close()

@@ -90,12 +90,12 @@ def update_period(game_result: GameResult):
 def update_game():
     return games.update()
 
-@router.get('/getGameResults/<game_id>/<team_id>', response_model=List[GameResultsStatsOut], tags=['games'])
+@router.get('/getGameResults/{game_id}/{team_id}', response_model=List[GameResultsStatsOut], tags=['games'])
 def get_game(game_id: UUID, team_id: UUID):
     # print(games.get_game_results(game_id=game_id, team_id=team_id))
     return games.get_game_results(game_id=game_id, team_id=team_id)
 
-@router.post('/addGameResults/<game_id>', tags=['games'])
+@router.post('/addGameResults/{game_id}', tags=['games'])
 def add_game_results():
     pass
 
@@ -108,7 +108,7 @@ def update_final_score(game: GameIn):
     return games.add_final_score(game)
 
 @router.get('/getSchedule')
-@router.get('/getSchedule/<season_id>')
-@router.get('/getSchedule/<season_id>/<slug>', response_model=List[ScheduleOut], tags=['games'])
+@router.get('/getSchedule/{season_id}')
+@router.get('/getSchedule/{season_id}/{slug}', response_model=List[ScheduleOut], tags=['games'])
 def get_schedules():
     pass

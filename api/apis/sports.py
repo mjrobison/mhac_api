@@ -14,7 +14,7 @@ class SportBase(BaseModel):
 class SportOut(SportBase):
     sport_id: int
 
-@router.get('/getSport/<id>', response_model=SportOut, tags=['sport'])
+@router.get('/getSport/{id}', response_model=SportOut, tags=['sport'])
 def get_sport(id: int):
     sport = sports.get(id)
     if not sport:

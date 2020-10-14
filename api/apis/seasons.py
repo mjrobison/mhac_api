@@ -12,7 +12,7 @@ class SeasonBase(BaseModel):
     
     season_name: str
     year: str
-    level: int
+    level: str
     sport: int
     start_date: Optional[date]
     roster_submission_deadline: Optional[date]
@@ -36,7 +36,7 @@ class Standings(BaseModel):
     games_played: int
     win_percentage: float
 
-@router.get('/getSeason/<id>', response_model=SeasonBase, tags=['season'])
+@router.get('/getSeason/{id}', response_model=SeasonBase, tags=['season'])
 def get_a_season(id):
     return seasons.get(id)
 
@@ -56,7 +56,7 @@ def add_season(season: SeasonBase):
 def update_season(season: SeasonIn):
     return seasons.update(season)
 
-@router.put('/archiveSeason/<season_id>', tags=['season'])
+@router.put('/archiveSeason/{season_id}', tags=['season'])
 def archive_season(season_id: UUID):
     return seasons.archive_season(season_id)
 
