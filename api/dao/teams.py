@@ -44,17 +44,24 @@ def row_mapper(row) -> TeamOut:
     return Team
 
 
-def get(slug: str) -> TeamOut:
-    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug''')
+def get(slug: str) -> List[TeamOut]:
+    team_list = []
+    NEW_DB = db()
+    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
     stmt = stmt.bindparams(slug = slug)
-    result = DB.execute(stmt)
-    row = result.fetchone()
-    result.close()
-    if row is None:
-        raise LookupError(f'Could not find key value with id: {id}')
-    else:
-        key = row_mapper(row)
-        return key
+    result = NEW_DB.execute(stmt)
+    NEW_DB.close()
+        # result = DB.execute(stmt)
+    for row in result:
+        team_list.append(row_mapper(row))
+    
+    return team_list
+
+    # if row is None:
+    #     raise LookupError(f'Could not find key value with id: {id}')
+    # else:
+    #     key = row_mapper(row)
+    #     return key
 
 def get_list() -> List[TeamOut]:
     team_list = []

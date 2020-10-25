@@ -1,5 +1,5 @@
-from sqlalchemy import Column, String
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
+# from sqlalchemy import Column, String
+# from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
 
 from sqlalchemy.sql import text # type: ignore
 from typing import TypedDict, List, Dict, Any, Optional
@@ -21,7 +21,7 @@ class Level(LevelBase):
 def row_mapper(row) -> Level:
     Level = {
         'id': row['id'],
-        'name': row['name']
+        'name': row['level_name']
     }
     return Level
 
@@ -38,10 +38,16 @@ def get_by_name(level_name) -> Level:
     return results.fetchone()
 
 def get_list() -> List[Level]:
+    NEW_DB = db()
     stmt = text(f'''{base_query}''')
-    stmt = stmt.bindparams()
-    results = DB.execute(stmt)
-    return results.fetchall()
+    print(stmt)
+    # stmt = stmt.bindparams()
+    results = NEW_DB.execute(stmt)
+    NEW_DB.close()
+    level_list = []
+    for result in results.fetchall():
+        level_list.append(row_mapper(result))
+    return level_list
     
 def create(level: LevelBase):
     stmt = text('''INSERT INTO mhac.levels(level_name) 

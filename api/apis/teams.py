@@ -36,11 +36,11 @@ class SeasonTeamOut(SeasonTeam):
 async def get():
     return teams.get_list()
 
-@router.get('/getTeams/{slug}', response_model=TeamOut, summary="Get an invididual team", tags=['teams'])
+@router.get('/getTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
 def getTeam(slug):
     return teams.get(slug)
 
-@router.get('/getSeasonTeams/{slug}', response_model=TeamOut, summary="Get an invididual team", tags=['teams'])
+@router.get('/getSeasonTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
 def getSeasonTeams(slug):
     return teams.get(slug)
 

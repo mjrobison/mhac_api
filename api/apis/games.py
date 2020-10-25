@@ -69,7 +69,6 @@ class GameResultsStatsOut(PlayerOut):
     # pass
     player_stats: Player_Stats
 
-
 @router.post('/addGame', tags=['games'])
 def add_game(game: Schedule):
     return games.create(game)
@@ -111,4 +110,4 @@ def update_final_score(game: GameIn):
 @router.get('/getSchedule/{season_id}')
 @router.get('/getSchedule/{season_id}/{slug}', response_model=List[ScheduleOut], tags=['games'])
 def get_schedules():
-    pass
+    return []
