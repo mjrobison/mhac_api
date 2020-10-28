@@ -46,11 +46,9 @@ def row_mapper(row) -> TeamOut:
 
 def get(slug: str) -> List[TeamOut]:
     team_list = []
-    NEW_DB = db()
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
     stmt = stmt.bindparams(slug = slug)
-    result = NEW_DB.execute(stmt)
-    NEW_DB.close()
+    result = DB.execute(stmt)
         # result = DB.execute(stmt)
     for row in result:
         team_list.append(row_mapper(row))

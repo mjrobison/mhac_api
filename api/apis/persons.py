@@ -46,14 +46,15 @@ class PlayerIn(PersonBase):
         return birthday
 
 
-@router.get('/getPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
-def get_all_players():
-    return players.get_list(person_type='Player')
-
 #TODO: Move to Rosters
 @router.get('/getPlayers/{slug}', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
     return players.get_team_list(slug)
+
+@router.get('/getPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
+def get_all_players():
+    return players.get_list(person_type='Player')
+
 
 # @router.get('/getPlayers/{id}', response_model=PlayerOut, tags=['players'])
 # def get_a_player(id):

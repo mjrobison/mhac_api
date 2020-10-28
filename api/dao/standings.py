@@ -46,7 +46,7 @@ def get_a_season(id) -> Standings:
     stmt = text(f'''SELECT * FROM mhac.standings
     INNER JOIN mhac.season_teams_with_names
         ON standings.season_id = season_teams_with_names.season_id
-        AND standings.team_id = season_teams_with_names.team_id
+        AND standings.team_id = season_teams_with_names.id
     INNER JOIN mhac.seasons
         ON season_teams_with_names.season_id = seasons.id
     WHERE standings.season_id = :id
@@ -66,7 +66,7 @@ def get(level=None) -> Standings:
     stmt = text(f'''SELECT * FROM mhac.standings
         INNER JOIN mhac.season_teams_with_names
             ON standings.season_id = season_teams_with_names.season_id
-            AND standings.team_id = season_teams_with_names.team_id
+            AND standings.team_id = season_teams_with_names.id
         INNER JOIN mhac.seasons
             ON season_teams_with_names.season_id = seasons.id
         WHERE seasons.archive is null
