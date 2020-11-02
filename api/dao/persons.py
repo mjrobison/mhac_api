@@ -66,6 +66,7 @@ def get_list(person_type) -> List[PlayerCreate]:
     return player_list
 
 def get_team_list(slug):
+    DB = db()
     player_list = []
     stmt = text('''SELECT person.* FROM mhac.person 
     INNER JOIN mhac.person_type 
@@ -75,6 +76,7 @@ def get_team_list(slug):
     WHERE person_type.type = 'Player' and slug = :slug''')
     stmt = stmt.bindparams(slug = slug)
     result = DB.execute(stmt)
+    DB.close()
     for row in result:
         player_list.append(player_row_mapper(row))
     
