@@ -95,11 +95,19 @@ def update(id, Player: PlayerCreate):
 def create_player(player: PlayerCreate):
     DB = db()
     print(player)
-
-    stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) ''')
-    stmt = stmt.bindparams(id = uuid4(), first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.number, position = player.position, person_type =  '1', team_id= player.team_id)
-    result = DB.execute(stmt)
-    DB.commit()
-    DB.close()
+    message = ''
+    try:
+        stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) ''')
+        stmt = stmt.bindparams(id = uuid4(), first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.number, position = player.position, person_type =  '1', team_id= player.team_id)
+        result = DB.execute(stmt)
+        DB.commit()
+        message = 'Successfully added player'
+    except Exception as exc:
+        message =  str(exc)
+        print(str(exc))
+    finally:
+        DB.close()
+        return message
+    
     # return result
 

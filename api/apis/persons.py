@@ -3,7 +3,7 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
 from datetime import datetime, date
-
+import logging
 from dao import persons as players
 from .teams import TeamBase
 
@@ -28,7 +28,8 @@ class PlayerOut(PersonBase):
 
 class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
-    id: UUID
+    id: Optional[UUID]
+    team_id: Optional[UUID]
     first_name: str
     last_name: str
     birth_date: date
@@ -40,8 +41,9 @@ class PlayerIn(PersonBase):
     @validator('birth_date')
     def age_between(cls, birthday):
         min_year = datetime.today().year - 13
-        max_year = datetime.today().year - 18
-        if not (birthday <= date(min_year, 9, 1) and birthday >= date(max_year, 9,1)):
+        max_year = datetime.today().year - 19
+        print(min_year, max_year, birthday <= date(min_year, 9, 1), birthday >= date(max_year, 9,1))
+        if not (birthday >= date(max_year, 9,1)):
             raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
         return birthday
 
