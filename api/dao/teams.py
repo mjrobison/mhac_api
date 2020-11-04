@@ -24,9 +24,10 @@ class Team(TypedDict):
 class TeamOut(Team):
     id: UUID
 
-class SeasonTeam(TypedDict):
+class SeasonTeam(Team):
     team_id: UUID
     season_id: UUID
+    level_name: str
 
 
 def row_mapper(row) -> TeamOut:
@@ -43,8 +44,24 @@ def row_mapper(row) -> TeamOut:
     }
     return Team
 
+def season_team_row_mapper(row) -> SeasonTeam:
+    SeasonTeam = {
+        'team_id': row['id'],
+        'team_name': row['team_name'],
+        'team_mascot': row['team_mascot'],
+        'main_color': row['main_color'],
+        'secondary_color': row['secondary_color'],
+        'website': row['website'],
+        'logo_color': row['logo_color'],
+        'logo_grey': row['logo_grey'],
+        'slug': row['slug'],
+        'season_id': row['season_id'],
+        'level_name': row['level_name']
+    }
+    return SeasonTeam
 
-def get(slug: str) -> List[TeamOut]:
+
+def get(slug: str) -> List[Team]:
     DB = db()
     team_list = []
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
@@ -57,6 +74,18 @@ def get(slug: str) -> List[TeamOut]:
     
     return team_list
 
+def get_season_team(slug: str) -> List[SeasonTeam]:
+    DB = db()
+    team_list = []
+    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
+    stmt = stmt.bindparams(slug = slug)
+    result = DB.execute(stmt)
+        # result = DB.execute(stmt)
+    DB.close()
+    for row in result:
+        team_list.append(season_team_row_mapper(row))
+    
+    return team_list
     # if row is None:
     #     raise LookupError(f'Could not find key value with id: {id}')
     # else:

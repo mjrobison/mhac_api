@@ -41,9 +41,9 @@ async def get():
     return teams.get_list()
 
 
-@router.get('/getSeasonTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
+@router.get('/getSeasonTeams/{slug}', response_model=List[SeasonTeam], summary="Get an invididual team", tags=['teams'])
 def getSeasonTeams(slug):
-    return teams.get(slug)
+    return teams.get_season_team(slug)
 
 @router.post('/addTeamToSeason', tags=['teams', 'seasons'])
 async def add_to_season(season_team: SeasonTeam):
