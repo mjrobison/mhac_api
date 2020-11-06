@@ -104,6 +104,7 @@ def create_player(player: PlayerCreate):
         result = DB.execute(stmt)
         DB.commit()
         message = 'Successfully added player'
+        #TODO: Add to a "roster"
     except Exception as exc:
         message =  str(exc)
         print(str(exc))

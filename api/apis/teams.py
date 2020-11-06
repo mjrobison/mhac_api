@@ -32,6 +32,11 @@ class SeasonTeam(BaseModel):
 class SeasonTeamOut(SeasonTeam):
     season_team_id: UUID
 
+class SeasonTeamOut2(TeamBase):
+    team_id: UUID
+    season_id: UUID
+    level_name: str
+
 @router.get('/getTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
 def getTeam(slug):
     return teams.get(slug)
@@ -40,10 +45,13 @@ def getTeam(slug):
 async def get():
     return teams.get_list()
 
-
 @router.get('/getSeasonTeams/{slug}', response_model=List[SeasonTeam], summary="Get an invididual team", tags=['teams'])
 def getSeasonTeams(slug):
-    return teams.get_season_team(slug)
+    return teams.get_season_teams(slug)
+
+@router.get('/getSeasonTeams/{slug}/{seasonid}', response_model=SeasonTeam, summary="Get an invididual team", tags=['teams'])
+def getSeasonTeams(slug, seasonid):
+    return teams.get_season_team(slug, seasonid)
 
 @router.post('/addTeamToSeason', tags=['teams', 'seasons'])
 async def add_to_season(season_team: SeasonTeam):
@@ -52,3 +60,7 @@ async def add_to_season(season_team: SeasonTeam):
 @router.post('/createTeam', tags=['teams'])
 async def create_team(team: TeamBase):
     return teams.create(team)
+
+@router.get('/test', response_model=SeasonTeamOut2, tags=['test'])
+def test_get_uuid_call():
+    return teams.get_with_uuid('896bf172-8deb-41d2-89b5-953f1ca197ef')

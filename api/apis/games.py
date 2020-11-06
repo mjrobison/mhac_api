@@ -2,10 +2,10 @@ from fastapi import APIRouter, HTTPException
 from typing import Optional, List, Dict
 from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
-from datetime import datetime, date
+from datetime import datetime, date, time
 
 from .seasons import SeasonBase
-from .teams import TeamBase
+from .teams import TeamBase, SeasonTeamOut2 as SeasonTeam
 from .persons import PlayerOut 
 from dao import games
 
@@ -29,14 +29,14 @@ class GameResult(GameIn):
     game_order: Optional[int]
 
 class Schedule(GameBase):
-    game_date: date
-    game_time: datetime
+    date: date
+    time: time
     season: UUID
-    neutral_site: bool
+    neutral_site: Optional[str]
 
 class Final_Scores(BaseModel):
-    away_score: int
-    home_score: int
+    away_score: Optional[int]
+    home_score: Optional[int]
 
 class Player_Stats(BaseModel):
     FGA: int
@@ -58,9 +58,21 @@ class Player_Stats(BaseModel):
     steals: int
     total_points: int
     total_rebounds: int
+    
+class ScheduleOut(Schedule):
+    home_team: SeasonTeam
+    away_team: SeasonTeam
+    final_scores: Final_Scores
 
-class ScheduleOut(GameBase):
-    pass
+class TeamSchedule(BaseModel):
+    schedule_id: int
+    game_date: date
+    game_time: time
+    game_id: UUID
+    home_team: SeasonTeam
+    away_team: SeasonTeam
+    final_scores: Final_Scores
+
 
 # class players(PersonBase):
 #     player_stats: List[Player_Stats]
@@ -71,6 +83,9 @@ class GameResultsStatsOut(PlayerOut):
 
 @router.post('/addGame', tags=['games'])
 def add_game(game: Schedule):
+    print(game)
+    if game.neutral_site == '':
+        game.neutral_site = False
     return games.create(game)
 
 @router.post('/addTournamentGame', tags=['games'])
@@ -106,8 +121,18 @@ def update_final_score():
 def update_final_score(game: GameIn):
     return games.add_final_score(game)
 
-@router.get('/getSchedule')
-@router.get('/getSchedule/{season_id}')
-@router.get('/getSchedule/{season_id}/{slug}', response_model=List[ScheduleOut], tags=['games'])
-def get_schedules():
+@router.get('/getSchedule/') #, response_model=List[ScheduleOut], tags=['games'])
+def get_season_schedules():
     return []
+
+@router.get('/getSchedule/{season_id}', response_model=List[ScheduleOut], tags=['games'])
+def get_season_schedules(season_id: UUID):
+    return []
+
+@router.get('/getSchedule/{season_id}/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
+def get_schedules(season_id: UUID, slug: str):
+    return games.get_team_schedule(season_id=season_id, slug=slug)
+
+@router.get('/getSchedule/{season_team_id}', response_model=List[ScheduleOut], tags=['games'])
+def get_team_schedule(season_team_id: UUID):
+    return games.get_team_schedule(season_team_id=season_team_id)

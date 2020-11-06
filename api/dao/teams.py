@@ -74,7 +74,7 @@ def get(slug: str) -> List[Team]:
     
     return team_list
 
-def get_season_team(slug: str) -> List[SeasonTeam]:
+def get_season_teams(slug: str) -> List[SeasonTeam]:
     DB = db()
     team_list = []
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
@@ -92,6 +92,17 @@ def get_season_team(slug: str) -> List[SeasonTeam]:
     #     key = row_mapper(row)
     #     return key
 
+def get_season_team(slug: str, seasonid: str) -> SeasonTeam:
+    DB = db()
+    team_list = []
+    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null and season_id = :seasonid''')
+    stmt = stmt.bindparams(slug = slug, seasonid = seasonid)
+    result = DB.execute(stmt)
+        # result = DB.execute(stmt)
+    DB.close()
+    return season_team_row_mapper(result.fetchone())
+
+
 def get_list() -> List[TeamOut]:
     DB = db()
     team_list = []
@@ -103,7 +114,8 @@ def get_list() -> List[TeamOut]:
     
     return team_list
 
-def get_with_uuid(id: UUID) -> TeamOut:
+def get_with_uuid(id: UUID) -> SeasonTeam:
+    print('\n\n\n\n\nMade It\n\n\n')
     DB = db()
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id''')
 
@@ -114,7 +126,7 @@ def get_with_uuid(id: UUID) -> TeamOut:
     if row is None:
         raise LookupError(f'Could not find key value with id: {id}')
     else:
-        key = row_mapper(row)
+        key = season_team_row_mapper(row)
         return key
 
 def create(team: Team):

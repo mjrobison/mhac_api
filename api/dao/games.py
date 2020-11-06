@@ -5,11 +5,13 @@ from sqlalchemy.sql import text # type: ignore
 from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4, UUID
 # from sqlalchemy.dialects.postgresql import JSON, UUID
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, time
 from database import db
 
 from .standings import add_to_standings, remove_from_standings
-from .teams import get_with_uuid as team_get
+from .teams import get_with_uuid as team_get, SeasonTeam
+
+import json
 
 DB = db()
 
@@ -28,14 +30,14 @@ class GameResult(TypedDict):
     game_order = int
 
 class Schedule(Game):
-    game_date = date
-    game_time = datetime
+    date = date
+    time = time
     season = dict
     neutral_site = bool
 
 class final_scores(TypedDict):
-    away_score: int
-    home_score: int
+    away_score: Optional[int]
+    home_score: Optional[int]
 
 class PlayerStats(TypedDict):
     FGA: int
@@ -65,11 +67,36 @@ class Player(TypedDict):
     number: int
     player_stats: PlayerStats
 
+class TeamSchedule(TypedDict):
+    schedule_id: int
+    game_date: date
+    game_time: time
+    game_id: UUID
+    home_team: SeasonTeam
+    away_team: SeasonTeam
+    final_scores: final_scores
+
+
 # class GameResultsOut(TypedDict):
 #     # final_scores: final_scores
 #     # game_id: UUID
     
 #     stats: List[Player]
+def team_schedule_row_mapper(row) -> TeamSchedule:
+    TeamSchedule = {
+        'schedule_id': row['schedule_id'],
+        'game_date': row['game_date'],
+        'game_time': row['game_time'],
+        'game_id': row['game_id'],
+        'home_team': team_get(row['home_team']),
+        'away_team': team_get(row['away_team']),
+        'final_scores': {
+            'away_score': row['final_away_score'],
+            'home_score': row['final_home_score']
+        }
+
+    }
+    return TeamSchedule
 
 def game_result_row_mapper(row) -> Player:
     Player = {'id': row['id'],
@@ -102,7 +129,6 @@ def game_result_row_mapper(row) -> Player:
     }
     return Player
             
-
 def get(game_id) -> Game:
     DB = db()
     stmt = text('''SELECT * FROM mhac.games WHERE game_id = :game_id ''')
@@ -124,7 +150,7 @@ def create(game: Schedule):
                    VALUES
                    (:game_id, :game_date, :game_time, :season_id, :neutral_site) ''')
 
-    stmt = stmt.bindparams(game_id = game_id , game_date = game.game_date, game_time=game.game_time, season_id= game.season, neutral_site=game.neutral_site)
+    stmt = stmt.bindparams(game_id = game_id, game_date = game.date, game_time=game.time, season_id= game.season, neutral_site=game.neutral_site)
     DB.execute(stmt)
     DB.commit()
     DB.close()
@@ -272,3 +298,42 @@ def get_game_results(game_id: UUID, team_id: UUID) -> List[Player]:
     for row in results:
         player_list.append(game_result_row_mapper(row))
     return player_list
+
+def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug: str = None) -> List[TeamSchedule]:
+    DB = db()
+    base_query = text('''SELECT
+         schedule.id as schedule_id, 
+            games.game_id as game_id,
+            schedule.game_date as game_date,
+            schedule.game_time as game_time, 
+            home_team.id as home_team,
+            away_team.id as away_team, 
+            final_home_score, 
+            final_away_score  
+        FROM mhac.games
+        INNER JOIN mhac.schedule 
+            ON games.game_id = schedule.game_id
+        LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
+            ON games.home_team_id = home_team.id
+        LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
+            ON games.away_team_id = away_team.id''')
+    
+    if not season_team_id: 
+        stmt = text(f''' {base_query}
+            WHERE (home_team.slug = :slug
+                OR away_team.slug = :slug)
+                AND schedule.season_id = :season_id ''')
+        stmt = stmt.bindparams(slug = slug, season_id = season_id)
+    else:
+        stmt = text(f''' {base_query}
+            WHERE (home_team.id = :season_team_id
+                OR away_team.id = :season_team_id)''')
+        stmt = stmt.bindparams(season_team_id = season_team_id)
+
+    results = DB.execute(stmt)
+    DB.close()
+    schedule = []
+    for game in results:
+        schedule.append(team_schedule_row_mapper(game))
+    # print(json.dumps(dict(schedule), indent=4))
+    return schedule
