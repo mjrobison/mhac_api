@@ -516,9 +516,11 @@ class GameResults(Resource):
             data['player_stats'] = stats
 
             data_all.append(data)
+            
         game['player_stats'] = data_all
 
         return jsonify(game), 200
+
     def post(self, game_id):
         data = request.get_json()
         if 'team' in data:

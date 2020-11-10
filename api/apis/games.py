@@ -89,7 +89,7 @@ def add_game(game: Schedule):
     return games.create(game)
 
 @router.post('/addTournamentGame', tags=['games'])
-def add_game(game: Schedule):
+def add_tournament_game(game: Schedule):
     pass
 
 @router.post('/addPeriodScore', tags=['games'])
@@ -104,9 +104,9 @@ def update_period(game_result: GameResult):
 def update_game():
     return games.update()
 
-@router.get('/getGameResults/{game_id}/{team_id}', response_model=List[GameResultsStatsOut], tags=['games'])
-def get_game(game_id: UUID, team_id: UUID):
-    # print(games.get_game_results(game_id=game_id, team_id=team_id))
+@router.get('/getGameResults/{game_id}') #, response_model=List[GameResultsStatsOut], tags=['games'])
+@router.get('/getGameResults/{game_id}/{team_id}') #, response_model=List[GameResultsStatsOut], tags=['games'])
+def get_game(game_id: UUID, team_id: UUID= None):
     return games.get_game_results(game_id=game_id, team_id=team_id)
 
 @router.post('/addGameResults/{game_id}', tags=['games'])
@@ -118,14 +118,14 @@ def update_final_score():
     pass
 
 @router.post('/addFinalScore', tags=['games'])
-def update_final_score(game: GameIn):
+def add_final_score(game: GameIn):
     return games.add_final_score(game)
 
 @router.get('/getSchedule/') #, response_model=List[ScheduleOut], tags=['games'])
-def get_season_schedules():
+def get_schedules():
     return []
 
-@router.get('/getSchedule/{season_id}', response_model=List[ScheduleOut], tags=['games'])
+@router.get('/getSchedule/{season_id}', response_model=List[TeamSchedule], tags=['games'])
 def get_season_schedules(season_id: UUID):
     return []
 
@@ -133,6 +133,6 @@ def get_season_schedules(season_id: UUID):
 def get_schedules(season_id: UUID, slug: str):
     return games.get_team_schedule(season_id=season_id, slug=slug)
 
-@router.get('/getSchedule/{season_team_id}', response_model=List[ScheduleOut], tags=['games'])
+@router.get('/getSchedule/{season_team_id}', response_model=List[TeamSchedule], tags=['games'])
 def get_team_schedule(season_team_id: UUID):
     return games.get_team_schedule(season_team_id=season_team_id)

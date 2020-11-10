@@ -86,11 +86,6 @@ def get_season_teams(slug: str) -> List[SeasonTeam]:
         team_list.append(season_team_row_mapper(row))
     
     return team_list
-    # if row is None:
-    #     raise LookupError(f'Could not find key value with id: {id}')
-    # else:
-    #     key = row_mapper(row)
-    #     return key
 
 def get_season_team(slug: str, seasonid: str) -> SeasonTeam:
     DB = db()
@@ -115,7 +110,6 @@ def get_list() -> List[TeamOut]:
     return team_list
 
 def get_with_uuid(id: UUID) -> SeasonTeam:
-    print('\n\n\n\n\nMade It\n\n\n')
     DB = db()
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id''')
 

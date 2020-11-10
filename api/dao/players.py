@@ -82,7 +82,7 @@ def create_player(player: PlayerCreate):
 
     stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) ''')
     stmt = stmt.bindparams(id = uuid4(), first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.number, position = player.position, person_type =  '1', team_id= player.team_id)
-    result = DB.execute(stmt)
+    DB.execute(stmt)
     DB.commit()
     DB.close()
     # return result

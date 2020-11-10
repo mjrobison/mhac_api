@@ -45,11 +45,11 @@ def getTeam(slug):
 async def get():
     return teams.get_list()
 
-@router.get('/getSeasonTeams/{slug}', response_model=List[SeasonTeam], summary="Get an invididual team", tags=['teams'])
+@router.get('/getSeasonTeams/{slug}', response_model=List[SeasonTeamOut2], summary="Get an invididual team", tags=['teams'])
 def getSeasonTeams(slug):
     return teams.get_season_teams(slug)
 
-@router.get('/getSeasonTeams/{slug}/{seasonid}', response_model=SeasonTeam, summary="Get an invididual team", tags=['teams'])
+@router.get('/getSeasonTeams/{slug}/{seasonid}', response_model=SeasonTeamOut2, summary="Get an invididual team", tags=['teams'])
 def getSeasonTeams(slug, seasonid):
     return teams.get_season_team(slug, seasonid)
 

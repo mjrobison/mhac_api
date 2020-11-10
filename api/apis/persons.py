@@ -17,19 +17,19 @@ class PersonBase(BaseModel):
     
 class PlayerOut(PersonBase):
     id: UUID
-    team_id: UUID 
+    team: UUID
     birth_date: Optional[date]
     height: Optional[str]
     person_type: Optional[int]
-    player_number: Optional[int]
-    position: Optional[int]
+    number: Optional[int]
+    position: Optional[str]
     age: Optional[int]
 
 
 class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
     id: Optional[UUID]
-    team_id: Optional[UUID]
+    season_roster_id: List[UUID]
     first_name: str
     last_name: str
     birth_date: date
@@ -37,6 +37,7 @@ class PlayerIn(PersonBase):
     person_type: str
     number: Optional[int]
     position: Optional[str]
+    
 
     @validator('birth_date')
     def age_between(cls, birthday):
@@ -88,5 +89,5 @@ def add_to_roster():
     pass
 
 @router.get('/getRoster/{season_team}')
-def get_team_roster():
+def get_team_roster(season_team: UUID):
     pass

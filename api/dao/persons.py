@@ -16,17 +16,33 @@ class Person(TypedDict):
     first_name= str 
     last_name= str 
     person_type = int
-    team_id = str
-
-
-class PlayerCreate(Person):
+    team = UUID
+    team_id = UUID
     birth_date: Date 
     height= Optional[str]
     number = int
-    position = str
+    position = Optional[str]
 
 
-def player_row_mapper(row) -> PlayerCreate:
+class PlayerCreate(TypedDict):
+    first_name= str 
+    last_name= str 
+    person_type = int
+    team = UUID
+    season_roster_id = List[UUID]
+    birth_date: Date 
+    height= Optional[str]
+    number = int
+    position = Optional[str]
+
+class PlayerReturn(Person):
+    id: UUID
+    season_roster_id: Optional[List[str]]
+
+
+
+
+def player_row_mapper(row) -> Person:
     PlayerCreate = {
         'id': row['id'],
         'first_name': row['first_name'],
@@ -35,6 +51,7 @@ def player_row_mapper(row) -> PlayerCreate:
         'height': row['height'],
         #TODO: Provide a lookup, 
         'person_type': row['person_type'],
+        'team': row['team_id'],
         'team_id': row['team_id'],
         'player_nnumber': row['number'],
         'position': row['position']
@@ -42,7 +59,7 @@ def player_row_mapper(row) -> PlayerCreate:
     return PlayerCreate
 
 
-def get(id) -> PlayerCreate:
+def get(id) -> Person:
     DB = db()
     stmt = text('''SELECT person.* FROM mhac.person WHERE id = :id ''')
     stmt = stmt.bindparams(id = id)
@@ -54,7 +71,7 @@ def get(id) -> PlayerCreate:
     else:
         return PlayerCreate
 
-def get_list(person_type) -> List[PlayerCreate]:
+def get_list(person_type) -> List[Person]:
     DB = db()
     player_list = []
     stmt = text('''SELECT person.* FROM mhac.person INNER JOIN mhac.person_type ON person.person_type = person_type.id WHERE person_type.type = :person_type ''')
@@ -68,16 +85,26 @@ def get_list(person_type) -> List[PlayerCreate]:
 def get_team_list(slug):
     DB = db()
     player_list = []
-    stmt = text('''SELECT person.* FROM mhac.person 
-    INNER JOIN mhac.person_type 
-    ON person.person_type = person_type.id
-    INNER JOIN mhac.teams 
-        ON person.team_id = teams.id 
-    WHERE person_type.type = 'Player' and slug = :slug''')
+    # stmt = text('''SELECT person.* FROM mhac.person 
+    # INNER JOIN mhac.person_type 
+    # ON person.person_type = person_type.id
+    # INNER JOIN mhac.teams 
+    #     ON person.team_id = teams.id 
+    # WHERE person_type.type = 'Player' and slug = :slug''')
+    stmt = text(''' 
+SELECT person.*, season_team_id, level_name
+FROM mhac.team_rosters
+INNER JOIN mhac.season_teams_with_names as teams
+    ON team_rosters.season_team_id = teams.id 
+INNER JOIN mhac.person
+    ON team_rosters.player_id = person.id
+WHERE teams.archive is null
+and slug = :slug ''')
     stmt = stmt.bindparams(slug = slug)
     result = DB.execute(stmt)
     DB.close()
     for row in result:
+        print(row)
         player_list.append(player_row_mapper(row))
     
     return player_list
@@ -96,21 +123,36 @@ def update(id, Player: PlayerCreate):
     
 def create_player(player: PlayerCreate):
     DB = db()
-    print(player)
+    print(f'\n\n\n{player}\n\n')
+
     message = ''
     try:
-        stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) ''')
-        stmt = stmt.bindparams(id = uuid4(), first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.number, position = player.position, person_type =  '1', team_id= player.team_id)
-        result = DB.execute(stmt)
+        player_id = uuid4()
+        stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) 
+        VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) ''')
+        stmt = stmt.bindparams(id = player_id, first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.number, position = player.position, person_type =  '1', team_id= player.team)
+        DB.execute(stmt)
+
+        for season_team in player.season_roster_id:
+            print(season_team)
+            stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
+            VALUES
+            (:season_team_id, :player_id) ''')
+            stmt = stmt.bindparams(season_team_id = season_team, player_id = player_id)
+
+            DB.execute(stmt)
+
         DB.commit()
         message = 'Successfully added player'
         #TODO: Add to a "roster"
     except Exception as exc:
         message =  str(exc)
         print(str(exc))
+        DB.rollback()
+        raise
     finally:
         DB.close()
-        return message
+
     
     # return result
 

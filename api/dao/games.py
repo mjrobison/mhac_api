@@ -66,6 +66,7 @@ class Player(TypedDict):
     id: UUID
     number: int
     player_stats: PlayerStats
+    team: SeasonTeam
 
 class TeamSchedule(TypedDict):
     schedule_id: int
@@ -76,12 +77,7 @@ class TeamSchedule(TypedDict):
     away_team: SeasonTeam
     final_scores: final_scores
 
-
-# class GameResultsOut(TypedDict):
-#     # final_scores: final_scores
-#     # game_id: UUID
     
-#     stats: List[Player]
 def team_schedule_row_mapper(row) -> TeamSchedule:
     TeamSchedule = {
         'schedule_id': row['schedule_id'],
@@ -99,11 +95,11 @@ def team_schedule_row_mapper(row) -> TeamSchedule:
     return TeamSchedule
 
 def game_result_row_mapper(row) -> Player:
-    Player = {'id': row['id'],
-        'team': team_get(row['season_team_id']),
-        'first_name': row['roster_first_name'],
-        'last_name': row['roster_last_name'],
-        'number': row['roster_number'],
+    Player = {'player_id': row['id'],
+        # 'team': team_get(row['season_team_id']),
+        'player_first_name': row['roster_first_name'],
+        'player_last_name': row['roster_last_name'],
+        'player_number': row['roster_number'],
         'person_type': '1',
         'player_stats': {
             'FGA': row['field_goals_attempted'],
@@ -128,6 +124,13 @@ def game_result_row_mapper(row) -> Player:
         }
     }
     return Player
+
+def final_score_mapper(row):
+    final_score = {
+        'home_score': row['final_home_score'],
+        'away_score': row['final_away_score']
+    }
+    return final_score
             
 def get(game_id) -> Game:
     DB = db()
@@ -240,11 +243,23 @@ def update_period_score(game: GameResult):
     #TODO: Check the score difference and send back a positive or negative
     pass
 
-def get_game_results(game_id: UUID, team_id: UUID) -> List[Player]:
+def get_game_results(game_id: UUID, team_id: UUID):
     #TODO: GameId, TeamID, Final Scores, Player Stats 
 
     print(game_id, team_id)
     DB = db()
+
+    stmt = text(''' 
+        SELECT * FROM mhac.games where game_id = :game_id
+    ''')
+    stmt = stmt.bindparams(game_id = game_id)
+    results = DB.execute(stmt)
+
+    game = {}
+    game['game_id'] = game_id
+    game['team_id'] = team_id
+    game['final_scores'] = final_score_mapper(results.fetchone())
+
     stmt = text('''WITH game_roster AS
     (
         SELECT mhac.team_rosters.season_team_id AS season_team_id
@@ -260,8 +275,7 @@ def get_game_results(game_id: UUID, team_id: UUID) -> List[Player]:
         ON mhac.games.home_team_id = mhac.season_teams_with_names.id 
             OR mhac.games.away_team_id = mhac.season_teams_with_names.id 
     JOIN mhac.person ON mhac.person.id = mhac.team_rosters.player_id
-    WHERE mhac.team_rosters.season_team_id = :team_id 
-        AND mhac.games.game_id = :game_id 
+    WHERE  mhac.games.game_id = :game_id 
     )
     SELECT
         roster.season_team_id,
@@ -288,16 +302,18 @@ def get_game_results(game_id: UUID, team_id: UUID) -> List[Player]:
         ON roster.game_id = mhac.basketball_stats.game_id 
         AND roster.id = mhac.basketball_stats.player_id
     ''')
-    stmt = stmt.bindparams(team_id=team_id, game_id=game_id)
+    stmt = stmt.bindparams(game_id=game_id)
     
-    query = DB.execute(stmt)
+    results = DB.execute(stmt)
 
     DB.close()
-    results = query.fetchall()
+    # results = query.fetchall()
     player_list = []
     for row in results:
         player_list.append(game_result_row_mapper(row))
-    return player_list
+    game['player_stats'] = player_list
+    print(game)
+    return game
 
 def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug: str = None) -> List[TeamSchedule]:
     DB = db()
