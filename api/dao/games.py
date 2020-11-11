@@ -102,10 +102,10 @@ def game_result_row_mapper(row) -> Player:
         'player_number': row['roster_number'],
         'person_type': '1',
         'player_stats': {
-            'FGA': row['field_goals_attempted'],
-            'FGM': row['field_goals_made'],
-            'ThreePA': row['three_pointers_attempted'],
-            'ThreePM': row['three_pointers_made'],
+            '2PA': row['field_goals_attempted'],
+            '2PM': row['field_goals_made'],
+            '3PA': row['three_pointers_attempted'],
+            '3PM': row['three_pointers_made'],
             'FTA': row['free_throws_attempted'],
             'FTM': row['free_throws_made'],
             'total_points': row['total_points'],
@@ -246,9 +246,18 @@ def update_period_score(game: GameResult):
 def get_game_results(game_id: UUID, team_id: UUID):
     #TODO: GameId, TeamID, Final Scores, Player Stats 
 
-    print(game_id, team_id)
     DB = db()
-
+    stmt = text(''' 
+        SELECT period as quarter, home_score, away_score FROM mhac.games_results where game_id = :game_id
+    ''')
+    stmt = stmt.bindparams(game_id = game_id)
+    results = DB.execute(stmt)
+    quarter_scores = {}
+    for (quarter, home_score, away_score) in results:
+        quarter_scores['quarter'] = quarter
+        quarter_scores['home_score'] = home_score
+        quarter_scores['away_score'] = away_score
+    
     stmt = text(''' 
         SELECT * FROM mhac.games where game_id = :game_id
     ''')
@@ -276,6 +285,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
             OR mhac.games.away_team_id = mhac.season_teams_with_names.id 
     JOIN mhac.person ON mhac.person.id = mhac.team_rosters.player_id
     WHERE  mhac.games.game_id = :game_id 
+        AND season_teams_with_names.id = :team_id
     )
     SELECT
         roster.season_team_id,
@@ -302,7 +312,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
         ON roster.game_id = mhac.basketball_stats.game_id 
         AND roster.id = mhac.basketball_stats.player_id
     ''')
-    stmt = stmt.bindparams(game_id=game_id)
+    stmt = stmt.bindparams(game_id=game_id, team_id = team_id)
     
     results = DB.execute(stmt)
 
@@ -345,11 +355,12 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             WHERE (home_team.id = :season_team_id
                 OR away_team.id = :season_team_id)''')
         stmt = stmt.bindparams(season_team_id = season_team_id)
-
+    # print(stmt)
     results = DB.execute(stmt)
     DB.close()
     schedule = []
     for game in results:
+        # print(team_schedule_row_mapper(game))
         schedule.append(team_schedule_row_mapper(game))
     # print(json.dumps(dict(schedule), indent=4))
     return schedule
