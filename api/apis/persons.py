@@ -29,7 +29,7 @@ class PlayerOut(PersonBase):
 class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
     id: Optional[UUID]
-    season_roster_id: List[SeasonTeamOut2]
+    season_roster: List[SeasonTeamOut2]
     first_name: str
     last_name: str
     birth_date: date

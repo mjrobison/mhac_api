@@ -131,7 +131,7 @@ def create_player(player: PlayerCreate):
         stmt = stmt.bindparams(id = player_id, first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.player_number, position = player.position, person_type = '1', team_id= player.team)
         DB.execute(stmt)
 
-        for season_team in player.season_roster_id:
+        for season_team in player.season_roster:
             print(season_team)
             stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
             VALUES
