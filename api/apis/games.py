@@ -72,6 +72,7 @@ class TeamSchedule(BaseModel):
     home_team: SeasonTeam
     away_team: SeasonTeam
     final_scores: Final_Scores
+    missing_stats: Optional[bool]
 
 
 # class players(PersonBase):
@@ -125,9 +126,13 @@ def add_final_score(game: GameIn):
 def get_full_schedules():
     return []
 
-@router.get('/getSchedule/{season_id}', response_model=List[TeamSchedule], tags=['games'])
-def get_season_schedules(season_id: UUID):
-    return []
+# @router.get('/getSchedule/{season_id}', response_model=List[TeamSchedule], tags=['games'])
+# def get_season_schedules(season_id: UUID):
+#     return []
+
+@router.get('/getSchedule/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
+def get_program_schedules(slug: str):
+    return games.get_program_schedule(slug=slug)
 
 @router.get('/getSchedule/{season_id}/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
 def get_schedules(season_id: UUID, slug: str):

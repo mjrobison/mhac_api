@@ -15,6 +15,30 @@ import json
 
 DB = db()
 
+schedule_base_query = text('''SELECT
+         schedule.id as schedule_id, 
+            games.game_id as game_id,
+            schedule.game_date as game_date,
+            schedule.game_time as game_time, 
+            home_team.id as home_team,
+            away_team.id as away_team, 
+            final_home_score, 
+            final_away_score,
+            CASE WHEN(SELECT count(*) FROM mhac.basketball_stats 
+                INNER JOIN mhac.season_teams_with_names 
+                    ON basketball_stats.team_id = season_teams_with_names.id
+                    AND season_teams_with_names.slug = :slug
+                AND basketball_stats.game_id = games.game_id) = 0 THEN true ELSE false 
+            END as missing_stats  
+        FROM mhac.games
+        INNER JOIN mhac.schedule 
+            ON games.game_id = schedule.game_id
+        LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
+            ON games.home_team_id = home_team.id
+        LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
+            ON games.away_team_id = away_team.id
+        ''')
+
 class Game(TypedDict):
     game_id =  Optional[UUID]
     home_team = UUID
@@ -76,6 +100,7 @@ class TeamSchedule(TypedDict):
     home_team: SeasonTeam
     away_team: SeasonTeam
     final_scores: final_scores
+    missing_stats: Optional[bool]
 
     
 def team_schedule_row_mapper(row) -> TeamSchedule:
@@ -89,7 +114,8 @@ def team_schedule_row_mapper(row) -> TeamSchedule:
         'final_scores': {
             'away_score': row['final_away_score'],
             'home_score': row['final_home_score']
-        }
+        },
+        'missing_stats': row['missing_stats']
 
     }
     return TeamSchedule
@@ -178,7 +204,7 @@ def add_period_score(game: GameResult):
         period = 'OT ' + game.period - 4
 
     DB = db()
-    stmt = text('''INSERT INTO mhac.games_results(game_id, period, home_score, away_score, game_order) 
+    stmt = text('''INSERT INTO mhac.game_results(game_id, period, home_score, away_score, game_order) 
                 VALUES 
                 (:game_id, :period, :home_score,:away_score, :game_order) ''')
     stmt = stmt.bindparams(game_id = game.game_id , period=game.period, home_score=game.home_score, away_score=game.away_score, game_order=game.period)
@@ -248,7 +274,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
 
     DB = db()
     stmt = text(''' 
-        SELECT period as quarter, home_score, away_score FROM mhac.games_results where game_id = :game_id
+        SELECT period as quarter, home_score, away_score FROM mhac.game_results where game_id = :game_id
     ''')
     stmt = stmt.bindparams(game_id = game_id)
     results = DB.execute(stmt)
@@ -327,7 +353,8 @@ def get_game_results(game_id: UUID, team_id: UUID):
 
 def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug: str = None) -> List[TeamSchedule]:
     DB = db()
-    base_query = text('''SELECT
+
+    schedule_base_query = text('''SELECT
          schedule.id as schedule_id, 
             games.game_id as game_id,
             schedule.game_date as game_date,
@@ -335,32 +362,50 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             home_team.id as home_team,
             away_team.id as away_team, 
             final_home_score, 
-            final_away_score  
+            final_away_score,
+            '' as missing_stats
         FROM mhac.games
         INNER JOIN mhac.schedule 
             ON games.game_id = schedule.game_id
         LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
             ON games.home_team_id = home_team.id
         LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
-            ON games.away_team_id = away_team.id''')
-    
+            ON games.away_team_id = away_team.id
+        ''')
+
     if not season_team_id: 
-        stmt = text(f''' {base_query}
+        stmt = text(f''' {schedule_base_query}
             WHERE (home_team.slug = :slug
                 OR away_team.slug = :slug)
                 AND schedule.season_id = :season_id ''')
         stmt = stmt.bindparams(slug = slug, season_id = season_id)
     else:
-        stmt = text(f''' {base_query}
+        stmt = text(f''' {schedule_base_query}
             WHERE (home_team.id = :season_team_id
                 OR away_team.id = :season_team_id)''')
         stmt = stmt.bindparams(season_team_id = season_team_id)
-    # print(stmt)
+
     results = DB.execute(stmt)
     DB.close()
     schedule = []
     for game in results:
-        # print(team_schedule_row_mapper(game))
         schedule.append(team_schedule_row_mapper(game))
-    # print(json.dumps(dict(schedule), indent=4))
+    return schedule
+
+
+def get_program_schedule(slug: str = None, year=None) -> List[TeamSchedule]:
+    DB = db()
+    
+    stmt = text(f''' {schedule_base_query}
+            WHERE home_team.archive is null and away_team.archive is null
+             AND (home_team.slug = :slug
+                OR away_team.slug = :slug)
+            ''')
+    stmt = stmt.bindparams(slug = slug)
+    
+    results = DB.execute(stmt)
+    DB.close()
+    schedule = []
+    for game in results:
+        schedule.append(team_schedule_row_mapper(game))
     return schedule
