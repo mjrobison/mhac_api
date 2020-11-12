@@ -5,14 +5,14 @@ from uuid import UUID
 from datetime import datetime, date
 import logging
 from dao import persons as players
-from .teams import TeamBase
+from .teams import TeamBase, SeasonTeamOut2
 
 router = APIRouter()
 
 class PersonBase(BaseModel):
     first_name: str
     last_name: str
-    person_type: str
+    person_type: Optional[int]
     team: Optional[UUID]
     
 class PlayerOut(PersonBase):
@@ -20,22 +20,22 @@ class PlayerOut(PersonBase):
     team: UUID
     birth_date: Optional[date]
     height: Optional[str]
-    person_type: Optional[int]
-    number: Optional[int]
+    player_number: Optional[int]
     position: Optional[str]
     age: Optional[int]
+    season_roster: Optional[List[SeasonTeamOut2]]
 
 
 class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
     id: Optional[UUID]
-    season_roster_id: List[UUID]
+    season_roster_id: List[SeasonTeamOut2]
     first_name: str
     last_name: str
     birth_date: date
     height: Optional[str]
     person_type: str
-    number: Optional[int]
+    player_number: Optional[int]
     position: Optional[str]
     
 
@@ -43,7 +43,7 @@ class PlayerIn(PersonBase):
     def age_between(cls, birthday):
         min_year = datetime.today().year - 13
         max_year = datetime.today().year - 19
-        print(min_year, max_year, birthday <= date(min_year, 9, 1), birthday >= date(max_year, 9,1))
+        # print(min_year, max_year, birthday <= date(min_year, 9, 1), birthday >= date(max_year, 9,1))
         if not (birthday >= date(max_year, 9,1)):
             raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
         return birthday

@@ -8,7 +8,7 @@ from uuid import uuid4, UUID
 from datetime import date, timedelta, datetime
 from database import db
 
-from .teams import get_with_uuid as get_team
+from .teams import get_with_uuid as get_team, SeasonTeam
 
 DB = db()
 
@@ -29,15 +29,15 @@ class PlayerCreate(TypedDict):
     last_name= str 
     person_type = int
     team = UUID
-    season_roster_id = List[UUID]
+    season_roster = List[SeasonTeam]
     birth_date: Date 
     height= Optional[str]
-    number = int
+    player_number = int
     position = Optional[str]
 
 class PlayerReturn(Person):
     id: UUID
-    season_roster_id: Optional[List[str]]
+    season_roster: Optional[List[str]]
 
 
 
@@ -53,7 +53,7 @@ def player_row_mapper(row) -> Person:
         'person_type': row['person_type'],
         'team': row['team_id'],
         'team_id': row['team_id'],
-        'player_nnumber': row['number'],
+        'player_number': row['number'],
         'position': row['position']
     }
     return PlayerCreate
@@ -104,9 +104,8 @@ and slug = :slug ''')
     result = DB.execute(stmt)
     DB.close()
     for row in result:
-        print(row)
         player_list.append(player_row_mapper(row))
-    
+
     return player_list
 
 def update(id, Player: PlayerCreate):
@@ -115,7 +114,7 @@ def update(id, Player: PlayerCreate):
     stmt = text('''UPDATE mhac.person 
     SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, position = :position, height = :height, number = :player_number, person_type = :person_type
     WHERE id = :id''')
-    stmt = stmt.bindparams(first_name = Player.first_name, last_name=Player.last_name, birth_date = Player.birth_date, position=Player.position, height= Player.height, player_number = Player.number, id = Player.id, person_type = '1')
+    stmt = stmt.bindparams(first_name = Player.first_name, last_name=Player.last_name, birth_date = Player.birth_date, position=Player.position, height= Player.height, player_number = Player.player_number, id = Player.id, person_type = '1')
     result = DB.execute(stmt)
     DB.commit()
     DB.close()
@@ -123,14 +122,13 @@ def update(id, Player: PlayerCreate):
     
 def create_player(player: PlayerCreate):
     DB = db()
-    print(f'\n\n\n{player}\n\n')
 
     message = ''
     try:
         player_id = uuid4()
         stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) 
         VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) ''')
-        stmt = stmt.bindparams(id = player_id, first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.number, position = player.position, person_type =  '1', team_id= player.team)
+        stmt = stmt.bindparams(id = player_id, first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.player_number, position = player.position, person_type = '1', team_id= player.team)
         DB.execute(stmt)
 
         for season_team in player.season_roster_id:
@@ -138,7 +136,7 @@ def create_player(player: PlayerCreate):
             stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
             VALUES
             (:season_team_id, :player_id) ''')
-            stmt = stmt.bindparams(season_team_id = season_team, player_id = player_id)
+            stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = player_id)
 
             DB.execute(stmt)
 
