@@ -113,6 +113,7 @@ GROUP BY person.id, person.first_name, person.last_name, person.birth_date, pers
 
 def update(id, Player: PlayerCreate):
     #TODO: Compare incoming with existing and update the new field
+    DB = db()
     print(str(Player))
     stmt = text('''UPDATE mhac.person 
     SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, position = :position, height = :height, number = :player_number, person_type = :person_type
