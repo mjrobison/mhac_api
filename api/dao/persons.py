@@ -9,6 +9,7 @@ from datetime import date, timedelta, datetime
 from database import db
 
 from .teams import get_with_uuid as get_team, SeasonTeam
+from .levels import get_by_id
 
 DB = db()
 
@@ -40,10 +41,8 @@ class PlayerReturn(Person):
     season_roster: Optional[List[str]]
 
 
-
-
-def player_row_mapper(row) -> Person:
-    PlayerCreate = {
+def player_row_mapper(row) -> PlayerReturn:
+    PlayerReturn = {
         'id': row['id'],
         'first_name': row['first_name'],
         'last_name': row['last_name'],
@@ -54,9 +53,10 @@ def player_row_mapper(row) -> Person:
         'team': row['team_id'],
         'team_id': row['team_id'],
         'player_number': row['number'],
-        'position': row['position']
+        'position': row['position'],
+        'season_roster': [get_team(i) for i in row['season_roster'].split(',')]
     }
-    return PlayerCreate
+    return PlayerReturn
 
 
 def get(id) -> Person:
@@ -92,20 +92,23 @@ def get_team_list(slug):
     #     ON person.team_id = teams.id 
     # WHERE person_type.type = 'Player' and slug = :slug''')
     stmt = text(''' 
-SELECT person.*, season_team_id, level_name
+SELECT person.*, string_agg(season_team_id::text, ',') AS season_roster, string_agg(level_id::text,',') 
 FROM mhac.team_rosters
 INNER JOIN mhac.season_teams_with_names as teams
     ON team_rosters.season_team_id = teams.id 
 INNER JOIN mhac.person
     ON team_rosters.player_id = person.id
+INNER JOIN mhac.seasons
+    ON seasons.id = teams.season_id
 WHERE teams.archive is null
-and slug = :slug ''')
+and teams.slug = :slug
+GROUP BY person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.number, person.position''')
     stmt = stmt.bindparams(slug = slug)
     result = DB.execute(stmt)
     DB.close()
     for row in result:
         player_list.append(player_row_mapper(row))
-
+    print(player_list)
     return player_list
 
 def update(id, Player: PlayerCreate):
