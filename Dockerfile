@@ -14,4 +14,4 @@ COPY ./api/fast_api.py .
 
 WORKDIR /app
 ENTRYPOINT ["uvicorn"]
-CMD ["fast_api:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--debug=true"]
+CMD ["fast_api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

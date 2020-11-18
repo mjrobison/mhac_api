@@ -136,7 +136,6 @@ def create_player(player: PlayerCreate):
         DB.execute(stmt)
 
         for season_team in player.season_roster:
-            print(season_team)
             stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
             VALUES
             (:season_team_id, :player_id) ''')
@@ -154,7 +153,4 @@ def create_player(player: PlayerCreate):
         raise
     finally:
         DB.close()
-
-    
-    # return result
 

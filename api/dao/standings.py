@@ -42,7 +42,7 @@ def row_mapper(row) -> Standings:
     return Standings
 
 def get_a_season(id) -> Standings:
-    # stmt = text('''SELECT * FROM mhac.standings ''')
+    DB = db()
     stmt = text(f'''SELECT * FROM mhac.standings
     INNER JOIN mhac.season_teams_with_names
         ON standings.season_id = season_teams_with_names.season_id
@@ -53,13 +53,15 @@ def get_a_season(id) -> Standings:
     ORDER BY win_percentage DESC''')
     stmt = stmt.bindparams(id=id)
     result = DB.execute(stmt)
-    # DB.close()
+    
+    DB.close()
     standings_list = []
     for row in result:
         standings_list.append(row_mapper(row))
     return standings_list
 
 def get(level=None) -> Standings:
+    DB = db()
     where = """AND level_name = '18U Boys' """  
     if level:
         where = """AND level_name = :level """
@@ -73,7 +75,7 @@ def get(level=None) -> Standings:
         {where}
         ORDER BY win_percentage DESC''')
     result = DB.execute(stmt)
-    # DB.close()
+    DB.close()
     standings_list = []
     for row in result:
         standings_list.append(row_mapper(row))
@@ -90,8 +92,12 @@ def add_to_standings(team_id, event, database):
                    SET games_played = games_played + 1, {update}
                    WHERE team_id = :team_id ''')
     
-    stmt = update.binparams(team_id = team_id)
-    database.execute(stmt)
+    stmt = update.bindparams(team_id = team_id)
+    try: 
+        database.execute(stmt)
+    except Exception as exc:
+        raise exc
+
 
 def remove_from_standings(team_id, event, database):
     if event:
@@ -103,8 +109,12 @@ def remove_from_standings(team_id, event, database):
                    SET games_played = games_played - 1, {update}
                    WHERE team_id = :team_id ''')
     
-    stmt = update.binparams(team_id = team_id)
-    database.execute(stmt)
+    stmt = update.bindparams(team_id = team_id)
+    try: 
+        database.execute(stmt)
+    except Exception as exc:
+        raise exc
+  
 
 def add_loss():
     pass

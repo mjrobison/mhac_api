@@ -23,9 +23,8 @@ class Standings(BaseModel):
 
 @router.get('/getStandings', response_model=List[Standings])
 def get_standings():
-    print(standings.get())
     return standings.get()
 
 @router.get('/getStandings/{season_id}', response_model=List[Standings])
-def get_standings(season_id: UUID):
+def get_season_standings(season_id: UUID):
     return standings.get_a_season(season_id)

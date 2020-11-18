@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status, File, UploadFile
 from typing import Optional, List, Dict
 from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
@@ -22,6 +22,9 @@ class GameBase(BaseModel):
 class GameIn(GameBase):
     game_id: UUID
 
+class GameInDel(BaseModel):
+    game_id: UUID
+
 class GameResult(GameIn):
     period: int
     home_score: int
@@ -39,6 +42,7 @@ class Final_Scores(BaseModel):
     home_score: Optional[int]
 
 class Player_Stats(BaseModel):
+    GamePlayed: Optional[bool]
     FGA: int
     FGM: int    
     ThreePA: int
@@ -73,6 +77,13 @@ class TeamSchedule(BaseModel):
     away_team: SeasonTeam
     final_scores: Final_Scores
     missing_stats: Optional[bool]
+
+class GameStats(BaseModel):
+    game_id: UUID
+    team_id: UUID
+    final_scores: Final_Scores
+    player_stats: List[Player_Stats]
+
 
 
 # class players(PersonBase):
@@ -111,8 +122,22 @@ def get_game(game_id: UUID, team_id: UUID= None):
     return games.get_game_results(game_id=game_id, team_id=team_id)
 
 @router.post('/addGameResults/{game_id}', tags=['games'])
-def add_game_results():
-    pass
+def add_game_results(game_id: UUID, game_scores: dict):
+    # print(game_scores)
+    final_scores = game_scores.get('final_scores')
+    if final_scores.get('home_score') or final_scores.get('away_score'):
+        # games.add_final_score({'game_id': game_scores.game_id, 'home_team': .})
+        pass
+    games.add_stats(game_scores)
+    
+
+    
+
+@router.post('/addFileGameStats/{game_id}/{team_id}')
+async def create_upload_file(game_id: UUID, team_id:UUID, file: UploadFile = File(...) ):
+    contents = await file.read()
+    return games.parse_csv(contents, game_id, team_id)
+
 
 @router.put('/updateFinalScore', tags=['games'])
 def update_final_score():
@@ -130,7 +155,7 @@ def get_full_schedules():
 # def get_season_schedules(season_id: UUID):
 #     return []
 
-@router.get('/getSchedule/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
+@router.get('/getProgramSchedule/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
 def get_program_schedules(slug: str):
     return games.get_program_schedule(slug=slug)
 
@@ -141,3 +166,11 @@ def get_schedules(season_id: UUID, slug: str):
 @router.get('/getSchedule/{season_team_id}', response_model=List[TeamSchedule], tags=['games'])
 def get_team_schedule(season_team_id: UUID):
     return games.get_team_schedule(season_team_id=season_team_id)
+
+@router.post('/deleteGame', tags=['games', 'test'])
+def delete_game(game_id: GameInDel):
+    try:
+        games.remove_game(game_id)
+        return {'200': 'success'}
+    except:
+        return {'400': 'There was a problem'}
