@@ -25,10 +25,10 @@ class GameIn(GameBase):
 class GameInDel(BaseModel):
     game_id: UUID
 
-class GameResult(GameIn):
-    period: int
-    home_score: int
-    away_score: int
+class GameResult(BaseModel):
+    period: str
+    home_score: Optional[int]
+    away_score: Optional[int]
     game_order: Optional[int]
 
 class Schedule(GameBase):
@@ -42,7 +42,8 @@ class Final_Scores(BaseModel):
     home_score: Optional[int]
 
 class Player_Stats(BaseModel):
-    GamePlayed: Optional[bool]
+    player_id: UUID
+    game_played: Optional[bool]
     FGA: int
     FGM: int    
     ThreePA: int
@@ -81,16 +82,12 @@ class TeamSchedule(BaseModel):
 class GameStats(BaseModel):
     game_id: UUID
     team_id: UUID
+    game_scores: Optional[List[GameResult]]
     final_scores: Final_Scores
     player_stats: List[Player_Stats]
 
 
-
-# class players(PersonBase):
-#     player_stats: List[Player_Stats]
-
 class GameResultsStatsOut(PlayerOut):
-    # pass
     player_stats: Player_Stats
 
 @router.post('/addGame', tags=['games'])
@@ -122,16 +119,13 @@ def get_game(game_id: UUID, team_id: UUID= None):
     return games.get_game_results(game_id=game_id, team_id=team_id)
 
 @router.post('/addGameResults/{game_id}', tags=['games'])
-def add_game_results(game_id: UUID, game_scores: dict):
+def add_game_results(game_id: UUID, game_scores: GameStats):
     # print(game_scores)
-    final_scores = game_scores.get('final_scores')
-    if final_scores.get('home_score') or final_scores.get('away_score'):
-        # games.add_final_score({'game_id': game_scores.game_id, 'home_team': .})
-        pass
-    games.add_stats(game_scores)
-    
+    # final_scores 
 
-    
+    #     pass
+    # games.add_stats(game_scores)
+    games.add_games_and_stats(game_scores)
 
 @router.post('/addFileGameStats/{game_id}/{team_id}')
 async def create_upload_file(game_id: UUID, team_id:UUID, file: UploadFile = File(...) ):

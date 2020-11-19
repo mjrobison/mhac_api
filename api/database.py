@@ -11,4 +11,4 @@ DATEBASE_URL = config.DB_URL
 engine = create_engine(
     DATEBASE_URL
 )
-db = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+db = sessionmaker(autocommit=False, autoflush=True, bind=engine)

@@ -12,8 +12,6 @@ from .seasons import Season, get as season_get, get_list
 from .teams import Team, get_with_uuid as team_get
 from .utils import calcGamesBehind
 
-DB = db()
-
 #TODO: Matt Implement sorting/games behind
 
 class Standings(TypedDict):
@@ -83,17 +81,24 @@ def get(level=None) -> Standings:
 
 
 def add_to_standings(team_id, event, database):
-    if event == 'win':
+    if event:
         update = text('''wins = wins + 1 ''')
     else:
         update = text('''losses = losses + 1 ''')
     
-    update = text('''UPDATE mhac.standings
-                   SET games_played = games_played + 1, {update}
-                   WHERE team_id = :team_id ''')
-    
-    stmt = update.bindparams(team_id = team_id)
     try: 
+        update = text(f'''UPDATE mhac.standings
+                    SET games_played = games_played + 1, {update}
+                    WHERE team_id = :team_id ''')
+        
+        stmt = update.bindparams(team_id = team_id)
+        database.execute(stmt)
+
+        update = text(f'''UPDATE mhac.standings
+            SET win_percentage = case when wins = 0 THEN 0.00 else wins/games_played::numeric(5,4) end
+            WHERE team_id = :team_id ''')
+        
+        stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
     except Exception as exc:
         raise exc
@@ -105,12 +110,19 @@ def remove_from_standings(team_id, event, database):
     else:
         update = text('''losses = losses - 1 ''')
     
-    update = text('''UPDATE mhac.standings
-                   SET games_played = games_played - 1, {update}
-                   WHERE team_id = :team_id ''')
-    
-    stmt = update.bindparams(team_id = team_id)
     try: 
+        update = text(f'''UPDATE mhac.standings
+                    SET games_played = games_played - 1, {update}
+                    WHERE team_id = :team_id ''')
+        
+        stmt = update.bindparams(team_id = team_id)
+        database.execute(stmt)
+
+        update = text(f'''UPDATE mhac.standings
+        SET win_percentage = case when wins = 0 THEN 0.00 else wins/games_played::numeric(5,4) end
+        WHERE team_id = :team_id ''')
+    
+        stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
     except Exception as exc:
         raise exc
@@ -118,3 +130,4 @@ def remove_from_standings(team_id, event, database):
 
 def add_loss():
     pass
+
