@@ -19,7 +19,7 @@ VALUES
 (uuid_generate_v4(), (SELECT id FROM mhac.seasons where year = '2020' and level_id = 1), (SELECT id FROM mhac.teams where slug = 'tennessee_heat')),
 (uuid_generate_v4(), (SELECT id FROM mhac.seasons where year = '2020' and level_id = 5), (SELECT id FROM mhac.teams where slug = 'tennessee_heat')),
 (uuid_generate_v4(), (SELECT id FROM mhac.seasons where year = '2020' and level_id = 1), (SELECT id FROM mhac.teams where slug = 'western_kentucky')),
-(uuid_generate_v4(), (SELECT id FROM mhac.seasons where year = '2020' and level_id = 5), (SELECT id FROM mhac.teams where slug = 'western_kentucky'));
+(uuid_generate_v4(), (SELECT id FROM mhac.seasons where year = '2020' and level_id = 5), (SELECT id FROM mhac.teams where slug = 'western_kentucky')),
 (uuid_generate_v4(), (SELECT id FROM mhac.seasons where year = '2020' and level_id = 3), (SELECT id FROM mhac.teams where slug = 'western_kentucky')),
 (uuid_generate_v4(), (SELECT id FROM mhac.seasons where year = '2020' and level_id = 3), (SELECT id FROM mhac.teams where slug = 'tennessee_heat')),
 (uuid_generate_v4(), (SELECT id FROM mhac.seasons where year = '2020' and level_id = 1), (SELECT id FROM mhac.teams where slug = 'covenant_christian')),
