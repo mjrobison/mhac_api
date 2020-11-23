@@ -143,7 +143,7 @@ def add_final_score(game: GameIn):
 
 @router.get('/getSchedule/') #, response_model=List[ScheduleOut], tags=['games'])
 def get_full_schedules():
-    return []
+    return games.get_team_schedule()
 
 # @router.get('/getSchedule/{season_id}', response_model=List[TeamSchedule], tags=['games'])
 # def get_season_schedules(season_id: UUID):

@@ -325,14 +325,14 @@ def get_game_results(game_id: UUID, team_id: UUID):
     game_scores = []
     for (quarter, home_score, away_score, game_order) in results:
         quarter_scores = {}
-        print(quarter, home_score, away_score, game_order)
+
         quarter_scores['game_id'] = game_id
         quarter_scores['period'] = quarter
         quarter_scores['home_score'] = home_score
         quarter_scores['away_score'] = away_score
         quarter_scores['game_order'] = game_order
         game_scores.append(quarter_scores)
-    print(game_scores)
+
     stmt = text(''' 
         SELECT * FROM mhac.games where game_id = :game_id
     ''')
@@ -407,7 +407,7 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
     missing_subquery = ''
     wheres = ''
 
-    if not season_team_id: 
+    if season_id and slug: 
         missing_subquery = text ('''SELECT count(*) FROM mhac.basketball_stats 
                 INNER JOIN mhac.season_teams_with_names 
                     ON basketball_stats.team_id = season_teams_with_names.id
@@ -442,7 +442,7 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             ''')
         stmt = stmt.bindparams(slug = slug, season_id = season_id)
     
-    else:
+    elif season_team_id :
         missing_subquery = text ('''SELECT count(*) FROM mhac.basketball_stats 
                 INNER JOIN mhac.season_teams_with_names 
                     ON basketball_stats.team_id = season_teams_with_names.id
@@ -474,12 +474,44 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             {wheres}
             ''')
         stmt = stmt.bindparams(season_team_id = season_team_id)
+    
+    else :
+        missing_subquery = '0' 
+        #  text('''SELECT count(*), season_team_id FROM mhac.basketball_stats 
+        #         INNER JOIN mhac.season_teams_with_names 
+        #             ON basketball_stats.team_id = season_teams_with_names.id
+        #             AND basketball_stats.game_id = games.game_id
+        #         ''')
+        
+        stmt = text(f'''SELECT
+            schedule.id as schedule_id, 
+                games.game_id as game_id,
+                schedule.game_date as game_date,
+                schedule.game_time as game_time, 
+                home_team.id as home_team,
+                away_team.id as away_team, 
+                final_home_score, 
+                final_away_score,
+                CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats
+            FROM mhac.games
+            INNER JOIN mhac.schedule 
+                ON games.game_id = schedule.game_id
+            LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
+                ON games.home_team_id = home_team.id
+            LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
+                ON games.away_team_id = away_team.id
+            WHERE (home_team.archive is null and away_team.archive is null)
+
+            ''')
+        # stmt = stmt.bindparams()
+    # print(stmt)
 
     results = DB.execute(stmt)
     DB.close()
     schedule = []
     for game in results:
         schedule.append(team_schedule_row_mapper(game))
+    # print(schedule)
     return schedule
 
 def get_program_schedule(slug: str = None, year=None) -> List[TeamSchedule]:
@@ -585,17 +617,14 @@ def parse_csv(fileContents, game_id, team_id):
                                                     )
                 DB.execute(insert_stmt)
             else:
-                print(line['Jersey'])
                 players_not_in_roster.append(line['Jersey'])
             
         index += 1 
     
     if len(players_not_in_roster)>0:
-        print(players_not_in_roster)
         DB.rollback()
         return {'missing_players': players_not_in_roster}
     else:
-        print("here")
         DB.commit()
     return {200: "success"}
 
@@ -634,7 +663,6 @@ def add_stats(player_stats, game_id, team_id, connection=None):
 
     try:
         for line in player_stats:
-            print(line)
             # if line.GamePlayed:
             stmt = text("""SELECT * FROM mhac.team_rosters
                     INNER JOIN mhac.person  
@@ -694,7 +722,6 @@ def add_games_and_stats(game: GameStats):
         print(str(exc))
     finally:
         DB.close()
-
 
 def stats_by_season_and_team(season_id, team_id):
     DB = db()

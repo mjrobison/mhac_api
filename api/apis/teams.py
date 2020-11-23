@@ -45,8 +45,9 @@ def getTeam(slug):
 async def get():
     return teams.get_list()
 
+@router.get('/getSeasonTeams/', response_model=List[SeasonTeamOut2], summary="Get all teams for the current season", tags=['teams'])
 @router.get('/getSeasonTeams/{slug}', response_model=List[SeasonTeamOut2], summary="Get an invididual team", tags=['teams'])
-def getSeasonTeams(slug):
+def getSeasonTeams(slug: str=None):
     return teams.get_season_teams(slug)
 
 @router.get('/getSeasonTeams/{slug}/{seasonid}', response_model=SeasonTeamOut2, summary="Get an invididual team", tags=['teams'])
@@ -61,6 +62,6 @@ async def add_to_season(season_team: SeasonTeam):
 async def create_team(team: TeamBase):
     return teams.create(team)
 
-@router.get('/test', response_model=SeasonTeamOut2, tags=['test'])
-def test_get_uuid_call():
-    return teams.get_with_uuid('896bf172-8deb-41d2-89b5-953f1ca197ef')
+# @router.get('/test', response_model=SeasonTeamOut2, tags=['test'])
+# def test_get_uuid_call():
+#     return teams.get_with_uuid('896bf172-8deb-41d2-89b5-953f1ca197ef')

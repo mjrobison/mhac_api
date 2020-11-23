@@ -69,10 +69,8 @@ def stats_by_season_and_team(season_id, team_id):
             
     """)
     group_by = """GROUP BY st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_name, number"""
-    print(season_id)
-    print(team_id)
+
     if season_id and team_id:
-        print("Here")
         where = ''' AND st.season_id = :season_id AND st.id = :team_id '''
         stmt = text(f'''{base_query} 
                        {where} 
@@ -80,7 +78,6 @@ def stats_by_season_and_team(season_id, team_id):
         stmt = stmt.bindparams(season_id=season_id, team_id = team_id)               
         
     elif season_id:
-        print("HEre")
         where = '''AND st.season_id = :season_id '''
         stmt = text(f'''{base_query} 
                        {where} 
@@ -88,7 +85,6 @@ def stats_by_season_and_team(season_id, team_id):
         stmt = stmt.bindparams(season_id=season_id)               
 
     elif team_id:
-        print("Last Here")
         where = ''' AND st.id = :team_id'''
         stmt = text(f'''{base_query} 
                        {where} 

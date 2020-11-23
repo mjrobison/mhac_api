@@ -74,11 +74,20 @@ def get(slug: str) -> List[Team]:
     
     return team_list
 
-def get_season_teams(slug: str) -> List[SeasonTeam]:
+def get_season_teams(slug: str= None) -> List[SeasonTeam]:
+    team_name = ''
+    if slug:
+        team_name = text("""AND slug = :slug """)
+    
     DB = db()
     team_list = []
-    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
-    stmt = stmt.bindparams(slug = slug)
+    stmt = text(f'''SELECT * FROM mhac.season_teams_with_names 
+        WHERE archive is null
+        {team_name}''')
+    print(stmt)
+    if slug:
+        stmt = stmt.bindparams(slug = slug)
+
     result = DB.execute(stmt)
         # result = DB.execute(stmt)
     DB.close()
