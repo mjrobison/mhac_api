@@ -298,7 +298,7 @@ def update_period_score(game: GameResult, game_id, database=None):
 
 def get_game_results(game_id: UUID, team_id: UUID):
     #TODO: GameId, TeamID, Final Scores, Player Stats 
-
+    print(game_id, team_id)
     DB = db()
     stmt = text(''' 
         SELECT COALESCE(expected_periods.period, game_results.period) as quarter, home_score, away_score, game_order 
@@ -341,11 +341,14 @@ def get_game_results(game_id: UUID, team_id: UUID):
 
     game = {}
     game['game_id'] = game_id
-    game['team_id'] = team_id
     game['final_scores'] = final_score_mapper(results.fetchone())
     game['game_scores'] = game_scores
 
-    stmt = text('''WITH game_roster AS
+    team_filter = ''
+    if team_id:
+        team_filter = 'AND season_teams_with_names.id = :team_id'
+    game['team_id'] = team_id
+    stmt = text(f'''WITH game_roster AS
     (
         SELECT mhac.team_rosters.season_team_id AS season_team_id
         , mhac.person.id AS id
@@ -361,7 +364,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
             OR mhac.games.away_team_id = mhac.season_teams_with_names.id 
     JOIN mhac.person ON mhac.person.id = mhac.team_rosters.player_id
     WHERE  mhac.games.game_id = :game_id 
-        AND season_teams_with_names.id = :team_id
+        {team_filter}
     )
     SELECT
         roster.season_team_id,
@@ -389,7 +392,10 @@ def get_game_results(game_id: UUID, team_id: UUID):
         ON roster.game_id = mhac.basketball_stats.game_id 
         AND roster.id = mhac.basketball_stats.player_id
     ''')
-    stmt = stmt.bindparams(game_id=game_id, team_id=team_id)
+    if team_id:
+        stmt = stmt.bindparams(game_id=game_id, team_id=team_id)
+    else:
+        stmt = stmt.bindparams(game_id=game_id)
     
     results = DB.execute(stmt)
 
@@ -399,7 +405,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
     for row in results:
         player_list.append(game_result_row_mapper(row))
     game['player_stats'] = player_list
-
+    print(game)
     return game
 
 def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug: str = None) -> List[TeamSchedule]:
@@ -530,6 +536,54 @@ def get_program_schedule(slug: str = None, year=None) -> List[TeamSchedule]:
     for game in results:
         schedule.append(team_schedule_row_mapper(game))
     return schedule
+
+def get_season_schedule(season_id):
+    DB = db()
+    
+    stmt = text(f''' {schedule_base_query}
+            WHERE season_id = :season_id
+            ''')
+
+    missing_subquery = text ('''SELECT count(*) FROM mhac.basketball_stats 
+            INNER JOIN mhac.season_teams_with_names 
+                ON basketball_stats.team_id = season_teams_with_names.id
+                AND basketball_stats.game_id = games.game_id
+                and season_teams_with_names.season_id = :season_id
+            ''')
+            
+    wheres = text(''' 
+        WHERE schedule.season_id = :season_id ''')
+
+    stmt = text(f'''SELECT
+        schedule.id as schedule_id, 
+            games.game_id as game_id,
+            schedule.game_date as game_date,
+            schedule.game_time as game_time, 
+            home_team.id as home_team,
+            away_team.id as away_team, 
+            final_home_score, 
+            final_away_score,
+            CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats
+        FROM mhac.games
+        INNER JOIN mhac.schedule 
+            ON games.game_id = schedule.game_id
+        LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
+            ON games.home_team_id = home_team.id
+        LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
+            ON games.away_team_id = away_team.id
+        {wheres}
+        ''')
+
+    # stmt = stmt.bindparams(slug = slug, season_id = season_id)
+    stmt = stmt.bindparams(season_id = season_id)
+    
+    results = DB.execute(stmt)
+    DB.close()
+    schedule = []
+    for game in results:
+        schedule.append(team_schedule_row_mapper(game))
+    return schedule
+
 
 def remove_game(game: GameIdDel):
     try:

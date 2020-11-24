@@ -120,11 +120,7 @@ def get_game(game_id: UUID, team_id: UUID= None):
 
 @router.post('/addGameResults/{game_id}', tags=['games'])
 def add_game_results(game_id: UUID, game_scores: GameStats):
-    # print(game_scores)
-    # final_scores 
 
-    #     pass
-    # games.add_stats(game_scores)
     games.add_games_and_stats(game_scores)
 
 @router.post('/addFileGameStats/{game_id}/{team_id}')
@@ -145,16 +141,17 @@ def add_final_score(game: GameIn):
 def get_full_schedules():
     return games.get_team_schedule()
 
-# @router.get('/getSchedule/{season_id}', response_model=List[TeamSchedule], tags=['games'])
-# def get_season_schedules(season_id: UUID):
-#     return []
+@router.get('/getSchedule/{season_id}', response_model=List[TeamSchedule], tags=['games'])
+def get_season_schedules(season_id: UUID):
+    return games.get_season_schedule(season_id)
 
 @router.get('/getProgramSchedule/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
 def get_program_schedules(slug: str):
     return games.get_program_schedule(slug=slug)
 
+
 @router.get('/getSchedule/{season_id}/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
-def get_schedules(season_id: UUID, slug: str):
+def get_schedules(season_id: UUID, slug: str= None):
     return games.get_team_schedule(season_id=season_id, slug=slug)
 
 @router.get('/getSchedule/{season_team_id}', response_model=List[TeamSchedule], tags=['games'])
