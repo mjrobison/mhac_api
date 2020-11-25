@@ -1,3 +1,4 @@
+from fastapi import Depends
 from sqlalchemy import Column, String
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
 
@@ -6,7 +7,7 @@ from typing import TypedDict, List, Dict, Any
 from uuid import uuid4
 from sqlalchemy.dialects.postgresql import JSON, UUID
 
-from database import db
+from database import db, get_db
 
 DB = db()
 
@@ -61,8 +62,8 @@ def season_team_row_mapper(row) -> SeasonTeam:
     return SeasonTeam
 
 
-def get(slug: str) -> List[Team]:
-    DB = db()
+def get(slug: str, DB = get_db()) -> List[Team]:
+    
     team_list = []
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
     stmt = stmt.bindparams(slug = slug)
@@ -84,7 +85,7 @@ def get_season_teams(slug: str= None) -> List[SeasonTeam]:
     stmt = text(f'''SELECT * FROM mhac.season_teams_with_names 
         WHERE archive is null
         {team_name}''')
-    print(stmt)
+    # print(stmt)
     if slug:
         stmt = stmt.bindparams(slug = slug)
 

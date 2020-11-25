@@ -51,7 +51,7 @@ class PlayerIn(PersonBase):
 #TODO: Move to Rosters
 @router.get('/getPlayers/{slug}', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
-    print(players.get_team_list(slug))
+    # print(players.get_team_list(slug))
     return players.get_team_list(slug)
 
 @router.get('/getPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
@@ -77,8 +77,8 @@ def add_player(player: PlayerIn):
 @router.put('/updatePlayer/{id}', summary="Update a player", tags=['players', 'rosters'])
 def update_player(id, player: PlayerIn):
     try:
-        print(player)
-        players.update(id, player)
+        
+        print(players.update(id, player))
     except Exception as exc:
         print(str(exc))
         return {400: "Error Message"}
