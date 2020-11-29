@@ -113,16 +113,37 @@ GROUP BY person.id, person.first_name, person.last_name, person.birth_date, pers
 
 def update(id, Player: PlayerCreate):
     #TODO: Compare incoming with existing and update the new field
+    #TODO: Remove a seasonTeam
     DB = db()
+    
+    for season_team in Player.season_roster:
+        stmt = text('''SELECT * FROM mhac.team_rosters 
+            WHERE season_team_id = :team_id AND player_id = :player_id ''')
+        stmt = stmt.bindparams(team_id = season_team.team_id, player_id = id)
 
+        result = DB.execute(stmt)
+        if result.rowcount > 0 :
+            continue
+        stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
+            VALUES
+            (:season_team_id, :player_id) ''')
+        
+        stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = id)
+        DB.execute(stmt)
+        
     stmt = text('''UPDATE mhac.person 
     SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, position = :position, height = :height, number = :player_number, person_type = :person_type
     WHERE id = :id''')
     stmt = stmt.bindparams(first_name = Player.first_name, last_name=Player.last_name, birth_date = Player.birth_date, position=Player.position, height= Player.height, player_number = Player.player_number, id = Player.id, person_type = '1')
-    result = DB.execute(stmt)
-    DB.commit()
-    DB.close()
-    return result
+    print(stmt)
+    try:
+        DB.execute(stmt)
+        DB.commit()
+    except Exception as exc:
+        print(str(exc))
+    finally:
+        DB.close()
+    
     
 def create_player(player: PlayerCreate):
     DB = db()
