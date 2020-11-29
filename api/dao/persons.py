@@ -150,11 +150,19 @@ def create_player(player: PlayerCreate):
 
     message = ''
     try:
-        player_id = uuid4()
-        stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) 
-        VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) ''')
-        stmt = stmt.bindparams(id = player_id, first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.player_number, position = player.position, person_type = '1', team_id= player.team)
-        DB.execute(stmt)
+        player_check_query = text('''SELECT * FROM mhac.person WHERE first_name = :first_name AND last_name = :last_name AND birth_date = :birth_date ''')
+        player_check_query = player_check_query.bindparams(first_name = player.first_name, last_name = player.last_name, birth_date = player.birth_date)
+        results = DB.execute(player_check_query)
+        if results.rowcount < 1:
+            player_id = uuid4()
+            stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) 
+            VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) ''')
+            stmt = stmt.bindparams(id = player_id, first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.player_number, position = player.position, person_type = '1', team_id= player.team)
+            DB.execute(stmt)
+        else:
+            player = results.fetchone() 
+            player_id = player.id
+            print(player_id)
 
         for season_team in player.season_roster:
             stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
