@@ -92,7 +92,7 @@ def get_team_list(slug):
     #     ON person.team_id = teams.id 
     # WHERE person_type.type = 'Player' and slug = :slug''')
     stmt = text(''' 
-SELECT person.*, string_agg(season_team_id::text, ',') AS season_roster, string_agg(level_id::text,',') 
+SELECT person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number as number, string_agg(season_team_id::text, ',') AS season_roster, string_agg(level_id::text,',') 
 FROM mhac.team_rosters
 INNER JOIN mhac.season_teams_with_names as teams
     ON team_rosters.season_team_id = teams.id 
@@ -102,7 +102,7 @@ INNER JOIN mhac.seasons
     ON seasons.id = teams.season_id
 WHERE teams.archive is null
 and teams.slug = :slug
-GROUP BY person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.number, person.position''')
+GROUP BY person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number ''')
     stmt = stmt.bindparams(slug = slug)
     result = DB.execute(stmt)
     DB.close()
@@ -117,18 +117,28 @@ def update(id, Player: PlayerCreate):
     DB = db()
     
     for season_team in Player.season_roster:
-        stmt = text('''SELECT * FROM mhac.team_rosters 
-            WHERE season_team_id = :team_id AND player_id = :player_id ''')
-        stmt = stmt.bindparams(team_id = season_team.team_id, player_id = id)
+            #   for season_team in player.season_roster:
+        stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
+        VALUES
+        (:season_team_id, :player_id, :number) 
+        ON CONFLICT ON CONSTRAINT ux_season_team_player_id 
+        DO UPDATE
+        SET jersey_number = :number''')
+        # stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = player_id, number = player.player_number)
 
-        result = DB.execute(stmt)
-        if result.rowcount > 0 :
-            continue
-        stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
-            VALUES
-            (:season_team_id, :player_id) ''')
+        # DB.execute(stmt)
+        # stmt = text('''SELECT * FROM mhac.team_rosters 
+        #     WHERE season_team_id = :team_id AND player_id = :player_id ''')
+        # stmt = stmt.bindparams(team_id = season_team.team_id, player_id = id)
+
+        # result = DB.execute(stmt)
+        # if result.rowcount > 0 :
+        #     continue
+        # stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
+        #     VALUES
+        #     (:season_team_id, :player_id) ''')
         
-        stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = id)
+        stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = id, number = Player.player_number)
         DB.execute(stmt)
         
     stmt = text('''UPDATE mhac.person 
@@ -168,10 +178,13 @@ def create_player(player: PlayerCreate):
             player_id = result[0]
 
         for season_team in player.season_roster:
-            stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
+            stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
             VALUES
-            (:season_team_id, :player_id) ''')
-            stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = player_id)
+            (:season_team_id, :player_id, :number) 
+            ON CONFLICT ON CONSTRAINT ux_season_team_player_id 
+            DO UPDATE
+            SET jersey_number = :number''')
+            stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = player_id, number = player.player_number)
 
             DB.execute(stmt)
 
