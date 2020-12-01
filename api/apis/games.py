@@ -92,7 +92,7 @@ class GameResultsStatsOut(PlayerOut):
 
 @router.post('/addGame', tags=['games'])
 def add_game(game: Schedule):
-    print(game)
+    # print(game)
     if game.neutral_site == '':
         game.neutral_site = False
     return games.create(game)

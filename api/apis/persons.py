@@ -65,12 +65,8 @@ def get_all_players():
 
 @router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
-    # try:
-        #TODO: Maybe some logic here?
+    # print(player)
     players.create_player(player)
-    # except Exception as exc:
-    #     print(str(exc))
-    #     raise HTTPException(status_code=404, detail=exc)
     return {200: "Success"}
 
 @router.post('/updatePlayer/{id}', summary="Update a player", tags=['players', 'rosters'])

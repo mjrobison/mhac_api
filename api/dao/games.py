@@ -14,6 +14,8 @@ from .teams import get_with_uuid as team_get, SeasonTeam
 
 import json
 
+from sqlalchemy.dialects import postgresql
+
 DB = db()
 
 schedule_base_query = text('''SELECT
@@ -396,7 +398,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
         stmt = stmt.bindparams(game_id=game_id, team_id=team_id)
     else:
         stmt = stmt.bindparams(game_id=game_id)
-    
+    # print(stmt)
     results = DB.execute(stmt)
 
     DB.close()
@@ -405,7 +407,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
     for row in results:
         player_list.append(game_result_row_mapper(row))
     game['player_stats'] = player_list
-    print(game)
+    
     return game
 
 def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug: str = None) -> List[TeamSchedule]:
@@ -584,7 +586,6 @@ def get_season_schedule(season_id):
         schedule.append(team_schedule_row_mapper(game))
     return schedule
 
-
 def remove_game(game: GameIdDel):
     try:
         DB = db()
@@ -632,6 +633,7 @@ def parse_csv(fileContents, game_id, team_id):
     team_sum = 0
     records = fileContents.decode('utf-8').split('\r\n')
     for record in records:
+        # print(record)
         if len(record) < 2:
             continue
         line = dict(zip(headers, record.split('|')))
@@ -647,7 +649,7 @@ def parse_csv(fileContents, game_id, team_id):
             stmt = stmt.bindparams(team_id=team_id, jersey=line['Jersey'])
             results = DB.execute(stmt)
             player = results.fetchone()
-            # print(player)
+            
             if player:
                 
                 insert_stmt = insert_stmt.bindparams(game_id=game_id, 
@@ -669,6 +671,7 @@ def parse_csv(fileContents, game_id, team_id):
                                                     turnovers=line['Turnovers'],
                                                     roster_id = player['roster_id']
                                                     )
+                # print("insert stmt", insert_stmt.compile(dialect=postgresql.dialect()))
                 DB.execute(insert_stmt)
             else:
                 players_not_in_roster.append(line['Jersey'])
@@ -677,13 +680,15 @@ def parse_csv(fileContents, game_id, team_id):
     
     if len(players_not_in_roster)>0:
         DB.rollback()
+        # print( {'missing_players': players_not_in_roster})
+        
         return {'missing_players': players_not_in_roster}
     else:
         DB.commit()
     return {200: "success"}
 
 def add_stats(player_stats, game_id, team_id, connection=None): 
-   
+    
     if not connection:
         DB = db()
     else: 
@@ -717,7 +722,7 @@ def add_stats(player_stats, game_id, team_id, connection=None):
 
     try:
         for line in player_stats:
-            # if line.GamePlayed:
+            # print(line)
             stmt = text("""SELECT * FROM mhac.team_rosters
                     INNER JOIN mhac.person  
                         on team_rosters.player_id = person.id
@@ -833,7 +838,7 @@ def stats_by_season_and_team(season_id, team_id):
     stats = {}
     stats['season_id'] = season_id
     stats['team_id'] = team_id
-
+    data_all = []
     for r in results:
         field_goal_percentage = 0.0
         if r.field_goals_attempted != 0:
