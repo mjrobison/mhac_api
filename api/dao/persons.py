@@ -157,16 +157,15 @@ def create_player(player: PlayerCreate):
         player_id = uuid4()
         stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) 
         VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) 
-        ON CONFLICT ON CONSTRAINT (ux_persons)
+        ON CONFLICT ON CONSTRAINT ux_persons
         DO
         UPDATE 
-        SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, height=:height, number = :number, position=:position''')
+        SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, height=:height, number = :number, position=:position
+        RETURNING id''')
         stmt = stmt.bindparams(id = player_id, first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.player_number, position = player.position, person_type = '1', team_id= player.team)
-        DB.execute(stmt)
-        # else:
-        #     player = results.fetchone() 
-        #     player_id = player.id
-        #     print(player_id)
+        result = DB.execute(stmt).fetchall()
+        if result:
+            player_id = result[0]
 
         for season_team in player.season_roster:
             stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id)
