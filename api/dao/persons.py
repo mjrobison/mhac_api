@@ -163,7 +163,7 @@ def create_player(player: PlayerCreate):
         SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, height=:height, number = :number, position=:position
         RETURNING id''')
         stmt = stmt.bindparams(id = player_id, first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.player_number, position = player.position, person_type = '1', team_id= player.team)
-        result = DB.execute(stmt).fetchall()
+        result = DB.execute(stmt).fetchone()
         if result:
             player_id = result[0]
 
