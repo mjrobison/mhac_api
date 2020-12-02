@@ -120,8 +120,7 @@ def get_game(game_id: UUID, team_id: UUID= None):
 
 @router.post('/addGameResults/{game_id}', tags=['games'])
 def add_game_results(game_id: UUID, game_scores: GameStats):
-
-    games.add_games_and_stats(game_scores)
+    return games.add_games_and_stats(game_scores)
 
 @router.post('/addFileGameStats/{game_id}/{team_id}')
 async def create_upload_file(game_id: UUID, team_id:UUID, file: UploadFile = File(...) ):
