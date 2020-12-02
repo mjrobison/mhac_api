@@ -104,8 +104,14 @@ WHERE teams.archive is null
 and teams.slug = :slug
 GROUP BY person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number ''')
     stmt = stmt.bindparams(slug = slug)
-    result = DB.execute(stmt)
-    DB.close()
+    try:
+        result = DB.execute(stmt)
+    except Exception as exc:
+        print(str(exc))
+        raise
+    finally:
+        DB.close()
+    
     for row in result:
         player_list.append(player_row_mapper(row))
 
@@ -145,7 +151,7 @@ def update(id, Player: PlayerCreate):
     SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, position = :position, height = :height, number = :player_number, person_type = :person_type
     WHERE id = :id''')
     stmt = stmt.bindparams(first_name = Player.first_name, last_name=Player.last_name, birth_date = Player.birth_date, position=Player.position, height= Player.height, player_number = Player.player_number, id = Player.id, person_type = '1')
-    print(stmt)
+
     try:
         DB.execute(stmt)
         DB.commit()
