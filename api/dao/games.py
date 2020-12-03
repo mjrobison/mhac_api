@@ -223,11 +223,12 @@ def add_period_score(game: GameResult, game_id: UUID, database=None):
         period = 'OT-' + str(num_period - 4)
 
     for score in game:
+        
         i = 1
         stmt = text('''INSERT INTO mhac.game_results(game_id, period, home_score, away_score, game_order) 
                     VALUES 
                     (:game_id, :period, :home_score,:away_score, :game_order) ''')
-        stmt = stmt.bindparams(game_id = game_id , period=score.period, home_score=score.home_score, away_score=score.away_score, game_order=i)
+        stmt = stmt.bindparams(game_id=game_id , period=score.period, home_score=score.home_score, away_score=score.away_score, game_order=i)
         DB.execute(stmt)
         i += 1 
     if database is None:
@@ -246,13 +247,13 @@ def add_final_score(game: GameStats, connection=None):
     stmt = text('''SELECT * FROM mhac.game_results WHERE game_id = :game_id ''')
     stmt = stmt.bindparams(game_id = game.game_id)
     results = DB.execute(stmt)
-    
+    # print(results, results.rowcount, str(results))
     if results.rowcount > 0:
         home_score = 0
         away_score = 0
         for result in results:
-            home_score += result.home_score
-            away_score += result.away_score
+            home_score += result.home_score or 0
+            away_score += result.away_score or 0 
             
         if home_score != game.final_scores.home_score or away_score != game.final_scores.away_score:
             return {400, "final scores dont match the period score"}
@@ -266,6 +267,7 @@ def add_final_score(game: GameStats, connection=None):
     if (game.final_scores.home_score and game.final_scores.away_score) and (not game_score.final_home_score or not game_score.final_away_score):
         update_standings = True
     elif game_score.final_home_score and game_score.final_away_score:
+        print("here")
         if (game_score.final_home_score > game_score.final_away_score and game.final_scores.home_score < game.final_scores.away_score) or (game_score.final_home_score < game_score.final_away_score and game.final_scores.home_score > game.final_scores.away_score):
             # Reverse game Standings
             remove_from_standings(game_score.home_team_id, game_score.final_home_score > game_score.final_away_score, DB)
@@ -447,6 +449,7 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
                 ON games.away_team_id = away_team.id
             {wheres}
+            ORDER BY schedule.game_date
             ''')
         stmt = stmt.bindparams(slug = slug, season_id = season_id)
     
@@ -480,6 +483,7 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
                 ON games.away_team_id = away_team.id
             {wheres}
+            ORDER BY schedule.game_date
             ''')
         stmt = stmt.bindparams(season_team_id = season_team_id)
     
@@ -509,7 +513,7 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
                 ON games.away_team_id = away_team.id
             WHERE (home_team.archive is null and away_team.archive is null)
-
+            ORDER BY schedule.game_date
             ''')
         # stmt = stmt.bindparams()
     # print(stmt)
@@ -770,7 +774,7 @@ def add_games_and_stats(game: GameStats):
     
     add_period_score(game.game_scores, game_id, database=DB)
     add_stats(game.player_stats, game_id, team_id)
-    
+    print("final_Scores", game.final_scores)
     final_scores = game.final_scores
 
     if final_scores.home_score or final_scores.away_score:

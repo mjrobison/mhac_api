@@ -33,7 +33,7 @@ class GameResult(BaseModel):
 
 class Schedule(GameBase):
     date: date
-    time: time
+    time: Optional[time]
     season: UUID
     neutral_site: Optional[str]
 
@@ -120,6 +120,7 @@ def get_game(game_id: UUID, team_id: UUID= None):
 
 @router.post('/addGameResults/{game_id}', tags=['games'])
 def add_game_results(game_id: UUID, game_scores: GameStats):
+    # print(game_scores)
     return games.add_games_and_stats(game_scores)
 
 @router.post('/addFileGameStats/{game_id}/{team_id}')
