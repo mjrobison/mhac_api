@@ -267,7 +267,7 @@ def add_final_score(game: GameStats, connection=None):
     if (game.final_scores.home_score and game.final_scores.away_score) and (not game_score.final_home_score or not game_score.final_away_score):
         update_standings = True
     elif game_score.final_home_score and game_score.final_away_score:
-        print("here")
+        # print("here")
         if (game_score.final_home_score > game_score.final_away_score and game.final_scores.home_score < game.final_scores.away_score) or (game_score.final_home_score < game_score.final_away_score and game.final_scores.home_score > game.final_scores.away_score):
             # Reverse game Standings
             remove_from_standings(game_score.home_team_id, game_score.final_home_score > game_score.final_away_score, DB)
