@@ -75,6 +75,18 @@ def get(slug: str, DB = get_db()) -> List[Team]:
     
     return team_list
 
+def _get_slug_by_level_id(id: str):
+    team_list = []
+    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null''')
+    stmt = stmt.bindparams(id = id)
+    result = DB.execute(stmt)
+        # result = DB.execute(stmt)
+    DB.close()
+    for row in result:
+        team_list.append(row_mapper(row))
+    
+    return team_list[0]
+
 def get_season_teams(slug: str= None) -> List[SeasonTeam]:
     team_name = ''
     if slug:
