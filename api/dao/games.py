@@ -847,7 +847,7 @@ def stats_by_season_and_team(season_id, team_id):
     data_all = []
     for r in results:
         field_goal_percentage = 0.0
-∑<        if r.field_goals_attempted != 0:
+        if r.field_goals_attempted != 0:
             field_goal_percentage = float(r.field_goals_made)/float(r.field_goals_attempted)
 
         three_point_percentage = 0.0
