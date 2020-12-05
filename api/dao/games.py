@@ -227,7 +227,9 @@ def add_period_score(game: GameResult, game_id: UUID, database=None):
         i = 1
         stmt = text('''INSERT INTO mhac.game_results(game_id, period, home_score, away_score, game_order) 
                     VALUES 
-                    (:game_id, :period, :home_score,:away_score, :game_order) ''')
+                    (:game_id, :period, :home_score,:away_score, :game_order) 
+                    ON CONFLICT ON CONSTRAINT ux_game_period
+                    DO UPDATE set home_score = :home_score, away_score = :away_score''')
         stmt = stmt.bindparams(game_id=game_id , period=score.period, home_score=score.home_score, away_score=score.away_score, game_order=i)
         DB.execute(stmt)
         i += 1 
@@ -236,6 +238,7 @@ def add_period_score(game: GameResult, game_id: UUID, database=None):
         return {200: "Success"}
 
 def add_final_score(game: GameStats, connection=None):
+    # print("In Final Score Add")
     update_standings = False
     #Add a validator for the verification
     if not connection:
@@ -255,8 +258,8 @@ def add_final_score(game: GameStats, connection=None):
             home_score += result.home_score or 0
             away_score += result.away_score or 0 
             
-        if home_score != game.final_scores.home_score or away_score != game.final_scores.away_score:
-            return {400, "final scores dont match the period score"}
+        # if home_score != game.final_scores.home_score or away_score != game.final_scores.away_score:
+        #     return {400, "final scores dont match the period score"}
     
     
     stmt = text('''SELECT * FROM mhac.games where game_id =:game_id ''')
@@ -275,7 +278,7 @@ def add_final_score(game: GameStats, connection=None):
             update_standings = True
             DB.commit()
 
-
+    # print("Ready for Update")
     stmt = text('''UPDATE mhac.games
                    SET final_home_score = :final_home_score, final_away_score = :final_away_score
                    WHERE game_id = :game_id''')
@@ -772,10 +775,11 @@ def add_games_and_stats(game: GameStats):
     team_id = game.team_id
     DB = db()
     
+    final_scores = game.final_scores
+    # print("final_Scores", final_scores)
+    # print("Game_scores", game.game_scores)
     add_period_score(game.game_scores, game_id, database=DB)
     add_stats(game.player_stats, game_id, team_id)
-    print("final_Scores", game.final_scores)
-    final_scores = game.final_scores
 
     if final_scores.home_score or final_scores.away_score:
         add_final_score(game, DB)
