@@ -19,7 +19,7 @@ class Person(TypedDict):
     person_type = int
     team = UUID
     team_id = UUID
-    birth_date: Date 
+    birth_date: Optional[Date] 
     height= Optional[str]
     number = int
     position = Optional[str]
@@ -31,7 +31,7 @@ class PlayerCreate(TypedDict):
     person_type = int
     team = UUID
     season_roster = List[SeasonTeam]
-    birth_date: Date 
+    birth_date: Optional[Date] 
     height= Optional[str]
     player_number = int
     position = Optional[str]
