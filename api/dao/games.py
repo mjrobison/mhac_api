@@ -238,7 +238,7 @@ def add_period_score(game: GameResult, game_id: UUID, database=None):
         return {200: "Success"}
 
 def add_final_score(game: GameStats, connection=None):
-    # print("In Final Score Add")
+    
     update_standings = False
     #Add a validator for the verification
     if not connection:
@@ -305,7 +305,7 @@ def update_period_score(game: GameResult, game_id, database=None):
 
 def get_game_results(game_id: UUID, team_id: UUID):
     #TODO: GameId, TeamID, Final Scores, Player Stats 
-    print(game_id, team_id)
+    # print(game_id, team_id)
     DB = db()
     stmt = text(''' 
         SELECT COALESCE(expected_periods.period, game_results.period) as quarter, home_score, away_score, game_order 
@@ -771,6 +771,7 @@ def add_stats(player_stats, game_id, team_id, connection=None):
     return "200"
 
 def add_games_and_stats(game: GameStats):
+    print('entrypoint')
     game_id = game.game_id
     team_id = game.team_id
     DB = db()

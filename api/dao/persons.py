@@ -82,7 +82,7 @@ def get_list(person_type) -> List[Person]:
     
     return player_list
 
-def get_team_list(slug):
+def get_team_list(slug, season_level: Optional[str] = None):
     DB = db()
     player_list = []
     # stmt = text('''SELECT person.* FROM mhac.person 
@@ -91,19 +91,26 @@ def get_team_list(slug):
     # INNER JOIN mhac.teams 
     #     ON person.team_id = teams.id 
     # WHERE person_type.type = 'Player' and slug = :slug''')
-    stmt = text(''' 
-SELECT person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number as number, string_agg(season_team_id::text, ',') AS season_roster, string_agg(level_id::text,',') 
-FROM mhac.team_rosters
-INNER JOIN mhac.season_teams_with_names as teams
-    ON team_rosters.season_team_id = teams.id 
-INNER JOIN mhac.person
-    ON team_rosters.player_id = person.id
-INNER JOIN mhac.seasons
-    ON seasons.id = teams.season_id
-WHERE teams.archive is null
-and teams.slug = :slug
-GROUP BY person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number ''')
+    base_query = text(''' 
+        SELECT person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number as number, string_agg(season_team_id::text, ',') AS season_roster, string_agg(level_id::text,',') 
+        FROM mhac.team_rosters
+        INNER JOIN mhac.season_teams_with_names as teams
+            ON team_rosters.season_team_id = teams.id 
+        INNER JOIN mhac.person
+            ON team_rosters.player_id = person.id
+        INNER JOIN mhac.seasons
+            ON seasons.id = teams.season_id
+        WHERE teams.archive is null
+        and teams.slug = :slug''')
+    group_by = text('''GROUP BY person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number''')
+
+    stmt = text(f"{base_query} {group_by}")
     stmt = stmt.bindparams(slug = slug)
+    
+    if season_level:
+        stmt = text(f"{base_query} and team_rosters.season_team_id = :season_level {group_by}")
+        stmt = stmt.bindparams(slug = slug, season_level = season_level)
+    
     try:
         result = DB.execute(stmt)
     except Exception as exc:

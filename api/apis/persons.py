@@ -4,7 +4,7 @@ from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
 from datetime import datetime, date
 import logging
-from dao import persons as players
+from dao import persons as players, teams
 from .teams import TeamBase, SeasonTeamOut2
 
 router = APIRouter()
@@ -84,6 +84,8 @@ def update_player(id, player: PlayerIn):
 def add_to_roster():
     pass
 
-@router.get('/getRoster/{season_team}')
+@router.get('/getRoster/{season_team}', summary="Get a leveled team roster", tags=['players', 'rosters'])
 def get_team_roster(season_team: UUID):
-    pass
+    team = teams._get_slug_by_level_id(season_team).get('slug')
+    return players.get_team_list(team, season_team)
+
