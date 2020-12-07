@@ -63,3 +63,7 @@ def archive_season(season_id: UUID):
 @router.get('/getCurrentSeasons')
 def get_current_season():
     return seasons.get_list(active=True)
+
+@router.get('/getActiveYear')
+def get_current_season():
+    return seasons.get_active_year()

@@ -93,6 +93,7 @@ def update(season: Season):
     return {200 : "Season Updated"}
 
 def create(season: Season):
+    DB = db()
     new_season_id= uuid4()
     stmt = text('''INSERT INTO mhac.seasons(id, name, year, level_id, sport_id, start_date, roster_submission_deadline, tournament_start_date, archive) 
                 VALUES
@@ -102,5 +103,17 @@ def create(season: Season):
     DB.close()
     return {200: f'{new_season_id} Added '}
 
+def get_active_year(archive=None):
+    DB = db()
+    stmt = text ('''
+        SELECT DISTINCT name, year FROM mhac.seasons
+        WHERE archive is NULL
+        ORDER BY year desc
+    ''')
+
+    result = DB.execute(stmt)
+    DB.close()
+
+    return result.fetchone()
 
         
