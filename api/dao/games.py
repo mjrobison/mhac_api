@@ -581,6 +581,7 @@ def get_season_schedule(season_id):
             ON games.home_team_id = home_team.id
         LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
             ON games.away_team_id = away_team.id
+        ORDER BY schedule.game_date, schedule.game_time
         {wheres}
         ''')
 
