@@ -652,7 +652,7 @@ def parse_csv(fileContents, game_id, team_id):
                 INNER JOIN mhac.person  
                     on team_rosters.player_id = person.id
                 WHERE season_team_id = :team_id
-                and person.number= :jersey  """)
+                and team_rosters.jersey_number= :jersey  """)
             stmt = stmt.bindparams(team_id=team_id, jersey=line['Jersey'])
             results = DB.execute(stmt)
             player = results.fetchone()

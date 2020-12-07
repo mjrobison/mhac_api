@@ -126,7 +126,11 @@ def add_game_results(game_id: UUID, game_scores: GameStats):
 @router.post('/addFileGameStats/{game_id}/{team_id}')
 async def create_upload_file(game_id: UUID, team_id:UUID, file: UploadFile = File(...) ):
     contents = await file.read()
-    return games.parse_csv(contents, game_id, team_id)
+    msg = games.parse_csv(contents, game_id, team_id)
+    missing_players = msg.get('missing_players')
+    if missing_players:
+        raise HTTPException(status_code=400, detail=missing_players)
+    return msg
 
 
 @router.put('/updateFinalScore', tags=['games'])
