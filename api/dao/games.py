@@ -536,6 +536,7 @@ def get_program_schedule(slug: str = None, year=None) -> List[TeamSchedule]:
             WHERE home_team.archive is null and away_team.archive is null
              AND (home_team.slug = :slug
                 OR away_team.slug = :slug)
+            ORDER BY game_date, game_time
             ''')
     stmt = stmt.bindparams(slug = slug)
     
