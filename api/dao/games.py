@@ -361,7 +361,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
         , mhac.person.id AS id
         , mhac.person.first_name AS first_name
         , mhac.person.last_name AS last_name
-        , mhac.person.number AS number
+        , mhac.team_rosters.jersey_number AS number
         , mhac.games.game_id AS game_id
     FROM mhac.team_rosters 
     JOIN mhac.season_teams_with_names 
