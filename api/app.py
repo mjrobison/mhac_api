@@ -516,9 +516,11 @@ class GameResults(Resource):
             data['player_stats'] = stats
 
             data_all.append(data)
+            
         game['player_stats'] = data_all
 
         return jsonify(game), 200
+
     def post(self, game_id):
         data = request.get_json()
         if 'team' in data:
@@ -555,7 +557,7 @@ class GameResults(Resource):
 
 
         finals = data.get('final_scores')
-       if finals:
+        if finals:
            game.final_home_score = finals.get('home_score', 0)
            game.final_away_score = finals.get('away_score', 0)
            db.session.commit()
