@@ -29,6 +29,7 @@ class SeasonTeam(Team):
     team_id: UUID
     season_id: UUID
     level_name: str
+    select_team_name:str
 
 
 def row_mapper(row) -> TeamOut:
@@ -48,7 +49,7 @@ def row_mapper(row) -> TeamOut:
 def season_team_row_mapper(row) -> SeasonTeam:
     SeasonTeam = {
         'team_id': row['id'],
-        'team_name': row['team_name'],
+        # 'team_name': row['team_name'],
         'team_mascot': row['team_mascot'],
         'main_color': row['main_color'],
         'secondary_color': row['secondary_color'],
@@ -57,7 +58,8 @@ def season_team_row_mapper(row) -> SeasonTeam:
         'logo_grey': row['logo_grey'],
         'slug': row['slug'],
         'season_id': row['season_id'],
-        'level_name': row['level_name']
+        'level_name': row['level_name'],
+        'team_name': row['team_name'] + ' ' + row['level_name']
     }
     return SeasonTeam
 

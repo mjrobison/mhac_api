@@ -4,7 +4,7 @@ from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
 from datetime import datetime, date, time
 
-from .seasons import SeasonBase
+from .seasons import SeasonBase, SeasonOut
 from .teams import TeamBase, SeasonTeamOut2 as SeasonTeam
 from .persons import PlayerOut 
 from dao import games
@@ -36,6 +36,9 @@ class Schedule(GameBase):
     time: Optional[time]
     season: UUID
     neutral_site: Optional[str]
+
+class ScheduleUpdate(Schedule):
+    game_id: UUID
 
 class Final_Scores(BaseModel):
     away_score: Optional[int]
@@ -78,6 +81,7 @@ class TeamSchedule(BaseModel):
     away_team: SeasonTeam
     final_scores: Final_Scores
     missing_stats: Optional[bool]
+    season: SeasonOut
 
 class GameStats(BaseModel):
     game_id: UUID
@@ -106,9 +110,11 @@ def enter_new_period_score(game: GameResult):
 def update_period(game_result: GameResult):
     return games.update_period_score(game_result)
 
-@router.put('/updateGame', tags=['games'])
-def update_game():
-    return games.update()
+@router.post('/updateGame', tags=['games'])
+def update_game(game: ScheduleUpdate):
+    print(game)
+    # return ''
+    return games.update(game)
 
 @router.get('/getGameResults/{game_id}') #, response_model=List[GameResultsStatsOut], tags=['games'])
 @router.get('/getGameResults/{game_id}/{team_id}') #, response_model=List[GameResultsStatsOut], tags=['games'])

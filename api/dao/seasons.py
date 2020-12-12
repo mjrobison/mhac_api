@@ -11,16 +11,16 @@ from database import db
 DB = db()
 
 class Season(TypedDict):
-    name                        = str
+    level                       = str
+    season_name                        = str
+    season_start_date                  = datetime
+    roster_submission_deadline  = datetime
+    # roster_addition_deadline    = Date
+    tournament_start_date       = datetime
+    sport                       = str
     year                        = str
-    level                       = int
-    sport                       = int
-    start_date                  = Date
-    roster_submission_deadline  = Date
-    roster_addition_deadline    = Date
-    tournament_start_date       = Date
-    archive                     = str
-    schedule                    = Optional[str]
+    # archive                     = str
+    # schedule                    = Optional[str]
     slug                        = str
 
 class SeasonUpdate(Season):
@@ -67,6 +67,13 @@ def get(slug: str):
     where = 'WHERE slug = :slug'
     stmt = text(F'''{base_query} {where} ''')
     result = DB.execute(stmt.bindparams(slug=slug))
+    DB.close()
+    return row_mapper(result.fetchone())
+
+def get_by_id(id: UUID) -> Season:
+    where = 'WHERE seasons.id = :id'
+    stmt = text(F'''{base_query} {where} ''')
+    result = DB.execute(stmt.bindparams(id=id))
     DB.close()
     return row_mapper(result.fetchone())
 

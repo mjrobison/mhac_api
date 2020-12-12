@@ -11,6 +11,7 @@ import csv
 
 from .standings import add_to_standings, remove_from_standings
 from .teams import get_with_uuid as team_get, SeasonTeam
+from .seasons import get_by_id, Season
 
 import json
 
@@ -32,7 +33,8 @@ schedule_base_query = text('''SELECT
                     ON basketball_stats.team_id = season_teams_with_names.id
                     AND season_teams_with_names.slug = :slug
                 AND basketball_stats.game_id = games.game_id) = 0 THEN true ELSE false 
-            END as missing_stats  
+            END as missing_stats,
+            schedule.season_id  
         FROM mhac.games
         INNER JOIN mhac.schedule 
             ON games.game_id = schedule.game_id
@@ -106,6 +108,7 @@ class TeamSchedule(TypedDict):
     away_team: SeasonTeam
     final_scores: final_scores
     missing_stats: Optional[bool]
+    season: Season
 
 class GameIdDel(TypedDict):
     game_id: UUID
@@ -129,7 +132,8 @@ def team_schedule_row_mapper(row) -> TeamSchedule:
             'away_score': row['final_away_score'],
             'home_score': row['final_home_score']
         },
-        'missing_stats': row['missing_stats']
+        'missing_stats': row['missing_stats'],
+        'season': get_by_id(row['season_id'])
 
     }
     return TeamSchedule
@@ -207,9 +211,27 @@ def update(game: Schedule):
     #TODO: This Call isn't correct yet
     DB = db()
     game_id = game.game_id
-    stmt = text('''INSERT INTO mhac.games(game_id, home_team_id, away_team_id) VALUES (:game_id, :home_team, :away_team) ''')
-    stmt = stmt.bindparams(game_id = game_id , home_team = game.home_team, away_team=game.away_team)
-    DB.execute(stmt)
+    # stmt = text('''INSERT INTO mhac.games(game_id, home_team_id, away_team_id) VALUES (:game_id, :home_team, :away_team) ''')
+    
+    try:
+        stmt = text("""UPDATE mhac.games
+        SET home_team_id = :home_team, away_team_id = :away_team
+        WHERE game_id = :game_id """)
+        stmt = stmt.bindparams(game_id = game_id , home_team = game.home_team, away_team=game.away_team)    
+        DB.execute(stmt)
+        
+        stmt = text('''UPDATE mhac.schedule 
+                    SET game_date= :game_date, game_time = :game_time, season_id = :season_id 
+                    WHERE game_id = :game_id
+                   ''')
+        stmt = stmt.bindparams( game_date = game.date, game_time = game.time, season_id = game.season, game_id= game_id)
+        DB.execute(stmt)
+        DB.commit()
+    except Exception as exc:
+        print(str(exc))
+        raise 
+    finally:
+        DB.close()
 
 def add_period_score(game: GameResult, game_id: UUID, database=None):
     #Game Order is for display purposes since it built the possibility of OT to be OT1, OT2, OT3. It is the actual period number
@@ -443,7 +465,8 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
                 away_team.id as away_team, 
                 final_home_score, 
                 final_away_score,
-                CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats
+                CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats,
+                schedule.season_id
             FROM mhac.games
             INNER JOIN mhac.schedule 
                 ON games.game_id = schedule.game_id
@@ -477,7 +500,8 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
                 away_team.id as away_team, 
                 final_home_score, 
                 final_away_score,
-                CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats
+                CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats,
+                schedule.season_id
             FROM mhac.games
             INNER JOIN mhac.schedule 
                 ON games.game_id = schedule.game_id
@@ -507,7 +531,8 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
                 away_team.id as away_team, 
                 final_home_score, 
                 final_away_score,
-                {missing_subquery} as missing_stats
+                {missing_subquery} as missing_stats,
+                schedule.season_id
             FROM mhac.games
             INNER JOIN mhac.schedule 
                 ON games.game_id = schedule.game_id
@@ -573,7 +598,8 @@ def get_season_schedule(season_id):
             away_team.id as away_team, 
             final_home_score, 
             final_away_score,
-            CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats
+            CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats,
+            schedule.season_id
         FROM mhac.games
         INNER JOIN mhac.schedule 
             ON games.game_id = schedule.game_id
@@ -587,7 +613,7 @@ def get_season_schedule(season_id):
 
     # stmt = stmt.bindparams(slug = slug, season_id = season_id)
     stmt = stmt.bindparams(season_id = season_id)
-    
+    # print(stmt)
     results = DB.execute(stmt)
     DB.close()
     schedule = []

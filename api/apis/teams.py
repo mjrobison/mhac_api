@@ -36,6 +36,7 @@ class SeasonTeamOut2(TeamBase):
     team_id: UUID
     season_id: UUID
     level_name: str
+    # select_team_name: str
 
 @router.get('/getTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
 def getTeam(slug):
