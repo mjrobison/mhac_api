@@ -59,7 +59,7 @@ def season_team_row_mapper(row) -> SeasonTeam:
         'slug': row['slug'],
         'season_id': row['season_id'],
         'level_name': row['level_name'],
-        'team_name': row['team_name'] + ' ' + row['level_name']
+        'team_name': row['team_name']
     }
     return SeasonTeam
 
