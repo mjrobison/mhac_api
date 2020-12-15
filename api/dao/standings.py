@@ -20,10 +20,15 @@ class Standings(TypedDict):
     wins = int
     losses = int
     games_played = int
+    games_behind = float
     win_percentage = float
 
 
-def row_mapper(row) -> Standings:
+def row_mapper(row, leader=None) -> Standings:
+    games_behind= 0.0    
+    if leader:
+        games_behind =calcGamesBehind(leader, row['wins'], row['losses'])
+
     Standings = {
         # 'team_id': team_get(row['team_id']),
         # 'season_id': season_get(row['season_id']),
@@ -33,8 +38,7 @@ def row_mapper(row) -> Standings:
         'wins': row['wins'],
         'losses': row['losses'],
         'games_played': row['games_played'],
-        # 'games_behind': calcGamesBehind()
-        'games_behind': 0,
+        'games_behind': games_behind,
         'win_percentage':  row['win_percentage']
     }
     return Standings
@@ -75,8 +79,16 @@ def get(level=None) -> Standings:
     result = DB.execute(stmt)
     DB.close()
     standings_list = []
+    i = 1 
+    leader = {}
     for row in result:
-        standings_list.append(row_mapper(row))
+        if i == 1: 
+            leader['wins'] = row['wins']
+            leader['losses'] = row['losses']
+            gb = 0 
+
+        standings_list.append(row_mapper(row, leader))
+        i += 1 
     return standings_list
 
 

@@ -18,7 +18,7 @@ class Standings(BaseModel):
     wins: int
     losses: int
     games_played: int
-    games_behind: int
+    games_behind: float
     win_percentage: float
 
 @router.get('/getStandings', response_model=List[Standings])
