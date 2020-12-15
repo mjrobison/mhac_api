@@ -12,6 +12,12 @@ from .seasons import Season, get as season_get, get_list
 from .teams import Team, get_with_uuid as team_get
 from .utils import calcGamesBehind
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 #TODO: Matt Implement sorting/games behind
 
 class Standings(TypedDict):
@@ -28,7 +34,7 @@ def row_mapper(row, leader=None) -> Standings:
     games_behind= 0.0    
     if leader:
         games_behind =calcGamesBehind(leader, row['wins'], row['losses'])
-
+    logger.info(games_behind)
     Standings = {
         # 'team_id': team_get(row['team_id']),
         # 'season_id': season_get(row['season_id']),
@@ -52,14 +58,22 @@ def get_a_season(id) -> Standings:
     INNER JOIN mhac.seasons
         ON season_teams_with_names.season_id = seasons.id
     WHERE standings.season_id = :id
-    ORDER BY win_percentage DESC''')
+    ORDER BY win_percentage DESC, wins desc''')
     stmt = stmt.bindparams(id=id)
     result = DB.execute(stmt)
-    
+
     DB.close()
     standings_list = []
+    i = 1 
+    leader = {}
     for row in result:
-        standings_list.append(row_mapper(row))
+        if i == 1: 
+            leader['wins'] = row['wins']
+            leader['losses'] = row['losses']
+            gb = 0 
+
+        standings_list.append(row_mapper(row, leader))
+        i += 1 
     return standings_list
 
 def get(level=None) -> Standings:
@@ -75,7 +89,7 @@ def get(level=None) -> Standings:
             ON season_teams_with_names.season_id = seasons.id
         WHERE seasons.archive is null
         {where}
-        ORDER BY win_percentage DESC''')
+        ORDER BY win_percentage DESC, wins desc''')
     result = DB.execute(stmt)
     DB.close()
     standings_list = []
