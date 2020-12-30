@@ -12,6 +12,7 @@ import csv
 from .standings import add_to_standings, remove_from_standings
 from .teams import get_with_uuid as team_get, SeasonTeam
 from .seasons import get_by_id, Season
+from .utils import totalPoints, totalRebounds
 
 import json
 
@@ -775,11 +776,11 @@ def add_stats(player_stats, game_id, team_id, connection=None):
                                                 three_pointers_made=line.ThreePM,
                                                 free_throws_attempted=line.FTA,
                                                 free_throws_made=line.FTM,
-                                                total_points=line.total_points,
+                                                total_points= totalPoints(twos = line.FGM, threes=line.ThreePM, free_throws = line.FTM),
                                                 assists=line.AST,
                                                 offensive_rebounds=line.OREB,
                                                 defensive_rebounds=line.DREB,
-                                                total_rebounds=line.total_rebounds,
+                                                total_rebounds=totalRebounds(offensive=line.OREB, defensive=line.DREB),
                                                 steals=line.steals,
                                                 blocks=line.blocks,
                                                 team_id=team_id,
