@@ -1,2 +1,2 @@
 ALTER TABLE mhac.standings
-ADD COLUMN rank int;
+ADD COLUMN standings_rank int;
