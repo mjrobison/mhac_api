@@ -42,7 +42,9 @@ def tournamentGameRowMapper(row) -> TournamentGame:
             'team1Seed': row['home_team_seed'],
             'team2': row['away_team'],
             'scoreTeam2': row['away_team_score'],
-            'team2Seed': row['away_team_seed']
+            'team2Seed': row['away_team_seed'],
+            'winner_to': row['winner_to'],
+            'loser_to': row['loser_to']
         },
         'location': {
             'address': '',
@@ -65,7 +67,7 @@ def get_tournament_games() -> TournamentGame:
     query = '''
     SELECT game_number, game_date, game_time, home_team.team_name as home_team, away_team.team_name as away_team, home_team_score, away_team_score, '' as game_location
     , levels.level_name as level_name,
-    home_team_seed, away_team_seed
+    home_team_seed, away_team_seed, winner_to, loser_to
     FROM mhac.tournamentgames
     INNER JOIN mhac.seasons
         ON tournamentgames.season_id = seasons.id
@@ -94,3 +96,44 @@ def get_tournament(DB=db(), year=None):
         data_all.append(tournamentRowMapper(r))
     
     return data_all
+
+def create_tournament_game(game, DB=db()):
+    next_game = game.game_number
+    if game.game_number is None:
+        query = """SELECT MAX(game_number) + 1 FROM mhac.tournamentgames WHERE season_id = :season_id """
+        query.bindparams(season_id = game.season_id)
+        DB.execute(query)
+        next_game = DB.fetchone()
+
+    try:
+        query = """
+        INSERT INTO mhac.tournamentgames(game_number,  game_date, game_time, home_team_seed, away_team_seed, game_description, season_id, winner_to, loser_to)
+        VALUES
+        (:game_number, :game_date, :game_time, :home_team_seed, :away_team_see, :description, :season_id, :winner_to, :loser_to)
+        """
+        query.bindparams(game_number = next_game, game_date= game.game_date, game_time=game.game_time, home_team_seed = game.home_team_seed, away_team_seed = game.away_team_seed, 
+                        game_description = game.game_description, season_id = game.season.id, winner_to = game.winner_to, loser_to = game.loser_to)
+
+        DB.execute(query)
+    except Exception as exc:
+        print(str(exc))
+        DB.rollback()
+        raise
+    
+    return {'success': 200}
+
+def update_tournament_game(game, DB=db()):
+    if game.home_team_score is not None and game.away_team_score is not None:
+        #Begin Updating tournament
+        # Start with pushing the seed numbers to the new game number
+        # Do I need the team_name/ID?
+        pass
+    
+    #What about reordering games
+    
+    query = """ 
+        UPDATE mhac.tournamentgames
+        SET game_date = :game_date, game_time = :game_time, home_team_seed = :home_team_seed, away_team_seed = :away_team_seed, game_description = :game_description, winner_to = :winner_to, loser_to = :loser_to
+        WHERE game_number = :game_number
+            AND season_id = :season_id
+    """

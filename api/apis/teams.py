@@ -66,3 +66,7 @@ async def create_team(team: TeamBase):
 # @router.get('/test', response_model=SeasonTeamOut2, tags=['test'])
 # def test_get_uuid_call():
 #     return teams.get_with_uuid('896bf172-8deb-41d2-89b5-953f1ca197ef')
+
+@router.get('/getTeamCount/{season_id}', tags=['teams'])
+async def count_teams(season_id):
+    return teams.get_team_count(season_id=season_id)

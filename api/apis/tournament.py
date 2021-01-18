@@ -25,3 +25,7 @@ def get_active_tournament():
 @router.get('/getTournaments', tags=['tournament'])
 def get_tournaments(year):
     return tournament.get_tournament(year=year)
+
+@router.post('/addTournamentGame', tags=['tournament'])
+def add_tournament_game(game):
+    return tournament.create_tournament_game(game=game)
