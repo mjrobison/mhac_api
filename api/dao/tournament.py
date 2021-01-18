@@ -39,8 +39,10 @@ def tournamentGameRowMapper(row) -> TournamentGame:
         'matchup': {
             'team1': row['home_team'],
             'scoreTeam1': row['home_team_score'],
+            'team1Seed': row['home_team_seed'],
             'team2': row['away_team'],
-            'scoreTeam2': row['away_team_score']
+            'scoreTeam2': row['away_team_score'],
+            'team2Seed': row['away_team_seed']
         },
         'location': {
             'address': '',
@@ -61,7 +63,9 @@ def tournamentRowMapper(row):
 def get_tournament_games() -> TournamentGame:
     DB = db()
     query = '''
-    SELECT game_number, game_date, game_time, home_team.team_name as home_team, away_team.team_name as away_team, home_team_score, away_team_score, '' as game_location, levels.level_name
+    SELECT game_number, game_date, game_time, home_team.team_name as home_team, away_team.team_name as away_team, home_team_score, away_team_score, '' as game_location
+    , levels.level_name as level_name,
+    home_team_seed, away_team_seed
     FROM mhac.tournamentgames
     INNER JOIN mhac.seasons
         ON tournamentgames.season_id = seasons.id
