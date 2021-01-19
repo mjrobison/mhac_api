@@ -9,7 +9,7 @@ config = config.get(os.environ.get('API_ENV', 'development'))
 DATEBASE_URL = config.DB_URL
 
 engine = create_engine(
-    DATEBASE_URL
+    DATEBASE_URL, pool_size =2 
 )
 db = sessionmaker(autocommit=False, autoflush=True, bind=engine)
 

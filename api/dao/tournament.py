@@ -127,10 +127,60 @@ def update_tournament_game(game, DB=db()):
         #Begin Updating tournament
         # Start with pushing the seed numbers to the new game number
         # Do I need the team_name/ID?
-        pass
-    
+
+        game_query = """SELECT * FROM mhac.tournamentgames WHERE game_number = :game_number and season_id = :season_id"""
+
+        game_query.bindparams(game_number = game.game_number, season_id = game.season.id)
+        DB.execute(game_query)
+        result = DB.fetchone()
+
+        update_query = """ UPDATE mhac.tournamentgames 
+            SET home_team_seed = :home_team_seed, away_team_seed = :away_team_seed
+            WHERE game_number = :game_number 
+                AND season_id = :season_id """
+        if game.home_team_score > game.away_team_score:
+            winner = game.home_team_seed
+            loser = game.away_team_seed
+        else:
+            winner = game.away_team_seed
+            loser = game.home_team_seed
+        
+        # Winner Update
+        # Get the number game information
+
+        game_query.bindparams(game_number=result.winner_to, season_id = result.season_id)
+        DB.execute(game_query)
+        winner_game = DB.fetchone()
+        
+        if winner_game.home_team_seed is not None:
+            # Determine the lower seed for home team
+            if winner_game.home_team_seed < winner:
+                update_query.bindparams(home_team_seed = winner, away_team_seed = winner_game.home_team_seed, game_number = result.winner_to, season_id = result.season_id)
+            else:
+                update_query.bindparams(away_team_seed = winner, home_team_seed = winner_game.home_team_seed, game_number = result.winner_to, season_id = result.season_id)
+        else:
+            update_query.bindparams(home_team_seed = winner, away_team_seed = None, game_number = result.winner_to, season_id = result.season_id)
+        
+        DB.execute(update_query)
+        
+        game_query.bindparams(game_number=result.loser_to, season_id = result.season_id)
+        DB.execute(game_query)
+        loser_game = DB.fetchone()
+
+        if loser_game.home_team_seed is not None:
+            # Determine the lower seed for home team
+            if loser_game.home_team_seed < winner:
+                update_query.bindparams(home_team_seed = loser, away_team_seed = loser_game.home_team_seed, game_number = result.loser_to, season_id = result.season_id)
+            else:
+                update_query.bindparams(away_team_seed = loser, home_team_seed = loser_game.home_team_seed, game_number = result.loser_to, season_id = result.season_id)
+        else:
+            update_query.bindparams(home_team_seed = loser, away_team_seed = None, game_number = result.winner_to, season_id = result.season_id)
+        
+        DB.execute(update_query)
+        
+        
     #What about reordering games
-    
+
     query = """ 
         UPDATE mhac.tournamentgames
         SET game_date = :game_date, game_time = :game_time, home_team_seed = :home_team_seed, away_team_seed = :away_team_seed, game_description = :game_description, winner_to = :winner_to, loser_to = :loser_to
