@@ -101,6 +101,9 @@ def add_game(game: Schedule):
         game.neutral_site = False
     return games.create(game)
 
+@router.post('/addTournamentGame', tags=['games'])
+def add_tournament_game(game: Schedule):
+    pass
 
 @router.post('/addPeriodScore', tags=['games'])
 def enter_new_period_score(game: GameResult):
@@ -112,7 +115,7 @@ def update_period(game_result: GameResult):
 
 @router.post('/updateGame', tags=['games'])
 def update_game(game: ScheduleUpdate):
-    print(game)
+    # print(game)
     # return ''
     return games.update(game)
 

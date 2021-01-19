@@ -614,7 +614,7 @@ def get_season_schedule(season_id):
 
     # stmt = stmt.bindparams(slug = slug, season_id = season_id)
     stmt = stmt.bindparams(season_id = season_id)
-    # print(stmt)
+    
     results = DB.execute(stmt)
     DB.close()
     schedule = []

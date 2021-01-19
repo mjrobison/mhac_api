@@ -21,7 +21,17 @@ class Season(TypedDict):
     year                        = str
     # archive                     = str
     # schedule                    = Optional[str]
-    slug                        = str
+    # name                        = str
+    # year                        = str
+    # level                       = int
+    # sport                       = int
+    # start_date                  = Date
+    # roster_submission_deadline  = Date
+    # roster_addition_deadline    = Date
+    # tournament_start_date       = Date
+    # archive                     = str
+    # schedule                    = Optional[str]
+    # slug                        = str
 
 class SeasonUpdate(Season):
     season_id                   = UUID

@@ -40,7 +40,7 @@ class PlayerIn(PersonBase):
     def age_between(cls, birthday):
         min_year = datetime.today().year - 13
         max_year = datetime.today().year - 19
-        print(min_year, max_year, birthday <= date(min_year, 9, 1), birthday >= date(max_year, 9,1))
+        # print(min_year, max_year, birthday <= date(min_year, 9, 1), birthday >= date(max_year, 9,1))
         if not (birthday >= date(max_year, 9,1)):
             raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
         return birthday
@@ -63,7 +63,7 @@ def get_all_players():
 
 @router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
-    print(player)
+    # print(player)
     players.create_player(player)
     return {200: "Success"}
 
@@ -71,6 +71,7 @@ def add_player(player: PlayerIn):
 @router.put('/updatePlayer/{id}', summary="Update a player", tags=['players', 'rosters'])
 def update_player(id, player: PlayerIn):
     try:
+        
         print(players.update(id, player))
     except Exception as exc:
         print(str(exc))
