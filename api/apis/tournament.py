@@ -13,11 +13,6 @@ router = APIRouter()
 def get_tournament_games():
     return {'games': tournament.get_tournament_games()}
 
-
-# @router.post('/addTournamentGame', tags=['games'])
-# def add_tournament_game():
-#     pass
-
 @router.get('/getActiveTournaments', tags=['tournament'])
 def get_active_tournament():
     return tournament.get_tournament()
