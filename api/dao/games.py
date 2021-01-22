@@ -758,7 +758,6 @@ def add_stats(player_stats, game_id, team_id, connection=None):
 
     try:
         for line in player_stats:
-            # print(line)
             stmt = text("""SELECT * FROM mhac.team_rosters
                     INNER JOIN mhac.person  
                         on team_rosters.player_id = person.id
@@ -781,8 +780,8 @@ def add_stats(player_stats, game_id, team_id, connection=None):
                                                 offensive_rebounds=line.OREB,
                                                 defensive_rebounds=line.DREB,
                                                 total_rebounds=totalRebounds(offensive=line.OREB, defensive=line.DREB),
-                                                steals=line.steals,
-                                                blocks=line.blocks,
+                                                steals=line.STEAL,
+                                                blocks=line.BLK,
                                                 team_id=team_id,
                                                 turnovers=line.TO,
                                                 roster_id = player.roster_id,
