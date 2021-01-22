@@ -5,6 +5,7 @@ from uuid import UUID
 from datetime import datetime, date, time
 
 from dao import tournament
+from .teams import TeamOut
 
 router = APIRouter()
 
@@ -18,6 +19,7 @@ class Game(BaseModel):
     season_id: UUID
     winner_to: Optional[int]
     loser_to: Optional[int]
+    winners_from: List[int]
 
 class GameUpdate(Game):
     home_team_score: Optional[int]
