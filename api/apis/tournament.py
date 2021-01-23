@@ -19,7 +19,7 @@ class Game(BaseModel):
     season_id: UUID
     winner_to: Optional[int]
     loser_to: Optional[int]
-    winners_from: List[int]
+    winners_from: Optional[List[int]]
 
 class GameUpdate(Game):
     home_team_score: Optional[int]
