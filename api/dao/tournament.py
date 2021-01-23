@@ -9,8 +9,9 @@ from datetime import date, timedelta, datetime, time
 from database import db
 import csv
 
-from .seasons import get_by_id
+from .seasons import get_by_id, Season
 from .teams import get_with_uuid, TeamOut
+
 
 import json
 
@@ -21,8 +22,8 @@ class MatchUp(TypedDict):
     team2 = Optional[str]
     scoreTeam2 = Optional[int]
     team2seed = Optional[int]
-    winner_to = Optional[int]
-    loser_to = Optional[int]
+    winner_to = Optional[str]
+    loser_to = Optional[str]
 
 class Location(TypedDict):
     address = str
@@ -34,7 +35,7 @@ class TournamentGame(TypedDict):
     time = time
     matchup = MatchUp
     location = Location
-    level = str
+    seasons = Season
 
 
 def tournamentGameRowMapper(row) -> TournamentGame:
@@ -50,14 +51,14 @@ def tournamentGameRowMapper(row) -> TournamentGame:
             'team2': get_with_uuid(row['away_team'])['team_name'] if row['away_team'] else None,
             'scoreTeam2': row['away_team_score'],
             'team2Seed': row['away_team_seed'],
-            'winner_to': row['winner_to'],
-            'loser_to': row['loser_to']
+            'winners_from': row['winners_from'],
+            'losers_from': row['losers_from']
         },
         'location': {
             'address': '',
             'name': ''
         },
-        'level': row['level_name']
+        'seasons': get_by_id(row['season_id'])
     }
     return TournamentGame
 
@@ -75,11 +76,19 @@ def get_tournament_games() -> TournamentGame:
     query = '''
     SELECT game_number, game_date, game_time, home_team.team_id as home_team
     , away_team.team_id as away_team, home_team_score, away_team_score, '' as game_location
-    , levels.level_name as level_name,
-    home_team_seed, away_team_seed, winner_to, loser_to
+    , seasons.id as season_id,
+    home_team_seed, away_team_seed, 
+        (SELECT string_agg(game_number::text, ',')
+    FROM mhac.tournamentgames t
+    WHERE winner_to = tournamentgames.game_number
+    AND season_id = tournamentgames.season_id) AS winners_from,   
+    (SELECT string_agg(game_number::text, ',')
+    FROM mhac.tournamentgames t
+    WHERE loser_to = tournamentgames.game_number
+        AND season_id = tournamentgames.season_id) AS losers_from
     , tournamentgames.game_description
-    , home_team.*
-    , away_team.*
+    -- , home_team.*
+    -- , away_team.*
     FROM mhac.tournamentgames
     INNER JOIN mhac.seasons
         ON tournamentgames.season_id = seasons.id
@@ -91,10 +100,6 @@ def get_tournament_games() -> TournamentGame:
     LEFT OUTER JOIN mhac.standings as away_team
         ON tournamentgames.away_team_seed::int = away_team.standings_rank
         AND tournamentgames.season_id = away_team.season_id
-    -- LEFT OUTER JOIN mhac.season_teams_with_names as home_team_with_name
-    --     ON home_team.team_id = home_team_with_name.id
-    -- LEFT OUTER JOIN mhac.season_teams_with_names as away_team_with_name
-    --     ON away_team.team_id = away_team_with_name.id
     
     WHERE year = '2020'
     ORDER BY game_number
@@ -103,6 +108,7 @@ def get_tournament_games() -> TournamentGame:
     data_all=[]
     results = DB.execute(query)
     for r in results:
+        # print(r)
         data_all.append(tournamentGameRowMapper(r))
         
     return data_all
@@ -234,4 +240,7 @@ def update_tournament_game(game, DB=db()):
         WHERE game_number = :game_number
             AND season_id = :season_id
     """
-    # query = query.bindparams(game_date = game.game_date, game_time = game.game_time, home_team_seed)
+    query = query.bindparams(game_date = game.game_date, game_time = game.game_time, home_team_seed=game.home_team_seed, away_team_seed=game.away_team_seed, game_description = games.game_description, winner_to = games.winner_to, loser_to=games.loser_to)
+
+    DB.execute(query)
+    DB.commit()

@@ -73,19 +73,20 @@ def get_list(active=None):
         season_list.append(row_mapper(row))
     return season_list
 
-def get(slug: str):
+def get(slug: str, DB=db()):
     where = 'WHERE slug = :slug'
     stmt = text(F'''{base_query} {where} ''')
     result = DB.execute(stmt.bindparams(slug=slug))
     DB.close()
     return row_mapper(result.fetchone())
 
-def get_by_id(id: UUID) -> Season:
+def get_by_id(id: UUID, DB=db()) -> Season:
     where = 'WHERE seasons.id = :id'
     stmt = text(F'''{base_query} {where} ''')
     result = DB.execute(stmt.bindparams(id=id))
+    season = row_mapper(result.fetchone())
     DB.close()
-    return row_mapper(result.fetchone())
+    return season
 
 def archive_season(season: UUID):
     stmt = text(f'''UPDATE mhac.seasons
