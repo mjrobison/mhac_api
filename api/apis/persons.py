@@ -17,7 +17,7 @@ class PersonBase(BaseModel):
     
 class PlayerOut(PersonBase):
     id: UUID
-    birth_date: Optional[date]
+    # birth_date: Optional[date]
     height: Optional[str]
     player_number: Optional[int]
     position: Optional[str]

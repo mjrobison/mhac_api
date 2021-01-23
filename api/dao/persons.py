@@ -39,14 +39,19 @@ class PlayerCreate(TypedDict):
 class PlayerReturn(Person):
     id: UUID
     season_roster: Optional[List[str]]
+    age: int
 
+def calc_age(birth_date): 
+    from dateutil.relativedelta import relativedelta
+    from datetime import date
+    return relativedelta(date.today(), birth_date).years
 
 def player_row_mapper(row) -> PlayerReturn:
     PlayerReturn = {
         'id': row['id'],
         'first_name': row['first_name'],
         'last_name': row['last_name'],
-        'birth_date': row['birth_date'],
+        'age': calc_age(row['birth_date']),
         'height': row['height'],
         #TODO: Provide a lookup, 
         'person_type': row['person_type'],
