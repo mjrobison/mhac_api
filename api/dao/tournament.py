@@ -118,7 +118,6 @@ def get_tournament(DB=db(), year=None):
     return data_all
 
 def create_tournament_game(game, DB=db()):
-    print(game)
     next_game = game.game_number
     if game.game_number is None:
         query = text("""SELECT MAX(game_number) + 1 FROM mhac.tournamentgames WHERE season_id = :season_id """)
