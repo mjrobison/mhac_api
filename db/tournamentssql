@@ -17,11 +17,6 @@ VALUES
 
 SELECT * FROM mhac.tournamentgames
 
-ALTER TABLE mhac.tournamentgames
-ADD COLUMN season_id UUID
-
-ALTER TABLE mhac.tournamentgames
-ALTER COLUMN game_time type time
 
 
 INSERT INTO mhac.tournamentgames(game_number, game_date, game_time, home_team, away_team, season_id )

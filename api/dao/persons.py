@@ -52,6 +52,7 @@ def player_row_mapper(row) -> PlayerReturn:
         'first_name': row['first_name'],
         'last_name': row['last_name'],
         'age': calc_age(row['birth_date']),
+        'birth_date': row['birth_date'],
         'height': row['height'],
         #TODO: Provide a lookup, 
         'person_type': row['person_type'],

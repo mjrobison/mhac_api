@@ -15,7 +15,7 @@ class PersonBase(BaseModel):
     person_type: Optional[int]
     team_id: Optional[UUID]
     
-class PlayerOut(PersonBase):
+class PublicPlayerOut(PersonBase):
     id: UUID
     # birth_date: Optional[date]
     height: Optional[str]
@@ -24,6 +24,14 @@ class PlayerOut(PersonBase):
     age: Optional[int]
     season_roster: Optional[List[SeasonTeamOut2]]
 
+class PlayerOut(PersonBase):
+    id: UUID
+    birth_date: Optional[date]
+    height: Optional[str]
+    player_number: Optional[int]
+    position: Optional[str]
+    age: Optional[int]
+    season_roster: Optional[List[SeasonTeamOut2]]
 
 class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
@@ -47,19 +55,15 @@ class PlayerIn(PersonBase):
 
 
 #TODO: Move to Rosters
-@router.get('/getPlayers/{slug}', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])
+@router.get('/getPlayers/{slug}', response_model=List[PublicPlayerOut], summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
     # print(players.get_team_list(slug))
     return players.get_team_list(slug)
 
-@router.get('/getPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
+@router.get('/getPlayers', response_model=List[PublicPlayerOut], summary="Get all players", tags=['players']  )
 def get_all_players():
     return players.get_list(person_type='Player')
 
-
-# @router.get('/getPlayers/{id}', response_model=PlayerOut, tags=['players'])
-# def get_a_player(id):
-#     return players.get(id)
 
 @router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
@@ -87,3 +91,12 @@ def get_team_roster(season_team: UUID):
     team = teams._get_slug_by_level_id(season_team).get('slug')
     return players.get_team_list(team, season_team)
 
+#TODO: Move to Rosters
+@router.get('/getAdminPlayers/{slug}', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])
+def get_team_players(slug):
+    # print(players.get_team_list(slug))
+    return players.get_team_list(slug)
+
+@router.get('/getAdminPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
+def get_all_players():
+    return players.get_list(person_type='Player')
