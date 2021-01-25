@@ -28,3 +28,7 @@ def get_standings():
 @router.get('/getStandings/{season_id}', response_model=List[Standings])
 def get_season_standings(season_id: UUID):
     return standings.get_a_season(season_id)
+
+@router.get('/lookupTeamByStandings/{season_id}/{rank}')
+def get_team_from_rank(season_id: UUID, rank:int):
+    return standings.get_team_from_rank(season_id, rank)

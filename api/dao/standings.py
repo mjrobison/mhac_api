@@ -29,7 +29,6 @@ class Standings(TypedDict):
     games_behind = float
     win_percentage = float
 
-
 def row_mapper(row, leader=None) -> Standings:
     games_behind= 0.0    
     if leader:
@@ -157,3 +156,11 @@ def remove_from_standings(team_id, event, database):
 def add_loss():
     pass
 
+
+def get_team_from_rank(season_id, rank, DB=db()):
+    query = text("""SELECT * FROM mhac.standings WHERE season_id = :season_id and standings_rank = :rank """)
+    query = query.bindparams(season_id=season_id, rank=rank)
+    results =DB.execute(query)
+    team = results.fetchone()
+    return team_get(team['team_id'])
+    
