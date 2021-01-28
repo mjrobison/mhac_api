@@ -71,10 +71,9 @@ def get(slug: str, DB = db()) -> List[Team]:
     stmt = stmt.bindparams(slug = slug)
     result = DB.execute(stmt)
         # result = DB.execute(stmt)
-    DB.close()
     for row in result:
         team_list.append(row_mapper(row))
-    
+    DB.close()
     return team_list
 
 def _get_slug_by_level_id(id: str):

@@ -549,11 +549,11 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
 
     
     results = DB.execute(stmt)
-    DB.close()
+    
     schedule = []
     for game in results:
         schedule.append(team_schedule_row_mapper(game))
-    # print(schedule)
+    DB.close()
     return schedule
 
 def get_program_schedule(slug: str = None, year=None) -> List[TeamSchedule]:
