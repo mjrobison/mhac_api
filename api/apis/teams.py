@@ -55,7 +55,7 @@ def getSeasonTeams(slug: str=None):
 def getSeasonTeams(slug, seasonid):
     return teams.get_season_team(slug, seasonid)
 
-@router.post('/addTeamToSeason', tags=['teams', 'seasons'])
+@router.post('/addTeamToSeason', tags=['teams', 'season'])
 async def add_to_season(season_team: SeasonTeam):
     return teams.add_to_season(season_team)
 
