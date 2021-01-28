@@ -153,7 +153,7 @@ def remove_from_standings(team_id, event, database):
                 raise Exception
 
         update = text(f'''UPDATE mhac.standings
-        SET win_percentage = case when wins = 0 THEN 0.00 else wins/games_played::numeric(5,4) end
+        SET win_percentage = case when wins = 0 THEN 0.00 else wins/games_played::decimal end
         WHERE team_id = :team_id ''')
     
         stmt = update.bindparams(team_id = team_id)
