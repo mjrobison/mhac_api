@@ -176,5 +176,6 @@ def get_team_count(DB=db(), season_id=None):
     query = text("""SELECT COUNT(*) FROM mhac.season_teams_with_names WHERE season_id = :season_id""")
     query = query.bindparams(season_id = season_id)
     
-    DB.execute(query)
-    return DB.fetchone()
+    results = DB.execute(query).fetchone()
+    results = results[0]
+    return results
