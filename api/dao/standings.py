@@ -109,21 +109,19 @@ def add_to_standings(team_id, event, database):
         update = text('''wins = wins + 1 ''')
     else:
         update = text('''losses = losses + 1 ''')
-    
-    try: 
+
+    try:
         update = text(f'''UPDATE mhac.standings
                     SET games_played = games_played + 1, {update}
                     WHERE team_id = :team_id ''')
-        
+
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
 
         update = text(f'''UPDATE mhac.standings
-            SET win_percentage = case when wins = 0 
-            THEN 0.00 else wins/games_played::numeric(5,4) 
-            END
+            SET win_percentage = case when wins = 0 THEN 0.00 else ROUND(wins/games_played::decimal, 4) end
             WHERE team_id = :team_id ''')
-        
+
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
     except Exception as exc:
@@ -135,16 +133,16 @@ def remove_from_standings(team_id, event, database):
         update = text('''wins = wins - 1 ''')
     else:
         update = text('''losses = losses - 1 ''')
-    
-    try: 
+
+    try:
         update = text(f'''UPDATE mhac.standings
                     SET games_played = games_played - 1, {update}
                     WHERE team_id = :team_id ''')
-        
+
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
         print(stmt)
-        
+
         check = text('''SELECT * FROM mhac.standings where team_id = :team_id ''')
         stmt = check.bindparams(team_id = team_id)
         results = database.execute(stmt)
@@ -155,13 +153,13 @@ def remove_from_standings(team_id, event, database):
         update = text(f'''UPDATE mhac.standings
         SET win_percentage = case when wins = 0 THEN 0.00 else wins/games_played::numeric(5,4) end
         WHERE team_id = :team_id ''')
-    
+
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
-        
+
     except Exception as exc:
         raise exc
-  
+
 
 def add_loss():
     pass
