@@ -6,6 +6,7 @@ from datetime import datetime, date, time
 
 from dao import tournament
 from .teams import TeamOut
+from .seasons import SeasonOut as Season
 
 router = APIRouter()
 
@@ -26,6 +27,30 @@ class GameUpdate(Game):
     away_team_score: Optional[int]
 
 
+class MatchUp(BaseModel):
+    team1: Optional[str]
+    scoreTeam1: Optional[int]
+    team1Seed: Optional[int]
+    team2: Optional[str]
+    scoreTeam2: Optional[int]
+    team2Seed: Optional[int]
+    winner_to: Optional[str]
+    loser_to: Optional[str]
+
+class Location(BaseModel):
+    address: str
+    name: str
+
+class TournamentGame(BaseModel):
+    game: int
+    date: date
+    time: time
+    matchup: MatchUp
+    location: Optional[Location]
+    seasons: Season
+    game_description: str
+
+
 @router.get('/getTournamentInformation', tags=['tournament'])
 def get_tournament_games():
     return {'games': tournament.get_tournament_games()}
@@ -43,5 +68,5 @@ def add_tournament_game(game: Game):
     return tournament.create_tournament_game(game=game)
 
 @router.post("/updateTournamentGame", tags=['tournament'])
-def update_tournament_game(game: GameUpdate):
+def update_tournament_game(game: TournamentGame):
     return tournament.update_tournament_game(game=game)

@@ -1,12 +1,15 @@
-from sqlalchemy import Column, String
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
+from fastapi import HTTPException, Depends
+# from sqlalchemy import Column, String
+# from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
+
+from sqlalchemy.orm import Session
 
 from sqlalchemy.sql import text # type: ignore
 from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4, UUID
 # from sqlalchemy.dialects.postgresql import JSON, UUID
 from datetime import date, timedelta, datetime, time
-from database import db
+from database import get_db, db
 import csv
 
 from .standings import add_to_standings, remove_from_standings
@@ -17,8 +20,6 @@ from .utils import totalPoints, totalRebounds
 import json
 
 from sqlalchemy.dialects import postgresql
-
-DB = db()
 
 schedule_base_query = text('''SELECT
          schedule.id as schedule_id, 
@@ -261,7 +262,6 @@ def add_period_score(game: GameResult, game_id: UUID, database=None):
         return {200: "Success"}
 
 def add_final_score(game: GameStats, connection=None):
-    
     update_standings = False
     #Add a validator for the verification
     if not connection:
@@ -290,36 +290,43 @@ def add_final_score(game: GameStats, connection=None):
     results = DB.execute(stmt)
     game_score = results.fetchone()
     
-    if (game.final_scores.home_score and game.final_scores.away_score) and (not game_score.final_home_score or not game_score.final_away_score):
-        update_standings = True
-    elif game_score.final_home_score and game_score.final_away_score:
-        # print("here")
-        if (game_score.final_home_score > game_score.final_away_score and game.final_scores.home_score < game.final_scores.away_score) or (game_score.final_home_score < game_score.final_away_score and game.final_scores.home_score > game.final_scores.away_score):
-            # Reverse game Standings
-            remove_from_standings(game_score.home_team_id, game_score.final_home_score > game_score.final_away_score, DB)
-            remove_from_standings(game_score.away_team_id, game_score.final_home_score < game_score.final_away_score, DB)
+    try:
+        if (game.final_scores.home_score and game.final_scores.away_score) and (not game_score.final_home_score or not game_score.final_away_score):
             update_standings = True
-            DB.commit()
+        elif game_score.final_home_score and game_score.final_away_score:
 
-    # print("Ready for Update")
-    stmt = text('''UPDATE mhac.games
-                   SET final_home_score = :final_home_score, final_away_score = :final_away_score
-                   WHERE game_id = :game_id''')
-    stmt = stmt.bindparams(game_id = game.game_id , final_home_score = game.final_scores.home_score, final_away_score=game.final_scores.away_score)
-    DB.execute(stmt)
-    if not connection:
-        DB.commit()
+            if (game_score.final_home_score > game_score.final_away_score and game.final_scores.home_score < game.final_scores.away_score) or (game_score.final_home_score < game_score.final_away_score and game.final_scores.home_score > game.final_scores.away_score):
+                # Reverse game Standings
+                remove_from_standings(game_score.home_team_id, game_score.final_home_score > game_score.final_away_score, DB)
+                remove_from_standings(game_score.away_team_id, game_score.final_home_score < game_score.final_away_score, DB)
+                update_standings = True
+                DB.commit()
+            elif (game.final_scores.home_score == 0 and game.final_scores.away_score == 0): 
+                remove_from_standings(game_score.home_team_id, game_score.final_home_score > game_score.final_away_score, DB)
+                remove_from_standings(game_score.away_team_id, game_score.final_home_score < game_score.final_away_score, DB)
+                update_standings = True
 
-    if update_standings:
-        #Takes a season team id
-        add_to_standings(game_score.home_team_id, event=game.final_scores.home_score > game.final_scores.away_score, database=DB)
-        add_to_standings(game_score.away_team_id, event=game.final_scores.home_score < game.final_scores.away_score, database=DB)
+        stmt = text('''UPDATE mhac.games
+                    SET final_home_score = :final_home_score, final_away_score = :final_away_score
+                    WHERE game_id = :game_id''')
+        stmt = stmt.bindparams(game_id = game.game_id , final_home_score = game.final_scores.home_score, final_away_score=game.final_scores.away_score)
+        DB.execute(stmt)
         if not connection:
             DB.commit()
+
+        if update_standings:
+            #Takes a season team id
+            add_to_standings(game_score.home_team_id, event=game.final_scores.home_score > game.final_scores.away_score, database=DB)
+            add_to_standings(game_score.away_team_id, event=game.final_scores.home_score < game.final_scores.away_score, database=DB)
+            if not connection:
+                DB.commit()
+         
+    except Exception as exc:
+        print(str(exc))
+        DB.rollback()
+        raise HTTPException(status_code = 400, detail="There was a problem updating the game")
     
-    if not connection:
-        DB.close()
-        return {200: "success"}
+    return 
 
 def update_period_score(game: GameResult, game_id, database=None):
     #TODO: Check the score difference and send back a positive or negative
@@ -540,7 +547,7 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             ORDER BY schedule.game_date
             ''')
 
-
+    
     results = DB.execute(stmt)
     DB.close()
     schedule = []
@@ -626,7 +633,7 @@ def remove_game(game: GameIdDel):
         results = DB.execute(stmt)
 
         if results.rowcount > 0:
-            return {400: "Game has results attached"}
+            raise HTTPException(status_code=400, detail= "Game has results attached")
 
 
         stmt = text("""
@@ -793,25 +800,21 @@ def add_stats(player_stats, game_id, team_id, connection=None):
     return "200"
 
 def add_games_and_stats(game: GameStats):
-    print('entrypoint')
     game_id = game.game_id
     team_id = game.team_id
     DB = db()
     
     final_scores = game.final_scores
-    # print("final_Scores", final_scores)
-    # print("Game_scores", game.game_scores)
     add_period_score(game.game_scores, game_id, database=DB)
     add_stats(game.player_stats, game_id, team_id)
 
-    if final_scores.home_score or final_scores.away_score:
+    if final_scores.home_score is not None or final_scores.away_score is not None:
         add_final_score(game, DB)
     try:
         DB.commit()
     except Exception as exc:
         print(str(exc))
-    finally:
-        DB.close()
+
 
 def stats_by_season_and_team(season_id, team_id):
     DB = db()

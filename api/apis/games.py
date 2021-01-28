@@ -138,7 +138,7 @@ async def create_upload_file(game_id: UUID, team_id:UUID, file: UploadFile = Fil
 def update_final_score():
     pass
 
-@router.post('/addFinalScore', tags=['games'])
+@router.post('/addFinalScore', tags=['games'], status_code=201)
 def add_final_score(game: GameIn):
     return games.add_final_score(game)
 

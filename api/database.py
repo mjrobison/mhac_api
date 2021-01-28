@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from contextlib import contextmanager
 
 from config import config
 import os
@@ -14,4 +15,19 @@ engine = create_engine(
 db = sessionmaker(autocommit=False, autoflush=True, bind=engine)
 
 def get_db():
-    return db()
+    DB = db()
+    try:
+        yield DB
+    finally: 
+        DB.close()
+
+@contextmanager
+def database_conn():
+    DB = db()
+    try:
+        yield DB
+        db.commit()
+    except:
+        DB.rollback()
+    finally:
+        DB.close()

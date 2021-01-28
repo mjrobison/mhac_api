@@ -33,7 +33,7 @@ def row_mapper(row, leader=None) -> Standings:
     games_behind= 0.0    
     if leader:
         games_behind =calcGamesBehind(leader, row['wins'], row['losses'])
-    logger.info(games_behind)
+    # logger.info(games_behind)
     Standings = {
         # 'team_id': team_get(row['team_id']),
         # 'season_id': season_get(row['season_id']),
@@ -104,7 +104,6 @@ def get(level=None) -> Standings:
         i += 1 
     return standings_list
 
-
 def add_to_standings(team_id, event, database):
     if event:
         update = text('''wins = wins + 1 ''')
@@ -120,7 +119,9 @@ def add_to_standings(team_id, event, database):
         database.execute(stmt)
 
         update = text(f'''UPDATE mhac.standings
-            SET win_percentage = case when wins = 0 THEN 0.00 else wins/games_played::numeric(5,4) end
+            SET win_percentage = case when wins = 0 
+            THEN 0.00 else wins/games_played::numeric(5,4) 
+            END
             WHERE team_id = :team_id ''')
         
         stmt = update.bindparams(team_id = team_id)
@@ -142,6 +143,14 @@ def remove_from_standings(team_id, event, database):
         
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
+        print(stmt)
+        
+        check = text('''SELECT * FROM mhac.standings where team_id = :team_id ''')
+        stmt = check.bindparams(team_id = team_id)
+        results = database.execute(stmt)
+        for r in results:
+            if r['games_played'] < 0 or r['wins'] < 0 or r['losses'] < 0:
+                raise Exception
 
         update = text(f'''UPDATE mhac.standings
         SET win_percentage = case when wins = 0 THEN 0.00 else wins/games_played::numeric(5,4) end
@@ -149,6 +158,7 @@ def remove_from_standings(team_id, event, database):
     
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
+        
     except Exception as exc:
         raise exc
   
@@ -167,3 +177,16 @@ def get_team_from_rank(season_id, rank, DB=db()):
     else:
         return None
     
+
+def update_standings_rank():
+    query = text('''SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc), * FROM mhac.standings WHERE season_id = '890a3d42-84d3-4600-8cf6-75ad5f8c658f';''')
+
+    query = text('''UPDATE mhac.standings                                                                                                                                       
+SET standings_rank = rn
+FROM (SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc) as rn, * FROM mhac.standings WHERE season_id = '890a3d42-84d3-4600-8cf6-75ad5f8c658f') as r
+WHERE standings.season_id = r.season_id 
+AND standings.team_id = r.team_id
+; ''')
+
+
+    #

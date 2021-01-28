@@ -36,6 +36,7 @@ class TournamentGame(TypedDict):
     matchup = MatchUp
     location = Location
     seasons = Season
+    game_description = str
 
 
 def tournamentGameRowMapper(row) -> TournamentGame:
@@ -169,78 +170,79 @@ def create_tournament_game(game, DB=db()):
     return {'success': 200}
 
 def update_tournament_game(game, DB=db()):
-    if game.home_team_score is not None and game.away_team_score is not None:
+    print(game)
+    if game.matchup.scoreTeam1 is not None and game.matchup.scoreTeam2 is not None:
         update = text("""UPDATE mhac.tournamentgames 
         SET home_team_score = :home_team_score, away_team_score = :away_team_score
         WHERE game_number = :game_number AND season_id = :season_id """)
 
-        update = update.bindparams(home_team_score = game.home_team_score, away_team_score = game.away_team_score, game_number = game.game_number, season_id = game.season_id)
+        update = update.bindparams(home_team_score = game.matchup.scoreTeam1, away_team_score = game.matchup.scoreTeam2, game_number = game.game, season_id = game.seasons.season_id)
 
         DB.execute(update)
         DB.commit()
 
         game_query = text("""SELECT * FROM mhac.tournamentgames WHERE game_number = :game_number and season_id = :season_id""")
 
-        game_query = game_query.bindparams(game_number = game.game_number, season_id = game.season_id)
+        game_query = game_query.bindparams(game_number = game.game, season_id = game.seasons.season_id)
         result = DB.execute(game_query).fetchone()
-        # print(f'\n\n\n{result}\n\n{result.winner_to}')
+
         update_query = text("""UPDATE mhac.tournamentgames 
             SET home_team_seed = :home_team_seed, away_team_seed = :away_team_seed
             WHERE game_number = :game_number 
                 AND season_id = :season_id """)
 
-        # print(game.home_team_score, game.away_team_score, game.home_team_seed)
-        if game.home_team_score > game.away_team_score:
-            winner = game.home_team_seed
-            loser = game.away_team_seed
+        if game.matchup.scoreTeam1 > game.matchup.scoreTeam2:
+            winner = game.matchup.team1Seed
+            loser = game.matchup.team2Seed
         else:
-            winner = game.away_team_seed
-            loser = game.home_team_seed
+            winner = game.matchup.team2Seed
+            loser = game.matchup.team1Seed
         
         # Winner Update
         # Get the number game information
-
-        game_query = game_query.bindparams(game_number=result.winner_to, season_id = result.season_id)
-        winner_game = DB.execute(game_query).fetchone()
+        if result.winner_to is not None:
+            game_query = game_query.bindparams(game_number=result.winner_to, season_id=result.season_id)
+            winner_game = DB.execute(game_query).fetchone()
+            if winner_game:
+                if winner_game.home_team_seed is not None:
+                    # Determine the lower seed for home team
+                    print(winner, winner_game.home_team_seed)
+                    if int(winner_game.home_team_seed) < int(winner):
+                        update_query = update_query.bindparams(home_team_seed = winner_game.home_team_seed, away_team_seed = winner, game_number = result.winner_to, season_id = result.season_id)
+                    else:
+                        update_query = update_query.bindparams(home_team_seed = winner, away_team_seed = winner_game.home_team_seed, game_number = result.winner_to, season_id = result.season_id)
+                else:
+                    update_query = update_query.bindparams(home_team_seed = winner, away_team_seed = None, game_number = result.winner_to, season_id = result.season_id)
+                    
+            DB.execute(update_query)
+            DB.commit()
         
-        if winner_game.home_team_seed is not None:
-            # Determine the lower seed for home team
-            if int(winner_game.home_team_seed) < int(winner):
-                update_query = update_query.bindparams(home_team_seed = winner, away_team_seed = winner_game.home_team_seed, game_number = result.winner_to, season_id = result.season_id)
+        if result.loser_to is not None:
+            game_query = game_query.bindparams(game_number=result.loser_to, season_id = result.season_id)
+            loser_game = DB.execute(game_query).fetchone()
+            
+            if loser_game.home_team_seed is not None:
+                # Determine the lower seed for home team
+                if loser_game.home_team_seed < winner:
+                    new_update_query = update_query.bindparams(home_team_seed = loser, away_team_seed = loser_game.home_team_seed, game_number = result.loser_to, season_id = result.season_id)
+                else:
+                    new_update_query = update_query.bindparams(away_team_seed = loser, home_team_seed = loser_game.home_team_seed, game_number = result.loser_to, season_id = result.season_id)
             else:
-                update_query = update_query.bindparams(away_team_seed = winner, home_team_seed = winner_game.home_team_seed, game_number = result.winner_to, season_id = result.season_id)
-        else:
-           update_query = update_query.bindparams(home_team_seed = winner, away_team_seed = None, game_number = result.winner_to, season_id = result.season_id)
-        
-        
-        DB.execute(update_query)
-        DB.commit()
-        
-        game_query = game_query.bindparams(game_number=result.loser_to, season_id = result.season_id)
-        loser_game = DB.execute(game_query).fetchone()
-        
-        if loser_game.home_team_seed is not None:
-            # Determine the lower seed for home team
-            if loser_game.home_team_seed < winner:
-                new_update_query = update_query.bindparams(home_team_seed = loser, away_team_seed = loser_game.home_team_seed, game_number = result.loser_to, season_id = result.season_id)
-            else:
-                new_update_query = update_query.bindparams(away_team_seed = loser, home_team_seed = loser_game.home_team_seed, game_number = result.loser_to, season_id = result.season_id)
-        else:
-            new_update_query = update_query.bindparams(home_team_seed = loser, away_team_seed = None, game_number = result.loser_to, season_id = result.season_id)
-        
-        DB.execute(new_update_query)
-        DB.commit()
-        
+                new_update_query = update_query.bindparams(home_team_seed = loser, away_team_seed = None, game_number = result.loser_to, season_id = result.season_id)
+            
+            DB.execute(new_update_query)
+            DB.commit()
+            
         
     #What about reordering games
+    else:
+        query = text(""" 
+            UPDATE mhac.tournamentgames
+            SET game_date = :game_date, game_time = :game_time, home_team_seed = :home_team_seed, away_team_seed = :away_team_seed, game_description = :game_description, winner_to = :winner_to, loser_to = :loser_to
+            WHERE game_number = :game_number
+                AND season_id = :season_id
+        """)
+        query = query.bindparams(season_id = game.seasons.season_id, game_number= game.game, game_date = game.date, game_time = game.time, home_team_seed=game.matchup.team1Seed, away_team_seed=game.matchup.team2Seed, game_description = game.game_description, winner_to = game.matchup.winner_to, loser_to=game.matchup.loser_to)
 
-    query = """ 
-        UPDATE mhac.tournamentgames
-        SET game_date = :game_date, game_time = :game_time, home_team_seed = :home_team_seed, away_team_seed = :away_team_seed, game_description = :game_description, winner_to = :winner_to, loser_to = :loser_to
-        WHERE game_number = :game_number
-            AND season_id = :season_id
-    """
-    query = query.bindparams(game_date = game.game_date, game_time = game.game_time, home_team_seed=game.home_team_seed, away_team_seed=game.away_team_seed, game_description = games.game_description, winner_to = games.winner_to, loser_to=games.loser_to)
-
-    DB.execute(query)
-    DB.commit()
+        DB.execute(query)
+        DB.commit()

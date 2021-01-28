@@ -64,7 +64,7 @@ def season_team_row_mapper(row) -> SeasonTeam:
     return SeasonTeam
 
 
-def get(slug: str, DB = get_db()) -> List[Team]:
+def get(slug: str, DB = db()) -> List[Team]:
     
     team_list = []
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
