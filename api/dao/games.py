@@ -480,7 +480,7 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             ''')
         stmt = stmt.bindparams(slug = slug, season_id = season_id)
     
-    elif season_team_id :
+    elif season_team_id:
         missing_subquery = text ('''SELECT count(*) FROM mhac.basketball_stats 
                 INNER JOIN mhac.season_teams_with_names 
                     ON basketball_stats.team_id = season_teams_with_names.id
@@ -517,11 +517,6 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
     
     else :
         missing_subquery = '0' 
-        #  text('''SELECT count(*), season_team_id FROM mhac.basketball_stats 
-        #         INNER JOIN mhac.season_teams_with_names 
-        #             ON basketball_stats.team_id = season_teams_with_names.id
-        #             AND basketball_stats.game_id = games.game_id
-        #         ''')
         
         stmt = text(f'''SELECT
             schedule.id as schedule_id, 
@@ -544,8 +539,7 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             WHERE (home_team.archive is null and away_team.archive is null)
             ORDER BY schedule.game_date
             ''')
-        # stmt = stmt.bindparams()
-    # print(stmt)
+
 
     results = DB.execute(stmt)
     DB.close()

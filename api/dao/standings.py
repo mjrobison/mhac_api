@@ -162,5 +162,8 @@ def get_team_from_rank(season_id, rank, DB=db()):
     query = query.bindparams(season_id=season_id, rank=rank)
     results =DB.execute(query)
     team = results.fetchone()
-    return team_get(team['team_id'])
+    if team:
+        return team_get(team['team_id'])
+    else:
+        return None
     

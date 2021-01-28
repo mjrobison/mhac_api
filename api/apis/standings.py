@@ -31,4 +31,7 @@ def get_season_standings(season_id: UUID):
 
 @router.get('/lookupTeamByStandings/{season_id}/{rank}')
 def get_team_from_rank(season_id: UUID, rank:int):
-    return standings.get_team_from_rank(season_id, rank)
+    team = standings.get_team_from_rank(season_id, rank)
+    if not team:
+        raise HTTPException(status_code=404, detail="No Team Found")
+    return team

@@ -40,7 +40,7 @@ class SeasonTeamOut2(TeamBase):
 
 @router.get('/getTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
 def getTeam(slug):
-    return teams.get(slug)
+    return teams.get(slug=slug)
     
 @router.get('/getTeams', response_model=List[TeamOut], summary="Get All Teams", tags=['teams'])
 async def get():
