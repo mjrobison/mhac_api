@@ -17,6 +17,7 @@ class Game(BaseModel):
     home_team_seed: Optional[int]
     away_team_seed: Optional[int]
     game_description: Optional[str]
+    display: bool
     season_id: UUID
     winner_to: Optional[int]
     loser_to: Optional[int]
@@ -49,6 +50,7 @@ class TournamentGame(BaseModel):
     location: Optional[Location]
     seasons: Season
     game_description: str
+    display: bool
 
 
 @router.get('/getTournamentInformation', tags=['tournament'])

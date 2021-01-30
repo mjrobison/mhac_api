@@ -45,6 +45,7 @@ def tournamentGameRowMapper(row) -> TournamentGame:
         'date': row['game_date'],
         'time': row['game_time'],
         'game_description': row['game_description'],
+        'display': row['display'],
         'matchup': {
             'team1': get_with_uuid(row['home_team'])['team_name'] if row['home_team'] else None,
             'scoreTeam1': row['home_team_score'],
@@ -88,8 +89,9 @@ def get_tournament_games() -> TournamentGame:
     WHERE loser_to = tournamentgames.game_number
         AND season_id = tournamentgames.season_id) AS losers_from
     , tournamentgames.game_description
-    -- , home_team.*
-    -- , away_team.*
+    , CASE WHEN seasons.tournament_start_date > current_date + 3 THEN false
+        ELSE true
+    END display
     FROM mhac.tournamentgames
     INNER JOIN mhac.seasons
         ON tournamentgames.season_id = seasons.id
