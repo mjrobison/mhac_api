@@ -90,7 +90,6 @@ def get(level=None) -> Standings:
         {where}
         ORDER BY win_percentage DESC, wins desc''')
     result = DB.execute(stmt)
-    DB.close()
     standings_list = []
     i = 1 
     leader = {}
@@ -102,6 +101,7 @@ def get(level=None) -> Standings:
 
         standings_list.append(row_mapper(row, leader))
         i += 1 
+    DB.close()
     return standings_list
 
 def add_to_standings(team_id, event, database):
@@ -182,11 +182,8 @@ def update_standings_rank():
     query = text('''SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc), * FROM mhac.standings WHERE season_id = '890a3d42-84d3-4600-8cf6-75ad5f8c658f';''')
 
     query = text('''UPDATE mhac.standings                                                                                                                                       
-SET standings_rank = rn
-FROM (SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc) as rn, * FROM mhac.standings WHERE season_id = '890a3d42-84d3-4600-8cf6-75ad5f8c658f') as r
-WHERE standings.season_id = r.season_id 
-AND standings.team_id = r.team_id
-; ''')
-
-
-    #
+                    SET standings_rank = rn
+                    FROM (SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc) as rn, * FROM mhac.standings WHERE season_id = '890a3d42-84d3-4600-8cf6-75ad5f8c658f') as r
+                    WHERE standings.season_id = r.season_id 
+                    AND standings.team_id = r.team_id; 
+                ''')
