@@ -5,6 +5,7 @@ from uuid import UUID
 from datetime import datetime, date
 
 from dao import teams
+from .addresses import Address
 
 
 router = APIRouter()
@@ -21,6 +22,8 @@ class TeamBase(BaseModel):
 
 class TeamOut(TeamBase):
     team_id: UUID
+    address: Address
+    
 
 class TeamUpdate(TeamBase):
     team_id: UUID
