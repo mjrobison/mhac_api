@@ -7,6 +7,7 @@ from typing import TypedDict, List, Dict, Any
 from uuid import uuid4
 from sqlalchemy.dialects.postgresql import JSON, UUID
 
+from .addresses import get_address_with_id, Address
 from database import db, get_db
 
 DB = db()
@@ -14,16 +15,17 @@ DB = db()
 class Team(TypedDict):
     team_name: str
     team_mascot: str
-    # address_id: address.address_id
     main_color: str
     secondary_color: str
     website: str
     logo_color: str
     logo_grey: str
     slug: str
+    
 
 class TeamOut(Team):
-    id: UUID
+    team_id: UUID
+    address: Address
 
 class SeasonTeam(Team):
     team_id: UUID
@@ -42,7 +44,8 @@ def row_mapper(row) -> TeamOut:
         'website': row['website'],
         'logo_color': row['logo_color'],
         'logo_grey': row['logo_grey'],
-        'slug': row['slug']
+        'slug': row['slug'],
+        'address': get_address_with_id(row['address_id'])
     }
     return Team
 
@@ -69,8 +72,7 @@ def get(slug: str, DB = db()) -> List[Team]:
     team_list = []
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
     stmt = stmt.bindparams(slug = slug)
-    result = DB.execute(stmt)
-        # result = DB.execute(stmt)
+    result = DB.execute(stmt).fetchall()
     for row in result:
         team_list.append(row_mapper(row))
     DB.close()
