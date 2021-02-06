@@ -57,7 +57,9 @@ def tournamentGameRowMapper(row) -> TournamentGame:
             'scoreTeam2': row['away_team_score'],
             'team2Seed': row['away_team_seed'],
             'winners_from': row['winners_from'],
-            'losers_from': row['losers_from']
+            'losers_from': row['losers_from'],
+            'winner_to': row['winner_to'],
+            'loser_to': row['loser_to']
         },
         'location': {
             'address': '',
@@ -94,7 +96,8 @@ def get_tournament_games() -> TournamentGame:
     , tournamentgames.game_description
     , CASE WHEN seasons.tournament_start_date > current_date + 3 THEN false
         ELSE true
-    END display
+    END display, 
+    winner_to, loser_to
     FROM mhac.tournamentgames
     INNER JOIN mhac.seasons
         ON tournamentgames.season_id = seasons.id
