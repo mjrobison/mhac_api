@@ -14,11 +14,15 @@ class PersonBase(BaseModel):
     last_name: str
     person_type: Optional[int]
     team_id: Optional[UUID]
+
+class Height(BaseModel):
+    feet: int
+    inches: int
     
 class PublicPlayerOut(PersonBase):
     id: UUID
     # birth_date: Optional[date]
-    height: Optional[str]
+    height: Optional[Height]
     player_number: Optional[int]
     position: Optional[str]
     age: Optional[int]
@@ -27,7 +31,7 @@ class PublicPlayerOut(PersonBase):
 class PlayerOut(PersonBase):
     id: UUID
     birth_date: Optional[date]
-    height: Optional[str]
+    height: Optional[Height]
     player_number: Optional[int]
     position: Optional[str]
     age: Optional[int]
@@ -38,7 +42,7 @@ class PlayerIn(PersonBase):
     id: Optional[UUID]
     season_roster: List[SeasonTeamOut2]
     birth_date: date
-    height: Optional[str]
+    height: Optional[Height]
     person_type: str
     player_number: Optional[int]
     position: Optional[str]
@@ -46,12 +50,17 @@ class PlayerIn(PersonBase):
 
     @validator('birth_date')
     def age_between(cls, birthday):
+        # print(birthday)
         min_year = datetime.today().year - 13
         max_year = datetime.today().year - 19
-        # print(min_year, max_year, birthday <= date(min_year, 9, 1), birthday >= date(max_year, 9,1))
+        if datetime.today().month < 9:
+            max_year = datetime.today().year - 20
+
         if not (birthday >= date(max_year, 9,1)):
             raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
         return birthday
+    
+    # TODO: Convert Feet and inches to inches
 
 
 #TODO: Move to Rosters
@@ -75,11 +84,10 @@ def add_player(player: PlayerIn):
 @router.put('/updatePlayer/{id}', summary="Update a player", tags=['players', 'rosters'])
 def update_player(id, player: PlayerIn):
     try:
-        
-        print(players.update(id, player))
+        players.update(id, player)
     except Exception as exc:
         print(str(exc))
-        return {400: "Error Message"}
+        return HTTPExcaption(status_code = 400, detail= "Error Message")
     return {200: "Success"}
 
 @router.post('/addPlayerToRoster')

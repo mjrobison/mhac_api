@@ -78,16 +78,15 @@ def get(slug: str, DB = db()) -> List[Team]:
     DB.close()
     return team_list
 
-def _get_slug_by_level_id(id: str):
+def _get_slug_by_level_id(id: str, DB = db()):
     team_list = []
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null''')
     stmt = stmt.bindparams(id = id)
     result = DB.execute(stmt)
-        # result = DB.execute(stmt)
-    DB.close()
+    
     for row in result:
         team_list.append(row_mapper(row))
-    
+    DB.close()
     return team_list[0]
 
 def get_season_teams(slug: str= None) -> List[SeasonTeam]:
@@ -118,20 +117,20 @@ def get_season_team(slug: str, seasonid: str) -> SeasonTeam:
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null and season_id = :seasonid''')
     stmt = stmt.bindparams(slug = slug, seasonid = seasonid)
     result = DB.execute(stmt)
-        # result = DB.execute(stmt)
+    
     DB.close()
     return season_team_row_mapper(result.fetchone())
 
 
-def get_list() -> List[TeamOut]:
-    DB = db()
+def get_list(DB = db()) -> List[TeamOut]:
+    
     team_list = []
     stmt = text('''SELECT * FROM mhac.teams''')
     result = DB.execute(stmt)
-    DB.close()
+    
     for row in result:
         team_list.append(row_mapper(row))
-    
+    DB.close()
     return team_list
 
 def get_with_uuid(id: UUID) -> SeasonTeam:
