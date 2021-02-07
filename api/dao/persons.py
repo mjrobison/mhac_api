@@ -13,6 +13,10 @@ from .levels import get_by_id
 
 DB = db()
 
+class Height(TypedDict):
+    feet: int
+    inches: int
+
 class Person(TypedDict):
     first_name= str 
     last_name= str 
@@ -20,7 +24,7 @@ class Person(TypedDict):
     team = UUID
     team_id = UUID
     birth_date: Optional[Date] 
-    height= Optional[str]
+    height = Optional[Height]
     number = int
     position = Optional[str]
 
@@ -32,7 +36,7 @@ class PlayerCreate(TypedDict):
     team = UUID
     season_roster = List[SeasonTeam]
     birth_date: Optional[Date] 
-    height= Optional[str]
+    height= Optional[Height]
     player_number = int
     position = Optional[str]
 
@@ -46,14 +50,30 @@ def calc_age(birth_date):
     from datetime import date
     return relativedelta(date.today(), birth_date).years
 
+def break_height(inches):
+    # print(inches)
+    if inches:
+        feet = int(int(inches)/12)
+        inches = int(int(inches) % 12)
+        return feet, inches
+    return 0, 0 
+
+def combine_height(feet, inches):
+    return (feet * 12) + inches
+
+
 def player_row_mapper(row) -> PlayerReturn:
+    feet, inches = break_height(row['height'] if row['height'] is not None else 0)
     PlayerReturn = {
         'id': row['id'],
         'first_name': row['first_name'],
         'last_name': row['last_name'],
         'age': calc_age(row['birth_date']),
         'birth_date': row['birth_date'],
-        'height': row['height'],
+        'height': {
+            'feet': feet,
+            'inches': inches
+        },
         #TODO: Provide a lookup, 
         'person_type': row['person_type'],
         'team': row['team_id'],
@@ -82,23 +102,18 @@ def get_list(person_type) -> List[Person]:
     player_list = []
     stmt = text('''SELECT person.* FROM mhac.person INNER JOIN mhac.person_type ON person.person_type = person_type.id WHERE person_type.type = :person_type ''')
     result = DB.execute(stmt.bindparams(person_type = person_type))
-    DB.close()
+    
     for row in result:
         player_list.append(player_row_mapper(row))
-    
+    DB.close()
     return player_list
 
-def get_team_list(slug, season_level: Optional[str] = None):
-    DB = db()
+def get_team_list(slug, season_level: Optional[str] = None, DB=db()):
     player_list = []
-    # stmt = text('''SELECT person.* FROM mhac.person 
-    # INNER JOIN mhac.person_type 
-    # ON person.person_type = person_type.id
-    # INNER JOIN mhac.teams 
-    #     ON person.team_id = teams.id 
-    # WHERE person_type.type = 'Player' and slug = :slug''')
+
     base_query = text(''' 
-        SELECT person.id, person.first_name, person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number as number, string_agg(season_team_id::text, ',') AS season_roster, string_agg(level_id::text,',') 
+        SELECT person.id, person.first_name
+        , person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number as number, string_agg(season_team_id::text, ',') AS season_roster, string_agg(level_id::text,',') 
         FROM mhac.team_rosters
         INNER JOIN mhac.season_teams_with_names as teams
             ON team_rosters.season_team_id = teams.id 
@@ -119,24 +134,43 @@ def get_team_list(slug, season_level: Optional[str] = None):
     
     try:
         result = DB.execute(stmt)
+        for row in result:
+            player_list.append(player_row_mapper(row))
     except Exception as exc:
         print(str(exc))
         raise
     finally:
         DB.close()
     
-    for row in result:
-        player_list.append(player_row_mapper(row))
-
     return player_list
 
-def update(id, Player: PlayerCreate):
+def update(id, Player: PlayerCreate, DB=db()):
     #TODO: Compare incoming with existing and update the new field
     #TODO: Remove a seasonTeam
-    DB = db()
     
+    #Check Season Teams
+    query = text(""" 
+    SELECT * FROM mhac.team_rosters
+    INNER JOIN mhac.season_teams_with_names
+        ON team_rosters.season_team_id = season_teams_with_names.id
+    WHERE player_id = :player_id
+        AND season_teams_with_names.archive is null
+    """)
+
+    query = query.bindparams(player_id = Player.id)
+    results = DB.execute(query).fetchall()
+
+    print(len(results))
+
+    if len(results) > len(Player.season_roster):
+        
+        for r in results:
+            if r not in Player.season_roster: 
+                update = text("""DELETE FROM mhac.team_rosters WHERE roster_id = :roster_id """)
+                update = update.bindparams(roster_id = r.roster_id)
+                DB.execute(update)
+
     for season_team in Player.season_roster:
-            #   for season_team in player.season_roster:
         stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
         VALUES
         (:season_team_id, :player_id, :number) 
@@ -163,7 +197,7 @@ def update(id, Player: PlayerCreate):
     stmt = text('''UPDATE mhac.person 
     SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, position = :position, height = :height, number = :player_number, person_type = :person_type
     WHERE id = :id''')
-    stmt = stmt.bindparams(first_name = Player.first_name, last_name=Player.last_name, birth_date = Player.birth_date, position=Player.position, height= Player.height, player_number = Player.player_number, id = Player.id, person_type = '1')
+    stmt = stmt.bindparams(first_name = Player.first_name, last_name=Player.last_name, birth_date = Player.birth_date, position=Player.position, height= combine_height(Player.height.feet, Player.height.inches), player_number = Player.player_number, id = Player.id, person_type = '1')
 
     try:
         DB.execute(stmt)

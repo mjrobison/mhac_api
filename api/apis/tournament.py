@@ -53,22 +53,22 @@ class TournamentGame(BaseModel):
     display: bool
 
 
-@router.get('/getTournamentInformation', tags=['tournament'])
+@router.get('/getTournamentInformation/', tags=['tournament'])
 def get_tournament_games():
     return {'games': tournament.get_tournament_games()}
 
-@router.get('/getActiveTournaments', tags=['tournament'])
+@router.get('/getActiveTournaments/', tags=['tournament'])
 def get_active_tournament():
     return tournament.get_tournament()
 
-@router.get('/getTournaments', tags=['tournament'])
+@router.get('/getTournaments/', tags=['tournament'])
 def get_tournaments(year):
     return tournament.get_tournament(year=year)
 
-@router.post('/addTournamentGame', tags=['tournament'])
+@router.post('/addTournamentGame/', tags=['tournament'])
 def add_tournament_game(game: Game):
     return tournament.create_tournament_game(game=game)
 
-@router.post("/updateTournamentGame", tags=['tournament'])
+@router.post("/updateTournamentGame/", tags=['tournament'])
 def update_tournament_game(game: TournamentGame):
     return tournament.update_tournament_game(game=game)
