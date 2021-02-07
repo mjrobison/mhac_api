@@ -87,7 +87,7 @@ def update_player(id, player: PlayerIn):
         players.update(id, player)
     except Exception as exc:
         print(str(exc))
-        return HTTPExcaption(status_code = 400, detail= "Error Message")
+        return HTTPException(status_code = 400, detail= "Error Message")
     return {200: "Success"}
 
 @router.post('/addPlayerToRoster')
