@@ -4,7 +4,7 @@ from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
 from datetime import datetime, date, time
 
-from .seasons import SeasonBase
+from .seasons import SeasonBase, SeasonOut
 from .teams import TeamBase, SeasonTeamOut2 as SeasonTeam
 from .persons import PlayerOut 
 from dao import games
@@ -36,6 +36,9 @@ class Schedule(GameBase):
     time: Optional[time]
     season: UUID
     neutral_site: Optional[str]
+
+class ScheduleUpdate(Schedule):
+    game_id: UUID
 
 class Final_Scores(BaseModel):
     away_score: Optional[int]
@@ -78,6 +81,7 @@ class TeamSchedule(BaseModel):
     away_team: SeasonTeam
     final_scores: Final_Scores
     missing_stats: Optional[bool]
+    season: SeasonOut
 
 class GameStats(BaseModel):
     game_id: UUID
@@ -97,10 +101,6 @@ def add_game(game: Schedule):
         game.neutral_site = False
     return games.create(game)
 
-@router.post('/addTournamentGame', tags=['games'])
-def add_tournament_game(game: Schedule):
-    pass
-
 @router.post('/addPeriodScore', tags=['games'])
 def enter_new_period_score(game: GameResult):
     return games.add_period_score(game)
@@ -109,9 +109,11 @@ def enter_new_period_score(game: GameResult):
 def update_period(game_result: GameResult):
     return games.update_period_score(game_result)
 
-@router.put('/updateGame', tags=['games'])
-def update_game():
-    return games.update()
+@router.post('/updateGame', tags=['games'])
+def update_game(game: ScheduleUpdate):
+    # print(game)
+    # return ''
+    return games.update(game)
 
 @router.get('/getGameResults/{game_id}') #, response_model=List[GameResultsStatsOut], tags=['games'])
 @router.get('/getGameResults/{game_id}/{team_id}') #, response_model=List[GameResultsStatsOut], tags=['games'])
@@ -120,8 +122,7 @@ def get_game(game_id: UUID, team_id: UUID= None):
 
 @router.post('/addGameResults/{game_id}', tags=['games'])
 def add_game_results(game_id: UUID, game_scores: GameStats):
-    games.add_games_and_stats(game_scores)
-    return 400
+    return games.add_games_and_stats(game_scores)
 
 @router.post('/addFileGameStats/{game_id}/{team_id}')
 async def create_upload_file(game_id: UUID, team_id:UUID, file: UploadFile = File(...) ):
@@ -137,11 +138,11 @@ async def create_upload_file(game_id: UUID, team_id:UUID, file: UploadFile = Fil
 def update_final_score():
     pass
 
-@router.post('/addFinalScore', tags=['games'])
+@router.post('/addFinalScore', tags=['games'], status_code=201)
 def add_final_score(game: GameIn):
     return games.add_final_score(game)
 
-@router.get('/getSchedule/') #, response_model=List[ScheduleOut], tags=['games'])
+@router.get('/getSchedule') #, response_model=List[ScheduleOut], tags=['games'])
 def get_full_schedules():
     return games.get_team_schedule()
 
