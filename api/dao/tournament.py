@@ -78,10 +78,16 @@ def tournamentRowMapper(row):
     }
 
 
-def get_tournament_games() -> TournamentGame:
-    DB = db()
-    query = '''
-    SELECT ROW_NUMBER() OVER (ORDER BY game_date, game_time ) AS logical_game_number, game_number, game_date, game_time, home_team.team_id as home_team
+def get_tournament_games(DB = db(), season_id=None) -> TournamentGame:
+    
+    if season_id:
+        where = f'WHERE seasons.id = :season_id '
+    else: 
+        season_id = '2020'
+        where = 'WHERE year = :season_id'
+
+    query = text(f'''
+    SELECT ROW_NUMBER() OVER (partition by seasons.id ORDER BY game_date, game_time ) AS logical_game_number, game_number, game_date, game_time, home_team.team_id as home_team
     , away_team.team_id as away_team, home_team_score, away_team_score, '' as game_location
     , seasons.id as season_id,
     home_team_seed, away_team_seed, 
@@ -109,17 +115,18 @@ def get_tournament_games() -> TournamentGame:
     LEFT OUTER JOIN mhac.standings as away_team
         ON tournamentgames.away_team_seed::int = away_team.standings_rank
         AND tournamentgames.season_id = away_team.season_id
-    
-    WHERE year = '2020'
+
+    {where}
     ORDER BY game_number
-    '''
-    
+    ''')
+
+    query = query.bindparams(season_id = season_id)
+
     data_all=[]
     results = DB.execute(query)
     for r in results:
-        # print(r)
         data_all.append(tournamentGameRowMapper(r))
-        
+    DB.close()
     return data_all
 
 
