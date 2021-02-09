@@ -1,0 +1,94 @@
+SELECT * 
+FROM mhac.season_teams_with_names as teams 
+LEFT OUTER join mhac.games as home_games on
+    teams.id = home_games.home_team_id
+LEFT OUTER join mhac.games as away_games on
+    teams.id = away_games.home_team_id
+WHERE archive is null
+
+SELECT home_team.id, SUM(case when final_home_score > final_away_score and games.home_team_id = home_team.id Then 1 ELSE 0 END) AS wins,
+SUM(case when final_home_score < final_away_score and games.home_team_id = home_team.id Then 1 ELSE 0 END) AS losses
+FROM mhac.games
+INNER JOIN mhac.season_teams_with_names as home_team
+    ON games.home_team_id = home_team.id
+WHERE home_team.slug = 'tennessee_heat' AND home_team.level_name = '16U Boys'
+    AND archive is null
+GROUP BY home_team.id
+
+SELECT * FROM mhac.standings; 
+
+BEGIN TRANSACTION;
+UPDATE mhac.standings
+SET wins = t.wins, losses = t.losses 
+FROM (SELECT home_team.id, SUM(case when final_home_score > final_away_score and games.home_team_id = home_team.id THEN 1
+WHEN final_home_score < final_away_score and games.away_team_id = home_team.id Then 1 ELSE 0 END) AS wins,
+SUM(case when final_home_score < final_away_score and games.home_team_id = home_team.id THEN 1
+WHEN final_home_score > final_away_score and games.away_team_id = home_team.id Then 1 ELSE 0 END) AS losses
+FROM mhac.games
+INNER JOIN mhac.season_teams_with_names as home_team
+ON (games.home_team_id = home_team.id OR games.away_team_id = home_team.id)
+WHERE slug = 'tennessee_heat' AND level_name = '18U Boys'
+    AND archive is null
+GROUP BY home_team.id) AS t 
+WHERE standings.team_id = t.id;
+
+
+
+SELECT home_team.id, SUM(case when final_home_score > final_away_score and games.home_team_id = home_team.id THEN 1
+WHEN final_home_score < final_away_score and games.away_team_id = home_team.id Then 1 ELSE 0 END) AS wins,
+SUM(case when final_home_score < final_away_score and games.home_team_id = home_team.id THEN 1
+WHEN final_home_score > final_away_score and games.away_team_id = home_team.id Then 1 ELSE 0 END) AS losses
+FROM mhac.games
+INNER JOIN mhac.season_teams_with_names as home_team
+ON (games.home_team_id = home_team.id OR games.away_team_id = home_team.id)
+WHERE slug = 'tennessee_heat' AND level_name = '16U Boys'
+    AND archive is null
+GROUP BY home_team.id
+
+
+
+
+
+SELECT * FROM mhac.games
+--COMMIT
+BEGIN TRANSACTION;
+UPDATE mhac.games
+SET final_home_score = 1, final_away_score = 2
+WHERE game_id IN ('2789b188-ce26-4513-9cda-ae79d9044818','4dfa48bc-3597-44ca-b43f-e7b78f411257')
+
+SELECT * 
+FROM mhac.season_teams_with_names
+INNER JOIN (
+    SELECT team, SUM(wins) AS wins FROM(
+        SELECT games.home_team_id as team, SUM(case when final_home_score > final_away_score Then 1 ELSE 0 END) AS wins
+        FROM mhac.games
+        GROUP BY games.home_team_id
+        UNION
+        SELECT games.away_team_id, SUM(case when final_home_score < final_away_score Then 1 ELSE 0 END) AS wins
+        FROM mhac.games
+        GROUP BY games.away_team_id
+    ) as w
+    GROUP BY team
+) as wins
+    ON season_teams_with_names.id = wins.team
+INNER JOIN (
+    SELECT team, SUM(losses) AS losses FROM(
+        SELECT games.home_team_id as team, SUM(case when final_home_score < final_away_score Then 1 ELSE 0 END) AS losses
+        FROM mhac.games
+        GROUP BY games.home_team_id
+        UNION
+        SELECT games.away_team_id, SUM(case when final_home_score > final_away_score Then 1 ELSE 0 END) AS losses
+        FROM mhac.games
+        GROUP BY games.away_team_id
+    ) as w
+    GROUP BY team
+) as losses
+    ON season_teams_with_names.id = losses.team
+
+INNER JOIN (
+    SELECT COUNT(*) FROM mhac.games
+    WHERE 
+) as games_played
+    ON season_teams_with_names.id = games_played.id
+WHERE season_teams_with_names.archive is null
+

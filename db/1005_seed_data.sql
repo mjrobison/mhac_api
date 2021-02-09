@@ -390,7 +390,6 @@ d25dd785-9d50-4651-a01b-e243232fd16e	Chancellor	Little	\N	\N	1	d9d2175a-6c1a-462
 7e44e4d1-5113-4090-aa30-98fb418ddd4c	Holden	Armstrong	\N	\N	1	d9d2175a-6c1a-462a-944c-7bd686927bd1	10	\N
 e4fa5316-f58c-4ff9-8d5d-78143539b7a1	Luke	Johnson	\N	\N	1	d9d2175a-6c1a-462a-944c-7bd686927bd1	51	\N
 d440a14c-851d-423b-b6b0-f8220eee6690	Jackson	Lain	\N	\N	1	d9d2175a-6c1a-462a-944c-7bd686927bd1	24	\N
-2754578f-6ae8-4bbb-8199-cf8d779d6beb	David	Webster	\N	\N	1	166c60f1-f571-42c7-bdc6-b756457da477	33	\N
 a1266216-8fa2-4dce-8c42-9099006c5467	Ryan	Cagle	\N	\N	1	166c60f1-f571-42c7-bdc6-b756457da477	31	\N
 090ab7c6-ab27-44da-a0af-98984ab57cda	Susannah	Sorrells	\N	\N	1	e59cd9dd-4020-4554-992b-1ed5219d7af6	1	\N
 b69d2995-4ceb-4fcb-86fc-d31d2dc10762	Grace	Minor	\N	\N	1	e59cd9dd-4020-4554-992b-1ed5219d7af6	40	\N
@@ -3482,10 +3481,6 @@ COPY mhac.game_results (pk, game_id, period, home_score, away_score, game_order)
 2	532f1dd6-70b9-4f40-bf5d-e2917efeeeee	2	11	16	2
 3	532f1dd6-70b9-4f40-bf5d-e2917efeeeee	3	13	17	3
 4	532f1dd6-70b9-4f40-bf5d-e2917efeeeee	4	6	4	4
-5	532f1dd6-70b9-4f40-bf5d-e2917efeeeee	1	2	7	1
-6	532f1dd6-70b9-4f40-bf5d-e2917efeeeee	2	11	16	2
-7	532f1dd6-70b9-4f40-bf5d-e2917efeeeee	3	13	17	3
-8	532f1dd6-70b9-4f40-bf5d-e2917efeeeee	4	6	4	4
 \.
 
 SELECT pg_catalog.setval('mhac.game_results_pk_seq', 8, true);

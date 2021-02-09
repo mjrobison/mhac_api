@@ -5,6 +5,7 @@ from uuid import UUID
 from datetime import datetime, date
 
 from dao import teams
+from .addresses import Address
 
 
 router = APIRouter()
@@ -21,6 +22,8 @@ class TeamBase(BaseModel):
 
 class TeamOut(TeamBase):
     team_id: UUID
+    address: Address
+    
 
 class TeamUpdate(TeamBase):
     team_id: UUID
@@ -36,10 +39,11 @@ class SeasonTeamOut2(TeamBase):
     team_id: UUID
     season_id: UUID
     level_name: str
+    # select_team_name: str
 
 @router.get('/getTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
 def getTeam(slug):
-    return teams.get(slug)
+    return teams.get(slug=slug)
     
 @router.get('/getTeams', response_model=List[TeamOut], summary="Get All Teams", tags=['teams'])
 async def get():
@@ -54,7 +58,7 @@ def getSeasonTeams(slug: str=None):
 def getSeasonTeams(slug, seasonid):
     return teams.get_season_team(slug, seasonid)
 
-@router.post('/addTeamToSeason', tags=['teams', 'seasons'])
+@router.post('/addTeamToSeason', tags=['teams', 'season'])
 async def add_to_season(season_team: SeasonTeam):
     return teams.add_to_season(season_team)
 
@@ -65,3 +69,7 @@ async def create_team(team: TeamBase):
 # @router.get('/test', response_model=SeasonTeamOut2, tags=['test'])
 # def test_get_uuid_call():
 #     return teams.get_with_uuid('896bf172-8deb-41d2-89b5-953f1ca197ef')
+
+@router.get('/getTeamCount/{season_id}', tags=['teams'])
+async def count_teams(season_id):
+    return teams.get_team_count(season_id=season_id)
