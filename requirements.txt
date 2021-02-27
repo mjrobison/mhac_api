@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+sqlalchemy
+pyscopg2
+python-multipart
+python-dateutil
