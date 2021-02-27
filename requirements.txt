@@ -1,6 +1,6 @@
 fastapi
 uvicorn
 sqlalchemy
-psycopg2
+pyscopg2
 python-multipart
 python-dateutil
