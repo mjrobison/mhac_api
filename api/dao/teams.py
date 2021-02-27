@@ -7,6 +7,7 @@ from typing import TypedDict, List, Dict, Any
 from uuid import uuid4
 from sqlalchemy.dialects.postgresql import JSON, UUID
 
+from .addresses import get_address_with_id, Address
 from database import db, get_db
 
 DB = db()
@@ -14,21 +15,23 @@ DB = db()
 class Team(TypedDict):
     team_name: str
     team_mascot: str
-    # address_id: address.address_id
     main_color: str
     secondary_color: str
     website: str
     logo_color: str
     logo_grey: str
     slug: str
+    
 
 class TeamOut(Team):
-    id: UUID
+    team_id: UUID
+    address: Address
 
 class SeasonTeam(Team):
     team_id: UUID
     season_id: UUID
     level_name: str
+    select_team_name:str
 
 
 def row_mapper(row) -> TeamOut:
@@ -41,14 +44,15 @@ def row_mapper(row) -> TeamOut:
         'website': row['website'],
         'logo_color': row['logo_color'],
         'logo_grey': row['logo_grey'],
-        'slug': row['slug']
+        'slug': row['slug'],
+        'address': get_address_with_id(row['address_id'])
     }
     return Team
 
 def season_team_row_mapper(row) -> SeasonTeam:
     SeasonTeam = {
         'team_id': row['id'],
-        'team_name': row['team_name'],
+        # 'team_name': row['team_name'],
         'team_mascot': row['team_mascot'],
         'main_color': row['main_color'],
         'secondary_color': row['secondary_color'],
@@ -57,34 +61,32 @@ def season_team_row_mapper(row) -> SeasonTeam:
         'logo_grey': row['logo_grey'],
         'slug': row['slug'],
         'season_id': row['season_id'],
-        'level_name': row['level_name']
+        'level_name': row['level_name'],
+        'team_name': row['team_name']
     }
     return SeasonTeam
 
 
-def get(slug: str, DB = get_db()) -> List[Team]:
+def get(slug: str, DB = db()) -> List[Team]:
     
     team_list = []
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
     stmt = stmt.bindparams(slug = slug)
-    result = DB.execute(stmt)
-        # result = DB.execute(stmt)
-    DB.close()
+    result = DB.execute(stmt).fetchall()
     for row in result:
         team_list.append(row_mapper(row))
-    
+    DB.close()
     return team_list
 
-def _get_slug_by_level_id(id: str):
+def _get_slug_by_level_id(id: str, DB = db()):
     team_list = []
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null''')
     stmt = stmt.bindparams(id = id)
     result = DB.execute(stmt)
-        # result = DB.execute(stmt)
-    DB.close()
+    
     for row in result:
         team_list.append(row_mapper(row))
-    
+    DB.close()
     return team_list[0]
 
 def get_season_teams(slug: str= None) -> List[SeasonTeam]:
@@ -115,20 +117,20 @@ def get_season_team(slug: str, seasonid: str) -> SeasonTeam:
     stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null and season_id = :seasonid''')
     stmt = stmt.bindparams(slug = slug, seasonid = seasonid)
     result = DB.execute(stmt)
-        # result = DB.execute(stmt)
+    
     DB.close()
     return season_team_row_mapper(result.fetchone())
 
 
-def get_list() -> List[TeamOut]:
-    DB = db()
+def get_list(DB = db()) -> List[TeamOut]:
+    
     team_list = []
     stmt = text('''SELECT * FROM mhac.teams''')
     result = DB.execute(stmt)
-    DB.close()
+    
     for row in result:
         team_list.append(row_mapper(row))
-    
+    DB.close()
     return team_list
 
 def get_with_uuid(id: UUID) -> SeasonTeam:
@@ -169,4 +171,12 @@ def add_to_season(season_team: SeasonTeam):
     results = DB.execute(stmt)
     DB.commit()
     DB.close()
+    return results
+
+def get_team_count(DB=db(), season_id=None):
+    query = text("""SELECT COUNT(*) FROM mhac.season_teams_with_names INNER JOIN mhac.standings ON season_teams_with_names.id = standings.team_id WHERE season_teams_with_names.season_id = :season_id AND standings_rank <> 99""")
+    query = query.bindparams(season_id = season_id)
+    
+    results = DB.execute(query).fetchone()
+    results = results[0]
     return results

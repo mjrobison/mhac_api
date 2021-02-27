@@ -8,7 +8,6 @@ from uuid import uuid4, UUID
 from datetime import date, timedelta, datetime
 from database import db
 
-DB = db()
 
 base_query = text('''SELECT * FROM mhac.levels''')
 
@@ -26,12 +25,14 @@ def row_mapper(row) -> Level:
     return Level
 
 def get_by_id(id) -> Level:
+    DB = db()
     stmt = text(f'''{base_query } WHERE id = :id''')
     stmt = stmt.bindparams(id = id)
     results = DB.execute(stmt)
     return results.fetchone()
 
 def get_by_name(level_name) -> Level:
+    DB = db()
     stmt = text(f'''{base_query } WHERE level_name = :level_name''')
     stmt = stmt.bindparams(level_name = level_name)
     results = DB.execute(stmt)
@@ -50,6 +51,7 @@ def get_list() -> List[Level]:
     return level_list
     
 def create(level: LevelBase):
+    DB = db()
     stmt = text('''INSERT INTO mhac.levels(level_name) 
                     VALUES
                     (:level_name)''')
@@ -61,6 +63,7 @@ def create(level: LevelBase):
 
 
 def update(level: Level):
+    DB =db()
     stmt = text('''UPDATE mhac.levels
                     SET level_name =:level_name
                     WHERE id = :id ''')

@@ -10,16 +10,16 @@ router = APIRouter()
 
 class SeasonBase(BaseModel):
     
-    season_name: str
-    year: str
     level: str
-    sport: int
-    start_date: Optional[date]
-    roster_submission_deadline: Optional[date]
-    roster_addition_deadline: Optional[date]
-    tournament_start_date: Optional[date]
-    archive: Optional[str]
-    schedule: Optional[str]
+    season_name: str
+    season_start_date: Optional[datetime]
+    roster_submission_deadline: Optional[datetime]
+    # roster_addition_deadline: Optional[date]
+    tournament_start_date: Optional[datetime]
+    sport: str
+    year: str
+    # archive: Optional[str]
+    # schedule: Optional[str]
     slug: str
 
 class SeasonOut(SeasonBase):
