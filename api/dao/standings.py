@@ -124,6 +124,13 @@ def add_to_standings(team_id, event, database):
 
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
+
+        query = text('''SELECT season_id FROM mhac.standings where team_id = :team_id ''')
+        stmt = update.bindparams(team_id = team_id)
+        season_id = database.execute(stmt).fetchone()
+
+        update_standings_rank(season_id=season_id[0], DB=database)
+
     except Exception as exc:
         raise exc
 
@@ -141,7 +148,6 @@ def remove_from_standings(team_id, event, database):
 
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
-        print(stmt)
 
         check = text('''SELECT * FROM mhac.standings where team_id = :team_id ''')
         stmt = check.bindparams(team_id = team_id)
@@ -174,14 +180,47 @@ def get_team_from_rank(season_id, rank, DB=db()):
         return team_get(team['team_id'])
     else:
         return None
-    
 
-def update_standings_rank():
-    query = text('''SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc), * FROM mhac.standings WHERE season_id = '890a3d42-84d3-4600-8cf6-75ad5f8c658f';''')
+def update_all_active_seasons(DB=db()):
+    query = text('''SELECT * FROM mhac.seasons WHERE archive is null''')
+    results =  DB.execute(query)
 
-    query = text('''UPDATE mhac.standings                                                                                                                                       
+    for season in results:
+        update_standings_rank(season[0], DB)
+
+
+def update_standings_rank(season_id, DB= db()):
+    # using the season_id determine if a change needs to be made
+
+    # if needed apply the update
+    try:
+
+        # query = text('''SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc), * FROM mhac.standings WHERE season_id = :season_id;''')
+
+        query = text('''UPDATE mhac.standings                                                                                                                                       
                     SET standings_rank = rn
-                    FROM (SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc) as rn, * FROM mhac.standings WHERE season_id = '890a3d42-84d3-4600-8cf6-75ad5f8c658f') as r
+                    FROM (SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc) as rn, * FROM mhac.standings WHERE season_id = :season_id) as r
                     WHERE standings.season_id = r.season_id 
                     AND standings.team_id = r.team_id; 
                 ''')
+        query = query.bindparams(season_id = season_id)
+        DB.execute(query)
+        DB.commit()
+    except Exception as exc:
+        raise
+
+
+def force_standings_rank(team_id, rank, DB=db()):
+    # Use the team_id to get the entire rank
+
+    try:
+        query = text('''UPDATE mhac.standings                                                                                                                                       
+                    SET standings_rank = :rank
+                     -- FROM (SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc) as rn, * FROM mhac.standings WHERE season_id = '890a3d42-84d3-4600-8cf6-75ad5f8c658f') as r
+                    WHERE standings.team_id = :team_id; 
+                ''')
+        query = query.bindparams(team_id = team_id, rank=rank)
+        DB.execute(query)
+        DB.commit()
+    except Exception as exc:
+        raise

@@ -54,8 +54,8 @@ class TournamentGame(BaseModel):
 
 
 @router.get('/getTournamentInformation/', tags=['tournament'])
-def get_tournament_games():
-    return {'games': tournament.get_tournament_games()}
+def get_tournament_games(season_id: UUID=None):
+    return {'games': tournament.get_tournament_games(season_id = season_id)}
 
 @router.get('/getActiveTournaments/', tags=['tournament'])
 def get_active_tournament():

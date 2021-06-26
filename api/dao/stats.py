@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import JSON, UUID
 
 from database import db
 
+
 def game_result_row_mapper(row):
     Player = {'player_id': row['id'],
         'player_first_name': row['roster_first_name'],
@@ -39,9 +40,10 @@ def game_result_row_mapper(row):
     }
     return Player
 
+
 def stats_by_season_and_team(season_id, team_id):
     DB = db()
-    data_all= []
+    data_all = []
     base_query = text("""SELECT st.season_id, player_id, number AS player_number, bs.team_id, p.first_name, p.last_name, t.team_name
                 , SUM(field_goals_attempted) AS field_goals_attempted
                 , SUM(field_goals_made) AS field_goals_made
