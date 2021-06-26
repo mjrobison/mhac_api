@@ -109,26 +109,26 @@ def add_to_standings(team_id, event, database):
         update = text('''wins = wins + 1 ''')
     else:
         update = text('''losses = losses + 1 ''')
-    
-    try: 
+
+    try:
         update = text(f'''UPDATE mhac.standings
                     SET games_played = games_played + 1, {update}
                     WHERE team_id = :team_id ''')
-        
+
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
 
         update = text(f'''UPDATE mhac.standings
             SET win_percentage = case when wins = 0 THEN 0.00 else ROUND(wins/games_played::decimal, 4) end
             WHERE team_id = :team_id ''')
-        
+
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
-        
+
         query = text('''SELECT season_id FROM mhac.standings where team_id = :team_id ''')
         stmt = update.bindparams(team_id = team_id)
         season_id = database.execute(stmt).fetchone()
-        
+
         update_standings_rank(season_id=season_id[0], DB=database)
 
     except Exception as exc:
@@ -140,15 +140,15 @@ def remove_from_standings(team_id, event, database):
         update = text('''wins = wins - 1 ''')
     else:
         update = text('''losses = losses - 1 ''')
-    
-    try: 
+
+    try:
         update = text(f'''UPDATE mhac.standings
                     SET games_played = games_played - 1, {update}
                     WHERE team_id = :team_id ''')
-        
+
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
-        
+
         check = text('''SELECT * FROM mhac.standings where team_id = :team_id ''')
         stmt = check.bindparams(team_id = team_id)
         results = database.execute(stmt)
@@ -159,13 +159,13 @@ def remove_from_standings(team_id, event, database):
         update = text(f'''UPDATE mhac.standings
         SET win_percentage = case when wins = 0 THEN 0.00 else wins/games_played::decimal end
         WHERE team_id = :team_id ''')
-    
+
         stmt = update.bindparams(team_id = team_id)
         database.execute(stmt)
-        
+
     except Exception as exc:
         raise exc
-  
+
 
 def add_loss():
     pass
@@ -184,10 +184,10 @@ def get_team_from_rank(season_id, rank, DB=db()):
 def update_all_active_seasons(DB=db()):
     query = text('''SELECT * FROM mhac.seasons WHERE archive is null''')
     results =  DB.execute(query)
-    
-    for season in results: 
+
+    for season in results:
         update_standings_rank(season[0], DB)
-    
+
 
 def update_standings_rank(season_id, DB= db()):
     # using the season_id determine if a change needs to be made
@@ -209,7 +209,7 @@ def update_standings_rank(season_id, DB= db()):
     except Exception as exc:
         raise
 
-            
+
 def force_standings_rank(team_id, rank, DB=db()):
     # Use the team_id to get the entire rank
 

@@ -79,15 +79,15 @@ def tournamentRowMapper(row):
 
 
 def get_tournament_games(DB = db(), season_id=None) -> TournamentGame:
-    
+
     if season_id:
         where = f'WHERE seasons.id = :season_id '
-    else: 
+    else:
         season_id = '2020'
         where = 'WHERE year = :season_id'
 
     query = text(f'''
-    SELECT ROW_NUMBER() OVER (partition by seasons.id ORDER BY game_date, game_time ) AS logical_game_number, game_number, game_date, game_time, home_team.team_id as home_team
+    SELECT ROW_NUMBER() OVER (PARTITION BY seasons.id ORDER BY game_date, game_time ) AS logical_game_number, game_number, game_date, game_time, home_team.team_id as home_team
     , away_team.team_id as away_team, home_team_score, away_team_score, '' as game_location
     , seasons.id as season_id,
     home_team_seed, away_team_seed, 
