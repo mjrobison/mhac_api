@@ -81,7 +81,7 @@ def tournamentRowMapper(row):
 def get_tournament_games() -> TournamentGame:
     DB = db()
     query = '''
-    SELECT ROW_NUMBER() OVER (ORDER BY game_date, game_time ) AS logical_game_number, game_number, game_date, game_time, home_team.team_id as home_team
+    SELECT ROW_NUMBER() OVER (PARTITION BY seasons.id ORDER BY game_date, game_time ) AS logical_game_number, game_number, game_date, game_time, home_team.team_id as home_team
     , away_team.team_id as away_team, home_team_score, away_team_score, '' as game_location
     , seasons.id as season_id,
     home_team_seed, away_team_seed, 
