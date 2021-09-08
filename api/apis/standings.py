@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from typing import Optional, List, Dict
 from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
@@ -35,3 +35,29 @@ def get_team_from_rank(season_id: UUID, rank:int):
     if not team:
         raise HTTPException(status_code=404, detail="No Team Found")
     return team
+
+@router.post('/updateSeasonStandings', status_code=201, tags=['standings'])
+def update_season_standings(season_id: UUID):
+    try:
+        standings.update_standings_rank(season_id)
+        return 'Succesfully Updated'
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post('/updateActiveSeasonStandings', status_code=201, tags=['standings'])
+def update_season_standings():
+    try:
+        standings.update_all_active_seasons()
+        return 'Succesfully Updated'
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post('/updateTeamStandingsRank', status_code=201, tags=['standings'])
+def update_team_standing_rank(team_id: UUID, rank: int):
+    try:
+        standings.force_standings_rank(team_id=team_id, rank=rank)
+        return 'Succesfully Updated'
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))

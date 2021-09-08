@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import JSON, UUID
 
 from database import db
 
+
 def game_result_row_mapper(row):
     Player = {'player_id': row['id'],
         'player_first_name': row['roster_first_name'],
@@ -39,9 +40,10 @@ def game_result_row_mapper(row):
     }
     return Player
 
+
 def stats_by_season_and_team(season_id, team_id):
     DB = db()
-    data_all= []
+    data_all = []
     base_query = text("""SELECT st.season_id, player_id, number AS player_number, bs.team_id, p.first_name, p.last_name, t.team_name
                 , SUM(field_goals_attempted) AS field_goals_attempted
                 , SUM(field_goals_made) AS field_goals_made
@@ -66,17 +68,15 @@ def stats_by_season_and_team(season_id, team_id):
             INNER JOIN mhac.person AS p
                 ON bs.player_id = p.id
             WHERE bs.game_played = true
-            
     """)
     group_by = """GROUP BY st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_name, number"""
-
+    stmt = text(f"""{base_query}{group_by}""")
     if season_id and team_id:
         where = ''' AND st.season_id = :season_id AND st.id = :team_id '''
-        stmt = text(f'''{base_query} 
-                       {where} 
+        stmt = text(f'''{base_query}
+                       {where}
                        {group_by} ''')
-        stmt = stmt.bindparams(season_id=season_id, team_id = team_id)               
-        
+        stmt = stmt.bindparams(season_id=season_id, team_id=team_id)
     elif season_id:
         where = '''AND st.season_id = :season_id '''
         stmt = text(f'''{base_query} 
