@@ -1,25 +1,15 @@
 from fastapi import HTTPException, Depends
-# from sqlalchemy import Column, String
-# from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
 
-from sqlalchemy.orm import Session
-
-from sqlalchemy.sql import text # type: ignore
-from typing import TypedDict, List, Dict, Any, Optional
+from sqlalchemy.sql import text  # type: ignore
+from typing import TypedDict, List, Optional
 from uuid import uuid4, UUID
-# from sqlalchemy.dialects.postgresql import JSON, UUID
-from datetime import date, timedelta, datetime, time
+from datetime import date, time
 from database import get_db, db
-import csv
 
 from .standings import add_to_standings, remove_from_standings
 from .teams import get_with_uuid as team_get, SeasonTeam
 from .seasons import get_by_id, Season
 from .utils import totalPoints, totalRebounds
-
-import json
-
-from sqlalchemy.dialects import postgresql
 
 schedule_base_query = text('''SELECT
          schedule.id as schedule_id, 
@@ -46,35 +36,40 @@ schedule_base_query = text('''SELECT
             ON games.away_team_id = away_team.id
         ''')
 
+
 class Game(TypedDict):
-    game_id =  Optional[UUID]
-    home_team = UUID
-    away_team = UUID
-    final_home_score = Optional[int]
-    final_away_score = Optional[int]
+    game_id: Optional[UUID]
+    home_team: UUID
+    away_team: UUID
+    final_home_score: Optional[int]
+    final_away_score: Optional[int]
+
 
 class GameResult(TypedDict):
-    game_id = Optional[UUID]
-    period = str
-    home_score = Optional[int]
-    away_score = Optional[int]
-    game_order = Optional[int]
+    game_id: Optional[UUID]
+    period: str
+    home_score: Optional[int]
+    away_score: Optional[int]
+    game_order: Optional[int]
+
 
 class Schedule(Game):
-    date = date
-    time = time
-    season = dict
-    neutral_site = bool
+    date: date
+    time: time
+    season: dict
+    neutral_site: bool
 
-class final_scores(TypedDict):
+
+class FinalScores(TypedDict):
     away_score: Optional[int]
     home_score: Optional[int]
+
 
 class PlayerStats(TypedDict):
     player_id: UUID
     game_played: Optional[bool]
     FGA: int
-    FGM: int    
+    FGM: int
     ThreePA: int
     ThreePM: int
     AST: int
@@ -93,6 +88,7 @@ class PlayerStats(TypedDict):
     total_points: int
     total_rebounds: int
 
+
 class Player(TypedDict):
     first_name: str
     last_name: str
@@ -101,6 +97,7 @@ class Player(TypedDict):
     player_stats: PlayerStats
     team: SeasonTeam
 
+
 class TeamSchedule(TypedDict):
     schedule_id: int
     game_date: date
@@ -108,22 +105,25 @@ class TeamSchedule(TypedDict):
     game_id: UUID
     home_team: SeasonTeam
     away_team: SeasonTeam
-    final_scores: final_scores
+    final_scores: FinalScores
     missing_stats: Optional[bool]
     season: Season
 
+
 class GameIdDel(TypedDict):
     game_id: UUID
+
 
 class GameStats(TypedDict):
     game_id: UUID
     team_id: UUID
     game_scores: Optional[List[GameResult]]
-    final_scores: final_scores
+    final_scores: FinalScores
     player_stats: PlayerStats
-    
+
+
 def team_schedule_row_mapper(row) -> TeamSchedule:
-    TeamSchedule = {
+    return {
         'schedule_id': row['schedule_id'],
         'game_date': row['game_date'],
         'game_time': row['game_time'],
@@ -138,105 +138,113 @@ def team_schedule_row_mapper(row) -> TeamSchedule:
         'season': get_by_id(row['season_id'])
 
     }
-    return TeamSchedule
+
 
 def game_result_row_mapper(row) -> Player:
     Player = {'player_id': row['id'],
-        'player_first_name': row['roster_first_name'],
-        'player_last_name': row['roster_last_name'],
-        'player_number': row['roster_number'],
-        'person_type': '1',
-        'player_stats': {
-            'game_played': row['game_played'],
-            'FGA': row['field_goals_attempted'],
-            'FGM': row['field_goals_made'],
-            'ThreePA': row['three_pointers_attempted'],
-            'ThreePM': row['three_pointers_made'],
-            'FTA': row['free_throws_attempted'],
-            'FTM': row['free_throws_made'],
-            'total_points': row['total_points'],
-            'AST': row['assists'],
-            'assists': row['assists'],
-            'STEAL': row['steals'],
-            'steals': row['steals'],
-            'BLK': row['blocks'],
-            'blocks': row['blocks'],
-            'OREB': row['offensive_rebounds'],
-            'DREB': row['defensive_rebounds'],
-            'offensive_rebounds': row['offensive_rebounds'],
-            'defensive_rebounds': row['defensive_rebounds'],
-            'TO': row['turnovers'],
-            'total_rebounds': row['total_rebounds']
-        }
-    }
+              'player_first_name': row['roster_first_name'],
+              'player_last_name': row['roster_last_name'],
+              'player_number': row['roster_number'],
+              'person_type': '1',
+              'player_stats': {
+                  'game_played': row['game_played'],
+                  'FGA': row['field_goals_attempted'],
+                  'FGM': row['field_goals_made'],
+                  'ThreePA': row['three_pointers_attempted'],
+                  'ThreePM': row['three_pointers_made'],
+                  'FTA': row['free_throws_attempted'],
+                  'FTM': row['free_throws_made'],
+                  'total_points': row['total_points'],
+                  'AST': row['assists'],
+                  'assists': row['assists'],
+                  'STEAL': row['steals'],
+                  'steals': row['steals'],
+                  'BLK': row['blocks'],
+                  'blocks': row['blocks'],
+                  'OREB': row['offensive_rebounds'],
+                  'DREB': row['defensive_rebounds'],
+                  'offensive_rebounds': row['offensive_rebounds'],
+                  'defensive_rebounds': row['defensive_rebounds'],
+                  'TO': row['turnovers'],
+                  'total_rebounds': row['total_rebounds']
+              }
+              }
     return Player
 
-def final_score_mapper(row):
+
+def final_score_mapper(row) -> FinalScores:
     final_score = {
         'home_score': row['final_home_score'],
         'away_score': row['final_away_score']
     }
     return final_score
-            
+
+
 def get(game_id) -> Game:
     DB = db()
     stmt = text('''SELECT * FROM mhac.games WHERE game_id = :game_id ''')
-    stmt = stmt.bindparams(game_id = game_id)
+    stmt = stmt.bindparams(game_id=game_id)
     results = DB.execute(stmt)
     DB.close()
     return results.fetchone()
 
+
 def create(game: Schedule):
     # Check for active season?
-    
+
     DB = db()
     game_id = uuid4()
-    stmt = text('''INSERT INTO mhac.games(game_id, home_team_id, away_team_id) VALUES (:game_id, :home_team, :away_team) ''')
-    stmt = stmt.bindparams(game_id = game_id , home_team = game.home_team, away_team=game.away_team)
+    stmt = text(
+        '''INSERT INTO mhac.games(game_id, home_team_id, away_team_id) VALUES (:game_id, :home_team, :away_team) ''')
+    stmt = stmt.bindparams(game_id=game_id, home_team=game.home_team, away_team=game.away_team)
     DB.execute(stmt)
-        
+
     stmt = text('''INSERT INTO mhac.schedule (game_id, game_date, game_time, season_id, neutral_site) 
                    VALUES
                    (:game_id, :game_date, :game_time, :season_id, :neutral_site) ''')
 
-    stmt = stmt.bindparams(game_id = game_id, game_date = game.date, game_time=game.time, season_id= game.season, neutral_site=game.neutral_site)
+    stmt = stmt.bindparams(game_id=game_id, game_date=game.date, game_time=game.time, season_id=game.season,
+                           neutral_site=game.neutral_site)
     DB.execute(stmt)
     DB.commit()
     DB.close()
 
     return {200: "success"}
 
+
 def get_list():
     pass
 
+
 def update(game: Schedule):
-    #TODO: This Call isn't correct yet
+    # TODO: This Call isn't correct yet
     DB = db()
     game_id = game.game_id
     # stmt = text('''INSERT INTO mhac.games(game_id, home_team_id, away_team_id) VALUES (:game_id, :home_team, :away_team) ''')
-    
+
     try:
         stmt = text("""UPDATE mhac.games
         SET home_team_id = :home_team, away_team_id = :away_team
         WHERE game_id = :game_id """)
-        stmt = stmt.bindparams(game_id = game_id , home_team = game.home_team, away_team=game.away_team)    
+        stmt = stmt.bindparams(game_id=game_id, home_team=game.home_team, away_team=game.away_team)
         DB.execute(stmt)
-        
+
         stmt = text('''UPDATE mhac.schedule 
                     SET game_date= :game_date, game_time = :game_time, season_id = :season_id 
                     WHERE game_id = :game_id
                    ''')
-        stmt = stmt.bindparams( game_date = game.date, game_time = game.time, season_id = game.season, game_id= game_id)
+        stmt = stmt.bindparams(game_date=game.date, game_time=game.time, season_id=game.season, game_id=game_id)
         DB.execute(stmt)
         DB.commit()
     except Exception as exc:
         print(str(exc))
-        raise 
+        raise
     finally:
         DB.close()
 
+
 def add_period_score(game: GameResult, game_id: UUID, database=None):
-    #Game Order is for display purposes since it built the possibility of OT to be OT1, OT2, OT3. It is the actual period number
+    # Game Order is for display purposes since it built the possibility of OT to be OT1, OT2, OT3. It is the actual period number
     if database is None:
         DB = db()
     else:
@@ -247,31 +255,32 @@ def add_period_score(game: GameResult, game_id: UUID, database=None):
         period = 'OT-' + str(num_period - 4)
 
     for score in game:
-        
         i = 1
         stmt = text('''INSERT INTO mhac.game_results(game_id, period, home_score, away_score, game_order) 
                     VALUES 
                     (:game_id, :period, :home_score,:away_score, :game_order) 
                     ON CONFLICT ON CONSTRAINT ux_game_period
                     DO UPDATE set home_score = :home_score, away_score = :away_score''')
-        stmt = stmt.bindparams(game_id=game_id , period=score.period, home_score=score.home_score, away_score=score.away_score, game_order=i)
+        stmt = stmt.bindparams(game_id=game_id, period=score.period, home_score=score.home_score,
+                               away_score=score.away_score, game_order=i)
         DB.execute(stmt)
-        i += 1 
+        i += 1
     if database is None:
         DB.commit()
         return {200: "Success"}
 
+
 def add_final_score(game: GameStats, connection=None):
     update_standings = False
-    #Add a validator for the verification
+    # Add a validator for the verification
     if not connection:
         DB = db()
     else:
         DB = connection
 
-    #Start with verifying the period score
+    # Start with verifying the period score
     stmt = text('''SELECT * FROM mhac.game_results WHERE game_id = :game_id ''')
-    stmt = stmt.bindparams(game_id = game.game_id)
+    stmt = stmt.bindparams(game_id=game.game_id)
     results = DB.execute(stmt)
     # print(results, results.rowcount, str(results))
     if results.rowcount > 0:
@@ -279,62 +288,73 @@ def add_final_score(game: GameStats, connection=None):
         away_score = 0
         for result in results:
             home_score += result.home_score or 0
-            away_score += result.away_score or 0 
-            
-        # if home_score != game.final_scores.home_score or away_score != game.final_scores.away_score:
+            away_score += result.away_score or 0
+
+            # if home_score != game.final_scores.home_score or away_score != game.final_scores.away_score:
         #     return {400, "final scores dont match the period score"}
-    
-    
+
     stmt = text('''SELECT * FROM mhac.games where game_id =:game_id ''')
-    stmt = stmt.bindparams(game_id = game.game_id)
+    stmt = stmt.bindparams(game_id=game.game_id)
     results = DB.execute(stmt)
     game_score = results.fetchone()
-    
+
     try:
-        if (game.final_scores.home_score and game.final_scores.away_score) and (not game_score.final_home_score or not game_score.final_away_score):
+        if (game.final_scores.home_score and game.final_scores.away_score) and (
+                not game_score.final_home_score or not game_score.final_away_score):
             update_standings = True
         elif game_score.final_home_score and game_score.final_away_score:
 
-            if (game_score.final_home_score > game_score.final_away_score and game.final_scores.home_score < game.final_scores.away_score) or (game_score.final_home_score < game_score.final_away_score and game.final_scores.home_score > game.final_scores.away_score):
+            if (
+                    game_score.final_home_score > game_score.final_away_score and game.final_scores.home_score < game.final_scores.away_score) or (
+                    game_score.final_home_score < game_score.final_away_score and game.final_scores.home_score > game.final_scores.away_score):
                 # Reverse game Standings
-                remove_from_standings(game_score.home_team_id, game_score.final_home_score > game_score.final_away_score, DB)
-                remove_from_standings(game_score.away_team_id, game_score.final_home_score < game_score.final_away_score, DB)
+                remove_from_standings(game_score.home_team_id,
+                                      game_score.final_home_score > game_score.final_away_score, DB)
+                remove_from_standings(game_score.away_team_id,
+                                      game_score.final_home_score < game_score.final_away_score, DB)
                 update_standings = True
                 DB.commit()
-            elif (game.final_scores.home_score == 0 and game.final_scores.away_score == 0): 
-                remove_from_standings(game_score.home_team_id, game_score.final_home_score > game_score.final_away_score, DB)
-                remove_from_standings(game_score.away_team_id, game_score.final_home_score < game_score.final_away_score, DB)
+            elif (game.final_scores.home_score == 0 and game.final_scores.away_score == 0):
+                remove_from_standings(game_score.home_team_id,
+                                      game_score.final_home_score > game_score.final_away_score, DB)
+                remove_from_standings(game_score.away_team_id,
+                                      game_score.final_home_score < game_score.final_away_score, DB)
                 update_standings = True
 
         stmt = text('''UPDATE mhac.games
                     SET final_home_score = :final_home_score, final_away_score = :final_away_score
                     WHERE game_id = :game_id''')
-        stmt = stmt.bindparams(game_id = game.game_id , final_home_score = game.final_scores.home_score, final_away_score=game.final_scores.away_score)
+        stmt = stmt.bindparams(game_id=game.game_id, final_home_score=game.final_scores.home_score,
+                               final_away_score=game.final_scores.away_score)
         DB.execute(stmt)
         if not connection:
             DB.commit()
 
         if update_standings:
-            #Takes a season team id
-            add_to_standings(game_score.home_team_id, event=game.final_scores.home_score > game.final_scores.away_score, database=DB)
-            add_to_standings(game_score.away_team_id, event=game.final_scores.home_score < game.final_scores.away_score, database=DB)
+            # Takes a season team id
+            add_to_standings(game_score.home_team_id, event=game.final_scores.home_score > game.final_scores.away_score,
+                             database=DB)
+            add_to_standings(game_score.away_team_id, event=game.final_scores.home_score < game.final_scores.away_score,
+                             database=DB)
             if not connection:
                 DB.commit()
-         
+
     except Exception as exc:
         print(str(exc))
         DB.rollback()
-        raise HTTPException(status_code = 400, detail="There was a problem updating the game")
-    
-    return 
+        raise HTTPException(status_code=400, detail="There was a problem updating the game")
+
+    return
+
 
 def update_period_score(game: GameResult, game_id, database=None):
-    #TODO: Check the score difference and send back a positive or negative
+    # TODO: Check the score difference and send back a positive or negative
     for score in game:
         print(score)
 
+
 def get_game_results(game_id: UUID, team_id: UUID):
-    #TODO: GameId, TeamID, Final Scores, Player Stats 
+    # TODO: GameId, TeamID, Final Scores, Player Stats
     # print(game_id, team_id)
     DB = db()
     stmt = text(''' 
@@ -357,7 +377,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
         ORDER BY game_order
 
     ''')
-    stmt = stmt.bindparams(game_id = game_id)
+    stmt = stmt.bindparams(game_id=game_id)
     results = DB.execute(stmt)
     game_scores = []
     for (quarter, home_score, away_score, game_order) in results:
@@ -373,7 +393,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
     stmt = text(''' 
         SELECT * FROM mhac.games where game_id = :game_id
     ''')
-    stmt = stmt.bindparams(game_id = game_id)
+    stmt = stmt.bindparams(game_id=game_id)
     results = DB.execute(stmt)
 
     game = {}
@@ -442,23 +462,25 @@ def get_game_results(game_id: UUID, team_id: UUID):
     for row in results:
         player_list.append(game_result_row_mapper(row))
     game['player_stats'] = player_list
-    
+
     return game
 
-def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug: str = None) -> List[TeamSchedule]:
+
+def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug: str = None, year: str = None) -> List[
+    TeamSchedule]:
     DB = db()
     missing_subquery = ''
     wheres = ''
 
-    if season_id and slug: 
-        missing_subquery = text ('''SELECT count(*) FROM mhac.basketball_stats 
+    if season_id and slug:
+        missing_subquery = text('''SELECT count(*) FROM mhac.basketball_stats 
                 INNER JOIN mhac.season_teams_with_names 
                     ON basketball_stats.team_id = season_teams_with_names.id
                     AND season_teams_with_names.slug = :slug
                     AND basketball_stats.game_id = games.game_id
                     and season_teams_with_names.season_id = :season_id
                 ''')
-                
+
         wheres = text(''' 
             WHERE (home_team.slug = :slug
                 OR away_team.slug = :slug)
@@ -485,10 +507,10 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             {wheres}
             ORDER BY schedule.game_date
             ''')
-        stmt = stmt.bindparams(slug = slug, season_id = season_id)
-    
+        stmt = stmt.bindparams(slug=slug, season_id=season_id)
+
     elif season_team_id:
-        missing_subquery = text ('''SELECT count(*) FROM mhac.basketball_stats 
+        missing_subquery = text('''SELECT count(*) FROM mhac.basketball_stats 
                 INNER JOIN mhac.season_teams_with_names 
                     ON basketball_stats.team_id = season_teams_with_names.id
                     AND season_teams_with_names.id = :season_team_id
@@ -498,7 +520,7 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
         wheres = text(f''' 
             WHERE (home_team.id = :season_team_id
                 OR away_team.id = :season_team_id)''')
-        
+
         stmt = text(f'''SELECT
             schedule.id as schedule_id, 
                 games.game_id as game_id,
@@ -520,11 +542,37 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             {wheres}
             ORDER BY schedule.game_date
             ''')
-        stmt = stmt.bindparams(season_team_id = season_team_id)
-    
-    else :
-        missing_subquery = '0' 
-        
+        stmt = stmt.bindparams(season_team_id=season_team_id)
+
+    elif year:
+        missing_subquery = '0'
+
+        stmt = text(f'''SELECT
+                schedule.id as schedule_id, 
+                    games.game_id as game_id,
+                    schedule.game_date as game_date,
+                    schedule.game_time as game_time, 
+                    home_team.id as home_team,
+                    away_team.id as away_team, 
+                    final_home_score, 
+                    final_away_score,
+                    {missing_subquery} as missing_stats,
+                    schedule.season_id
+                FROM mhac.games
+                INNER JOIN mhac.schedule 
+                    ON games.game_id = schedule.game_id
+                LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
+                    ON games.home_team_id = home_team.id
+                LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
+                    ON games.away_team_id = away_team.id
+                WHERE year = :year
+                ORDER BY schedule.game_date
+                ''')
+        stmt = stmt.bindparams(year=year)
+
+    else:
+        missing_subquery = '0'
+
         stmt = text(f'''SELECT
             schedule.id as schedule_id, 
                 games.game_id as game_id,
@@ -547,26 +595,26 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             ORDER BY schedule.game_date
             ''')
 
-    
     results = DB.execute(stmt)
-    
+
     schedule = []
     for game in results:
         schedule.append(team_schedule_row_mapper(game))
     DB.close()
     return schedule
 
+
 def get_program_schedule(slug: str = None, year=None) -> List[TeamSchedule]:
     DB = db()
-    
+
     stmt = text(f''' {schedule_base_query}
             WHERE home_team.archive is null and away_team.archive is null
              AND (home_team.slug = :slug
                 OR away_team.slug = :slug)
             ORDER BY game_date, game_time
             ''')
-    stmt = stmt.bindparams(slug = slug)
-    
+    stmt = stmt.bindparams(slug=slug)
+
     results = DB.execute(stmt)
     DB.close()
     schedule = []
@@ -574,22 +622,25 @@ def get_program_schedule(slug: str = None, year=None) -> List[TeamSchedule]:
         schedule.append(team_schedule_row_mapper(game))
     return schedule
 
-def get_season_schedule(season_id):
-    DB = db()
-    
-    stmt = text(f''' {schedule_base_query}
-            WHERE season_id = :season_id
-            ''')
 
-    missing_subquery = text ('''SELECT count(*) FROM mhac.basketball_stats 
+def get_season_schedule(season_id=None, year=None, DB=db()):
+    wheres = ''
+
+    missing_subquery = text('''SELECT count(*) FROM mhac.basketball_stats 
             INNER JOIN mhac.season_teams_with_names 
                 ON basketball_stats.team_id = season_teams_with_names.id
                 AND basketball_stats.game_id = games.game_id
                 and season_teams_with_names.season_id = :season_id
             ''')
-            
-    wheres = text(''' 
-        WHERE schedule.season_id = :season_id ''')
+    if season_id:
+        wheres = text(''' 
+            WHERE schedule.season_id = :argument ''')
+        argument = season_id
+    elif year:
+        missing_subquery = 0
+        wheres = text(''' 
+                    WHERE seasons.year = :argument ''')
+        argument = year
 
     stmt = text(f'''SELECT
         schedule.id as schedule_id, 
@@ -605,6 +656,8 @@ def get_season_schedule(season_id):
         FROM mhac.games
         INNER JOIN mhac.schedule 
             ON games.game_id = schedule.game_id
+        INNER JOIN mhac.seasons
+            ON schedule.season_id = seasons.id
         LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
             ON games.home_team_id = home_team.id
         LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
@@ -613,9 +666,8 @@ def get_season_schedule(season_id):
         ORDER BY schedule.game_date, schedule.game_time
         ''')
 
-    # stmt = stmt.bindparams(slug = slug, season_id = season_id)
-    stmt = stmt.bindparams(season_id = season_id)
-    
+    stmt = stmt.bindparams(argument=argument)
+
     results = DB.execute(stmt)
     DB.close()
     schedule = []
@@ -623,30 +675,30 @@ def get_season_schedule(season_id):
         schedule.append(team_schedule_row_mapper(game))
     return schedule
 
+
 def remove_game(game: GameIdDel):
     try:
         DB = db()
         stmt = text("""
         SELECT * FROM mhac.game_results WHERE game_id = :game_id
         """)
-        stmt = stmt.bindparams(game_id = game.game_id)
+        stmt = stmt.bindparams(game_id=game.game_id)
         results = DB.execute(stmt)
 
         if results.rowcount > 0:
-            raise HTTPException(status_code=400, detail= "Game has results attached")
-
+            raise HTTPException(status_code=400, detail="Game has results attached")
 
         stmt = text("""
         DELETE FROM mhac.schedule WHERE game_id = :game_id
         """)
-        stmt = stmt.bindparams(game_id = game.game_id)
+        stmt = stmt.bindparams(game_id=game.game_id)
         DB.execute(stmt)
         DB.commit()
 
         stmt = text("""
         DELETE FROM mhac.games WHERE game_id = :game_id
         """)
-        stmt = stmt.bindparams(game_id = game.game_id)
+        stmt = stmt.bindparams(game_id=game.game_id)
         DB.execute(stmt)
         DB.commit()
     except Exception as exc:
@@ -655,15 +707,15 @@ def remove_game(game: GameIdDel):
     finally:
         DB.close()
 
+
 def parse_csv(fileContents, game_id, team_id):
-    
     DB = db()
     insert_stmt = text(""" 
     INSERT INTO mhac.basketball_stats(game_id,player_id,game_played,field_goals_attempted,field_goals_made,three_pointers_attempted,three_pointers_made,free_throws_attempted,free_throws_made,total_points,assists,offensive_rebounds,defensive_rebounds,total_rebounds,steals,blocks,team_id,turnovers,roster_id)
     VALUES
     (:game_id,:player_id,true, :field_goals_attempted,:field_goals_made,:three_pointers_attempted,:three_pointers_made,:free_throws_attempted,:free_throws_made,:total_points,:assists,:offensive_rebounds,:defensive_rebounds,:total_rebounds,:steals,:blocks,:team_id,:turnovers,:roster_id )
     """)
-    index = 0 
+    index = 0
     headers = []
     stats = []
     players_not_in_roster = []
@@ -686,51 +738,51 @@ def parse_csv(fileContents, game_id, team_id):
             stmt = stmt.bindparams(team_id=team_id, jersey=line['Jersey'])
             results = DB.execute(stmt)
             player = results.fetchone()
-            
+
             if player:
-                
-                insert_stmt = insert_stmt.bindparams(game_id=game_id, 
-                                                    player_id = player['player_id'], 
-                                                    field_goals_attempted=line['TwoPointAttempts'],
-                                                    field_goals_made=line['TwoPointsMade'],
-                                                    three_pointers_attempted=line['ThreePointAttempts'],
-                                                    three_pointers_made=line['ThreePointsMade'],
-                                                    free_throws_attempted=line['FreeThrowAttempts'],
-                                                    free_throws_made=line['FreeThrowsMade'],
-                                                    total_points=line['Points'],
-                                                    assists=line['Assists'],
-                                                    offensive_rebounds=line['OffensiveRebounds'],
-                                                    defensive_rebounds=line['DefensiveRebounds'],
-                                                    total_rebounds=line['Rebounds'],
-                                                    steals=line['Steals'],
-                                                    blocks=line['BlockedShots'],
-                                                    team_id=team_id,
-                                                    turnovers=line['Turnovers'],
-                                                    roster_id = player['roster_id']
-                                                    )
+
+                insert_stmt = insert_stmt.bindparams(game_id=game_id,
+                                                     player_id=player['player_id'],
+                                                     field_goals_attempted=line['TwoPointAttempts'],
+                                                     field_goals_made=line['TwoPointsMade'],
+                                                     three_pointers_attempted=line['ThreePointAttempts'],
+                                                     three_pointers_made=line['ThreePointsMade'],
+                                                     free_throws_attempted=line['FreeThrowAttempts'],
+                                                     free_throws_made=line['FreeThrowsMade'],
+                                                     total_points=line['Points'],
+                                                     assists=line['Assists'],
+                                                     offensive_rebounds=line['OffensiveRebounds'],
+                                                     defensive_rebounds=line['DefensiveRebounds'],
+                                                     total_rebounds=line['Rebounds'],
+                                                     steals=line['Steals'],
+                                                     blocks=line['BlockedShots'],
+                                                     team_id=team_id,
+                                                     turnovers=line['Turnovers'],
+                                                     roster_id=player['roster_id']
+                                                     )
                 # print("insert stmt", insert_stmt.compile(dialect=postgresql.dialect()))
                 DB.execute(insert_stmt)
             else:
                 players_not_in_roster.append(line['Jersey'])
-            
-        index += 1 
-    
-    if len(players_not_in_roster)>0:
+
+        index += 1
+
+    if len(players_not_in_roster) > 0:
         DB.rollback()
         # print( {'missing_players': players_not_in_roster})
-        
+
         return {'missing_players': players_not_in_roster}
     else:
         DB.commit()
     return {200: "success"}
 
-def add_stats(player_stats, game_id, team_id, connection=None): 
-    
+
+def add_stats(player_stats, game_id, team_id, connection=None):
     if not connection:
         DB = db()
-    else: 
+    else:
         DB = connection
-    
+
     insert_stmt = text(""" 
     INSERT INTO mhac.basketball_stats(game_id,player_id,game_played, field_goals_attempted,field_goals_made,three_pointers_attempted,three_pointers_made,free_throws_attempted,free_throws_made,total_points,assists,offensive_rebounds,defensive_rebounds,total_rebounds,steals,blocks,team_id,turnovers,roster_id)
     VALUES
@@ -768,26 +820,27 @@ def add_stats(player_stats, game_id, team_id, connection=None):
             results = DB.execute(stmt)
             player = results.fetchone()
 
-            insert_stmt = insert_stmt.bindparams(game_id=game_id, 
-                                                player_id = player.player_id, 
-                                                field_goals_attempted=line.FGA,
-                                                field_goals_made=line.FGM,
-                                                three_pointers_attempted=line.ThreePA,
-                                                three_pointers_made=line.ThreePM,
-                                                free_throws_attempted=line.FTA,
-                                                free_throws_made=line.FTM,
-                                                total_points= totalPoints(twos = line.FGM, threes=line.ThreePM, free_throws = line.FTM),
-                                                assists=line.AST,
-                                                offensive_rebounds=line.OREB,
-                                                defensive_rebounds=line.DREB,
-                                                total_rebounds=totalRebounds(offensive=line.OREB, defensive=line.DREB),
-                                                steals=line.STEAL,
-                                                blocks=line.BLK,
-                                                team_id=team_id,
-                                                turnovers=line.TO,
-                                                roster_id = player.roster_id,
-                                                game_played = line.game_played
-                                                )
+            insert_stmt = insert_stmt.bindparams(game_id=game_id,
+                                                 player_id=player.player_id,
+                                                 field_goals_attempted=line.FGA,
+                                                 field_goals_made=line.FGM,
+                                                 three_pointers_attempted=line.ThreePA,
+                                                 three_pointers_made=line.ThreePM,
+                                                 free_throws_attempted=line.FTA,
+                                                 free_throws_made=line.FTM,
+                                                 total_points=totalPoints(twos=line.FGM, threes=line.ThreePM,
+                                                                          free_throws=line.FTM),
+                                                 assists=line.AST,
+                                                 offensive_rebounds=line.OREB,
+                                                 defensive_rebounds=line.DREB,
+                                                 total_rebounds=totalRebounds(offensive=line.OREB, defensive=line.DREB),
+                                                 steals=line.STEAL,
+                                                 blocks=line.BLK,
+                                                 team_id=team_id,
+                                                 turnovers=line.TO,
+                                                 roster_id=player.roster_id,
+                                                 game_played=line.game_played
+                                                 )
 
             DB.execute(insert_stmt)
             if not connection:
@@ -799,11 +852,12 @@ def add_stats(player_stats, game_id, team_id, connection=None):
             DB.close()
     return "200"
 
+
 def add_games_and_stats(game: GameStats):
     game_id = game.game_id
     team_id = game.team_id
     DB = db()
-    
+
     final_scores = game.final_scores
     add_period_score(game.game_scores, game_id, database=DB)
     add_stats(game.player_stats, game_id, team_id)
@@ -845,27 +899,27 @@ def stats_by_season_and_team(season_id, team_id):
             
     """)
     group_by = """GROUP BY st.season_id, player_id, bs.team_id, p.first_name, p.last_name, t.team_name, number"""
-     
+
     if season_id and team_id:
         where = '''WHERE st.season_id = :season_id and st.id = :team_id '''
         stmt = text(f'''{base_query} 
                        {where} 
                        {group_by} ''')
-        stmt = stmt.bindparams(season_id=season_id, team_id = team_id)               
-        
+        stmt = stmt.bindparams(season_id=season_id, team_id=team_id)
+
     elif season_id:
         where = '''WHERE st.season_id = :season_id '''
         stmt = text(f'''{base_query} 
                        {where} 
                        {group_by} ''')
-        stmt = stmt.bindparams(team_id=team_id)               
+        stmt = stmt.bindparams(team_id=team_id)
 
     elif team_id:
         where = ''' WHERE st.id = :team_id'''
         stmt = text(f'''{base_query} 
                        {where} 
                        {group_by} ''')
-        stmt = stmt.bindparams(team_id = team_id)
+        stmt = stmt.bindparams(team_id=team_id)
 
     results = DB.execute(stmt)
 
@@ -876,15 +930,15 @@ def stats_by_season_and_team(season_id, team_id):
     for r in results:
         field_goal_percentage = 0.0
         if r.field_goals_attempted != 0:
-            field_goal_percentage = float(r.field_goals_made)/float(r.field_goals_attempted)
+            field_goal_percentage = float(r.field_goals_made) / float(r.field_goals_attempted)
 
         three_point_percentage = 0.0
         if r.three_pointers_attempted != 0:
-            three_point_percentage = float(r.three_pointers_made)/float(r.three_pointers_attempted)
+            three_point_percentage = float(r.three_pointers_made) / float(r.three_pointers_attempted)
 
         free_throw_percentage = 0.0
         if r.free_throws_attempted != 0:
-            free_throw_percentage = float(r.free_throws_made)/float(r.free_throws_attempted)
+            free_throw_percentage = float(r.free_throws_made) / float(r.free_throws_attempted)
         data = {
             "team_id": r.team_id,
             "team_name": r.team_name,
@@ -898,10 +952,10 @@ def stats_by_season_and_team(season_id, team_id):
                 '2P%': field_goal_percentage,
                 "3PA": r.three_pointers_attempted,
                 "3PM": r.three_pointers_made,
-                "3P%": three_point_percentage, 
+                "3P%": three_point_percentage,
                 "FTA": r.free_throws_attempted,
                 "FTM": r.free_throws_made,
-                "FT%": free_throw_percentage, 
+                "FT%": free_throw_percentage,
                 "total_points": r.total_points,
                 "assists": r.assists,
                 "offensive_rebounds": r.offensive_rebounds,
@@ -911,7 +965,7 @@ def stats_by_season_and_team(season_id, team_id):
                 "blocks": r.blocks,
                 "turnovers": r.turnovers,
                 "games_played": r.games_played,
-                "points_per_game": float(r.total_points)/float(r.games_played)
+                "points_per_game": float(r.total_points) / float(r.games_played)
             }
         }
         data_all.append(data)
