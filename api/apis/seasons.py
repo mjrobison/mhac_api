@@ -5,7 +5,7 @@ from uuid import UUID
 from datetime import date
 
 from dao import seasons
-from .teams import TeamBase
+from .teams import TeamBase, TeamOut
 from .levels import LevelOut
 router = APIRouter()
 
@@ -53,7 +53,8 @@ class SeasonUpdate(BaseModel):
     year: str
     archive: Optional[bool]
     slug: Optional[str]
-    levels: LevelOut
+    level: LevelOut
+    season_teams: Optional[List[TeamOut]]
 
 
 class Standings(BaseModel):
@@ -92,7 +93,7 @@ def add_season(season: SeasonNew):
         seasons.create(season, level)
     return {200: "Success"}
 
-@router.put('/updateSeason', status_code=204, tags=['season'])
+@router.put('/updateSeason', status_code=200, tags=['season'])
 def update_season(seasonsUpdate: List[SeasonUpdate]):
     errors = []
     try:

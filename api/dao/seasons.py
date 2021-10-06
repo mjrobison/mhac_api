@@ -5,7 +5,7 @@ from datetime import date
 from database import db, database_conn
 
 from .levels import get_level_by_id, Level
-
+from .teams import TeamOut, admin_get_with_uuid
 
 class Season(TypedDict):
     level: Dict
@@ -33,7 +33,8 @@ class SeasonUpdate(TypedDict):
     year: str
     archive: Optional[bool]
     slug: Optional[str]
-    levels: Level
+    level: Level
+    season_teams: Optional[List[TeamOut]]
 
 
 class SeasonNew(TypedDict):
@@ -66,6 +67,10 @@ def row_mapper(row) -> Season:
 
 
 def admin_season_row_mapper(row):
+    season_teams = []
+    if row.season_teams:
+        season_teams = [admin_get_with_uuid(i) for i in row.season_teams.split(',')]
+
     Season = {
         'season_id': row['season_id'],
         'season_name': row['name'],
@@ -76,8 +81,8 @@ def admin_season_row_mapper(row):
         'year': row['year'],
         'slug': row['slug'],
         'level': get_level_by_id(row['level_id']),
-        'archive': row['archive'] or False
-
+        'archive': row['archive'] or False,
+        'season_teams': season_teams
     }
     return Season
 
@@ -178,12 +183,32 @@ def update(season: SeasonUpdate, session=db()):
                            slug=season.slug,
                            season_id=season.season_id)
     try:
-
         session.execute(stmt)
+        stmt = text('''SELECT * FROM mhac.season_teams WHERE season_id = :season_id 
+            ''')
+        stmt = stmt.bindparams(season_id = season.season_id)
+        current_season_teams = session.execute(stmt)
+        team_list = [team.team_id for team in current_season_teams ]
+        for team in season.season_teams:
+            if team.team_id in team_list:
+                continue
+            stmt = text("""INSERT INTO mhac.season_teams(id, season_id, team_id)
+            VALUES
+            (:id, :season_id, :team_id)
+            """)
+            season_team_id=uuid4()
+            stmt = stmt.bindparams(id=season_team_id, season_id=season.season_id, team_id=team.team_id)
+            session.execute(stmt)
+            stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
+            VALUES
+            (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
+            ''')
+            stmt = stmt.bindparams(team_id=season_team_id, season_id=season.season_id)
+            session.execute(stmt)
         session.commit()
     except Exception as exc:
         print(str(exc))
-        return HTTPException(status_code=500, detail=str(exc))
+        raise exc
     finally:
         session.close()
     return {200: "Success"}
@@ -246,13 +271,18 @@ def get_admin_season(db=db()):
         seasons.slug::TEXT as slug,
         levels.id::TEXT as level_id, 
         seasons.year,
-        seasons.archive
+        seasons.archive,
+        string_agg(season_teams_with_names.id::text, ',') AS season_teams
     FROM mhac.seasons 
     INNER JOIN mhac.levels 
         ON seasons.level_id = levels.id 
     INNER JOIN mhac.sports 
         ON seasons.sport_id = sports.id
-    --GROUP BY seasons.name, seasons.start_date, seasons.tournament_start_date, seasons.roster_submission_deadline, sports.sport_name, seasons.YEAR, seasons.archive
+    LEFT OUTER JOIN mhac.season_teams_with_names
+        ON seasons.id = season_teams_with_names.season_id
+    GROUP BY seasons.id, seasons.name, seasons.start_date, seasons.tournament_start_date,
+            seasons.roster_submission_deadline, sports.sport_name, seasons.year, seasons.slug,
+            levels.id, seasons.archive
     ORDER BY seasons.year desc, levels.id
     ''')
 

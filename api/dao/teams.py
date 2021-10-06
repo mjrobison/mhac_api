@@ -3,9 +3,8 @@ from sqlalchemy import Column, String
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
 
 from sqlalchemy.sql import text  # type: ignore
-from typing import TypedDict, List, Dict, Any
-from uuid import uuid4
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from typing import TypedDict, List, Dict, Any, Optional
+from uuid import uuid4, UUID
 
 from .addresses import get_address_with_id, Address
 from database import db, get_db
@@ -18,7 +17,7 @@ class Team(TypedDict):
     team_mascot: str
     main_color: str
     secondary_color: str
-    website: str
+    website: Optional[str]
     logo_color: str
     logo_grey: str
     slug: str
@@ -26,14 +25,22 @@ class Team(TypedDict):
 
 class TeamOut(Team):
     team_id: UUID
-    address: Address
+    address: Optional[Address]
+    season_id: Optional[UUID]
 
 
 class SeasonTeam(Team):
     team_id: UUID
     season_id: UUID
-    level_name: str
-    select_team_name: str
+    level_name: Optional[str]
+    select_team_name: Optional[str]
+
+class SeasonTeamUpdate(Team):
+    team_id: UUID
+    season_id: Optional[UUID]
+    address: Optional[Address]
+    level_name: Optional[str]
+
 
 
 def row_mapper(row) -> TeamOut:
@@ -69,6 +76,21 @@ def season_team_row_mapper(row) -> SeasonTeam:
     }
     return SeasonTeam
 
+def row_mapper_team(row) -> TeamOut:
+    Team = {
+        'team_id': row['team_id'],
+        'team_name': row['team_name'],
+        'team_mascot': row['team_mascot'],
+        'main_color': row['main_color'],
+        'secondary_color': row['secondary_color'],
+        'website': row['website'],
+        'logo_color': row['logo_color'],
+        'logo_grey': row['logo_grey'],
+        'slug': row['slug'],
+        'address': get_address_with_id(row['address_id'])
+    }
+    return Team
+
 
 def get(slug: str, DB=db()) -> List[Team]:
     team_list = []
@@ -94,24 +116,31 @@ def _get_slug_by_level_id(id: str, DB=db()):
 
 
 def get_season_teams(slug: str = None) -> List[SeasonTeam]:
+    base_query = text(f'''SELECT * FROM mhac.season_teams_with_names 
+        WHERE archive is null''')
     team_name = ''
     if slug:
-        team_name = text("""AND slug = :slug """)
+        team_name = text(f""" {base_query} AND slug = :slug """)
+        team_name = team_name.bindparams(slug=slug)
 
     DB = db()
     team_list = []
-    stmt = text(f'''SELECT * FROM mhac.season_teams_with_names 
-        WHERE archive is null
-        {team_name}''')
-    # print(stmt)
-    if slug:
-        stmt = stmt.bindparams(slug=slug)
-
-    result = DB.execute(stmt)
-    # result = DB.execute(stmt)
+    
+    result = DB.execute(team_name)
+    
+    if result.rowcount < 1:
+        team_name = text(f"""{base_query}  AND season_id = :slug """)
+        team_name = team_name.bindparams(slug=slug)
+        result = DB.execute(team_name)
+        for row in result:    
+            team_list.append(row_mapper_team(row))
+    
+    else:
+        for row in result:    
+            team_list.append(season_team_row_mapper(row))
+    
+    
     DB.close()
-    for row in result:
-        team_list.append(season_team_row_mapper(row))
 
     return team_list
 
@@ -154,6 +183,21 @@ def get_with_uuid(id: UUID) -> SeasonTeam:
         return key
 
 
+def admin_get_with_uuid(id: UUID) -> SeasonTeam:
+    DB = db()
+    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id''')
+
+    stmt = stmt.bindparams(id=id)
+    result = DB.execute(stmt)
+    row = result.fetchone()
+    DB.close()
+    if row is None:
+        raise LookupError(f'Could not find key value with id: {id}')
+    else:
+        key = row_mapper_team(row)
+        return key
+
+
 def create(team: Team):
     DB = db()
     # TODO: Validate SeasonId
@@ -171,14 +215,25 @@ def create(team: Team):
 
 
 def add_to_season(season_team: SeasonTeam):
+    print(f"HERE: {season_team}")
     DB = db()
     stmt = text('''INSERT INTO mhac.season_teams (id, season_id, team_id)
                    VALUES
                     (:id, :season_id, :team_id)''')
     stmt = stmt.bindparams(id=uuid4, season_id=season_team.season_id, team_id=season_team.team_id)
-
-    results = DB.execute(stmt)
-    DB.commit()
+    try:
+        DB.execute(stmt)
+        stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
+        VALUES
+        (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
+        ''')
+        stmt = stmt.bindparams(team_id=season_team.team_id, season_id=season_team.season_id)
+        DB.execute(stmt)
+        DB.commit()
+    except:
+        DB.rollback()
+        raise
+        
     DB.close()
     return results
 
