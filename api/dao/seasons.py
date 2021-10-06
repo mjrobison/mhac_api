@@ -163,6 +163,22 @@ def archive_season(season: UUID, session=db()):
     return {200: "Season Archived"}
 
 
+def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
+    stmt = text(""" 
+        DELETE FROM mhac.standings
+        WHERE season_id = :season_id
+            AND team_id = :team_id
+    """)
+    stmt = stmt.bindparams(season_id = season_id, team_id = team_id)
+    session.execute(stmt)
+
+    stmt = text("""
+        DELETE FROM mhac.season_teams 
+        WHERE season_id = :season_id and team_id = :team_id
+     """)
+    stmt = stmt.bindparams(season_id = season_id, team_id = team_id)
+    session.execute(stmt)
+
 def update(season: SeasonUpdate, session=db()):
     archive = season.archive
     if not season.archive:
@@ -174,7 +190,7 @@ def update(season: SeasonUpdate, session=db()):
                       tournament_start_date= :tournament_start_date,
                       archive = :archive,
                       slug = :slug 
-                  WHERE id = :season_id ''')
+                  WHERE id = :season_id''')
     stmt = stmt.bindparams(name=season.season_name,
                            start_date=season.season_start_date,
                            roster_submission_deadline=season.roster_submission_deadline,
@@ -188,9 +204,15 @@ def update(season: SeasonUpdate, session=db()):
             ''')
         stmt = stmt.bindparams(season_id = season.season_id)
         current_season_teams = session.execute(stmt)
-        team_list = [team.team_id for team in current_season_teams ]
+        current_team_list = [team.team_id for team in current_season_teams]
+        incoming_team_list = [team.team_id for team in season.season_teams]
+        teams_to_remove = set(current_team_list) - set(incoming_team_list)
+        
+        for team in teams_to_remove:
+            remove_team_by_id(team_id= team, season_id=season.season_id, session=session)
+        
         for team in season.season_teams:
-            if team.team_id in team_list:
+            if team.team_id in current_team_list:
                 continue
             stmt = text("""INSERT INTO mhac.season_teams(id, season_id, team_id)
             VALUES
@@ -215,7 +237,6 @@ def update(season: SeasonUpdate, session=db()):
 
 
 def create(season: SeasonNew, level: Level, db=db()):
-    print(season, level)
     new_season_id = uuid4()
     slug = season.slug
     if season.slug == '' or not season.slug:
