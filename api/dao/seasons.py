@@ -47,6 +47,7 @@ class SeasonNew(TypedDict):
     year:  str
     archive: bool
     slug: Optional[str]
+    season_teams: Optional[List[TeamOut]]
 
 
 def row_mapper(row) -> Season:
@@ -179,6 +180,24 @@ def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
     stmt = stmt.bindparams(season_id = season_id, team_id = team_id)
     session.execute(stmt)
 
+def add_team_to_season(season_id: UUID, team_id: UUID, session=db()):
+    season_team_id=uuid4()
+
+    stmt = text("""INSERT INTO mhac.season_teams(id, season_id, team_id)
+            VALUES
+            (:id, :season_id, :team_id)
+            """)
+            
+    stmt = stmt.bindparams(id=season_team_id, season_id=season_id, team_id=team_id)
+    session.execute(stmt)
+    stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
+                    VALUES
+            (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
+            ''')
+    stmt = stmt.bindparams(team_id=season_team_id, season_id=season_id)
+    session.execute(stmt)
+
+
 def update(season: SeasonUpdate, session=db()):
     archive = season.archive
     if not season.archive:
@@ -214,19 +233,8 @@ def update(season: SeasonUpdate, session=db()):
         for team in season.season_teams:
             if team.team_id in current_team_list:
                 continue
-            stmt = text("""INSERT INTO mhac.season_teams(id, season_id, team_id)
-            VALUES
-            (:id, :season_id, :team_id)
-            """)
-            season_team_id=uuid4()
-            stmt = stmt.bindparams(id=season_team_id, season_id=season.season_id, team_id=team.team_id)
-            session.execute(stmt)
-            stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
-            VALUES
-            (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
-            ''')
-            stmt = stmt.bindparams(team_id=season_team_id, season_id=season.season_id)
-            session.execute(stmt)
+            add_team_to_season(season_id=season.season_id, team_id=team.team_id)
+            
         session.commit()
     except Exception as exc:
         print(str(exc))
@@ -236,7 +244,7 @@ def update(season: SeasonUpdate, session=db()):
     return {200: "Success"}
 
 
-def create(season: SeasonNew, level: Level, db=db()):
+def create(season: SeasonNew, level: Level, session=db()):
     new_season_id = uuid4()
     slug = season.slug
     if season.slug == '' or not season.slug:
@@ -244,12 +252,20 @@ def create(season: SeasonNew, level: Level, db=db()):
     stmt = text('''INSERT INTO mhac.seasons(id, name, year, level_id, sport_id, start_date, roster_submission_deadline, tournament_start_date, archive, slug)
                 VALUES
                 (:id, :name, :year, :level, :sport, :season_start_date, :roster_submission_deadline, :tournament_start_date, :archive, :slug )''')
-    db.execute(stmt.bindparams(id=new_season_id, name=season.season_name, year=season.year, level=level.id,
+    try:
+        session.execute(stmt.bindparams(id=new_season_id, name=season.season_name, year=season.year, level=level.id,
                                sport=1, season_start_date=season.season_start_date,
                                roster_submission_deadline=season.roster_submission_deadline,
                                tournament_start_date=season.tournament_start_date, archive=None, slug=slug))
-    db.commit()
-    db.close()
+
+        for team in season.season_teams:
+            add_team_to_season(season_id=new_season_id, team_id= team.team_id, session=session)
+    except:
+        session.rollback()
+    else:
+        session.commit()
+    finally:
+        session.close()
     return {200: f'{new_season_id} Added '}
 
 
