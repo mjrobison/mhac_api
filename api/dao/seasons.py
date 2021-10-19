@@ -189,7 +189,11 @@ def add_team_to_season(season_id: UUID, team_id: UUID, session=db()):
             """)
             
     stmt = stmt.bindparams(id=season_team_id, season_id=season_id, team_id=team_id)
-    session.execute(stmt)
+    try:
+        session.execute(stmt)
+    except Exception as exc:
+        print(str(exc))
+        raise exc
     stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
                     VALUES
             (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
@@ -261,12 +265,12 @@ def create(season: SeasonNew, level: Level, session=db()):
 
         for team in season.season_teams:
             add_team_to_season(season_id=new_season_id, team_id= team.team_id, session=session)
+        
+        session.commit()
+        return_statement = {200: f'{new_season_id} Added '}
     except Exception as exc:
         session.rollback()
         return_statement = {500: f"Problem with creation of {season.season_name}\n {str(exc)}"}
-    else:
-        session.commit()
-        return_statement = {200: f'{new_season_id} Added '}
     finally:
         session.close()
     return return_statement
