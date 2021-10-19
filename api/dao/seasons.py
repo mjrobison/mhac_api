@@ -257,22 +257,22 @@ def create(season: SeasonNew, level: Level, session=db()):
     stmt = text('''INSERT INTO mhac.seasons(id, name, year, level_id, sport_id, start_date, roster_submission_deadline, tournament_start_date, archive, slug)
                 VALUES
                 (:id, :name, :year, :level, :sport, :season_start_date, :roster_submission_deadline, :tournament_start_date, :archive, :slug )''')
-    try:
-        session.execute(stmt.bindparams(id=new_season_id, name=season.season_name, year=season.year, level=level.id,
+    # try:
+    session.execute(stmt.bindparams(id=new_season_id, name=season.season_name, year=season.year, level=level.id,
                                sport=1, season_start_date=season.season_start_date,
                                roster_submission_deadline=season.roster_submission_deadline,
                                tournament_start_date=season.tournament_start_date, archive=None, slug=slug))
 
-        for team in season.season_teams:
-            add_team_to_season(season_id=new_season_id, team_id= team.team_id, session=session)
+    for team in season.season_teams:
+        add_team_to_season(season_id=new_season_id, team_id= team.team_id, session=session)
         
-        session.commit()
-        return_statement = {200: f'{new_season_id} Added '}
-    except Exception as exc:
-        session.rollback()
-        return_statement = {500: f"Problem with creation of {season.season_name}\n {str(exc)}"}
-    finally:
-        session.close()
+    session.commit()
+    return_statement = {200: f'{new_season_id} Added '}
+    # except Exception as exc:
+    #     session.rollback()
+    #     return_statement = {500: f"Problem with creation of {season.season_name}\n {str(exc)}"}
+    # finally:
+    #     session.close()
     return return_statement
 
 
