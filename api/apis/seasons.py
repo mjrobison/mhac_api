@@ -88,10 +88,10 @@ def get_seasons():
 
 @router.post('/addSeason', tags=['season'])
 def add_season(season: SeasonNew):
-    # print(season)
+    msg = []
     for level in season.level:
-        seasons.create(season, level)
-    return {200: "Success"}
+        msg.append(seasons.create(season, level))
+    return msg
 
 @router.put('/updateSeason', status_code=200, tags=['season'])
 def update_season(seasonsUpdate: List[SeasonUpdate]):
