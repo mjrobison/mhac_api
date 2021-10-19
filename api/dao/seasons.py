@@ -247,6 +247,7 @@ def update(season: SeasonUpdate, session=db()):
 def create(season: SeasonNew, level: Level, session=db()):
     new_season_id = uuid4()
     slug = season.slug
+    return_statement = {}
     if season.slug == '' or not season.slug:
         slug = f"{season.year}_{str(level.level_name).lower()}_basketball"
     stmt = text('''INSERT INTO mhac.seasons(id, name, year, level_id, sport_id, start_date, roster_submission_deadline, tournament_start_date, archive, slug)
@@ -260,13 +261,15 @@ def create(season: SeasonNew, level: Level, session=db()):
 
         for team in season.season_teams:
             add_team_to_season(season_id=new_season_id, team_id= team.team_id, session=session)
-    except:
+    except Exception as exc:
         session.rollback()
+        return_statement = {500: f"Problem with creation of {season.season_name}\n {str(exc)}"}
     else:
         session.commit()
+        return_statement = {200: f'{new_season_id} Added '}
     finally:
         session.close()
-    return {200: f'{new_season_id} Added '}
+    return return_statement
 
 
 def get_active_year(archive=None, db=db()):
