@@ -116,29 +116,35 @@ def _get_slug_by_level_id(id: str, DB=db()):
 
 
 def get_season_teams(slug: str = None) -> List[SeasonTeam]:
+    DB = db()
+    team_list = []
+
+    print(f"\n\n{slug}\n\n")
+
     base_query = text(f'''SELECT * FROM mhac.season_teams_with_names 
         WHERE archive is null''')
     team_name = ''
     if slug:
         team_name = text(f""" {base_query} AND slug = :slug """)
         team_name = team_name.bindparams(slug=slug)
-
-    DB = db()
-    team_list = []
-    
-    result = DB.execute(team_name)
-    
-    if result.rowcount < 1:
-        team_name = text(f"""{base_query}  AND season_id = :slug """)
-        team_name = team_name.bindparams(slug=slug)
         result = DB.execute(team_name)
-        for row in result:    
-            team_list.append(row_mapper_team(row))
+
+    
+        if result.rowcount < 1:
+            team_name = text(f"""{base_query}  AND season_id = :slug """)
+            team_name = team_name.bindparams(slug=slug)
+            result = DB.execute(team_name)
+            for row in result:    
+                team_list.append(row_mapper_team(row))
+        
+        else:
+            for row in result:    
+                team_list.append(season_team_row_mapper(row))
     
     else:
+        result = DB.execute(base_query)
         for row in result:    
             team_list.append(season_team_row_mapper(row))
-    
     
     DB.close()
 
@@ -148,6 +154,9 @@ def get_season_teams(slug: str = None) -> List[SeasonTeam]:
 def get_season_team(slug: str, seasonid: str) -> SeasonTeam:
     DB = db()
     team_list = []
+
+    print(f"\n\n{slug}, {seasonid}\n\n")
+
     stmt = text(
         '''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null and season_id = :seasonid''')
     stmt = stmt.bindparams(slug=slug, seasonid=seasonid)

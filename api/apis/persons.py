@@ -16,8 +16,8 @@ class PersonBase(BaseModel):
     team_id: Optional[UUID]
 
 class Height(BaseModel):
-    feet: int
-    inches: int
+    feet: Optional[int]
+    inches: Optional[int]
     
 class PublicPlayerOut(PersonBase):
     id: UUID

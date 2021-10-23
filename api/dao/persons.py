@@ -14,31 +14,31 @@ from .levels import get_level_by_id
 DB = db()
 
 class Height(TypedDict):
-    feet: int
-    inches: int
+    feet: Optional[int]
+    inches: Optional[int]
 
 class Person(TypedDict):
-    first_name= str 
-    last_name= str 
-    person_type = int
-    team = UUID
-    team_id = UUID
+    first_name: str 
+    last_name: str 
+    person_type: int
+    team: UUID
+    team_id: UUID
     birth_date: Optional[Date] 
-    height = Optional[Height]
-    number = int
-    position = Optional[str]
+    height: Optional[Height]
+    number: int
+    position: Optional[str]
 
 
 class PlayerCreate(TypedDict):
-    first_name= str 
-    last_name= str 
-    person_type = int
-    team = UUID
-    season_roster = List[SeasonTeam]
+    first_name: str 
+    last_name: str 
+    person_type: int
+    team: UUID
+    season_roster: List[SeasonTeam]
     birth_date: Optional[Date] 
-    height= Optional[Height]
-    player_number = int
-    position = Optional[str]
+    height: Optional[Height]
+    player_number: Optional[int]
+    position: Optional[str]
 
 class PlayerReturn(Person):
     id: UUID
@@ -222,7 +222,8 @@ def update(id, Player: PlayerCreate, DB=db()):
         DB.close()
     
     
-def create_player(player: PlayerCreate):
+def create_player(player):
+    print(player)
     DB = db()
 
     message = ''
@@ -235,7 +236,8 @@ def create_player(player: PlayerCreate):
         # if height:
         print(player.height)
         player_height = combine_height(player.height)
-        print(player_height)
+        if player_height == 0:
+            player_height = None
         # player['height'] = player_height
         player_id = uuid4()
         stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id)
