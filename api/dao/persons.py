@@ -9,36 +9,36 @@ from datetime import date, timedelta, datetime
 from database import db
 
 from .teams import get_with_uuid as get_team, SeasonTeam
-from .levels import get_by_id
+from .levels import get_level_by_id
 
 DB = db()
 
 class Height(TypedDict):
-    feet: int
-    inches: int
+    feet: Optional[int]
+    inches: Optional[int]
 
 class Person(TypedDict):
-    first_name= str 
-    last_name= str 
-    person_type = int
-    team = UUID
-    team_id = UUID
+    first_name: str 
+    last_name: str 
+    person_type: int
+    team: UUID
+    team_id: UUID
     birth_date: Optional[Date] 
-    height = Optional[Height]
-    number = int
-    position = Optional[str]
+    height: Optional[Height]
+    number: int
+    position: Optional[str]
 
 
 class PlayerCreate(TypedDict):
-    first_name= str 
-    last_name= str 
-    person_type = int
-    team = UUID
-    season_roster = List[SeasonTeam]
+    first_name: str 
+    last_name: str 
+    person_type: int
+    team: UUID
+    season_roster: List[SeasonTeam]
     birth_date: Optional[Date] 
-    height= Optional[Height]
-    player_number = int
-    position = Optional[str]
+    height: Optional[Height]
+    player_number: Optional[int]
+    position: Optional[str]
 
 class PlayerReturn(Person):
     id: UUID
@@ -58,8 +58,8 @@ def break_height(inches):
         return feet, inches
     return 0, 0 
 
-def combine_height(feet, inches):
-    return (feet * 12) + inches
+def combine_height(height: Height):
+    return (height.feet * 12) + height.inches
 
 
 def player_row_mapper(row) -> PlayerReturn:
@@ -113,7 +113,15 @@ def get_team_list(slug, season_level: Optional[str] = None, DB=db()):
 
     base_query = text(''' 
         SELECT person.id, person.first_name
-        , person.last_name, person.birth_date, person.height, person.person_type, person.team_id, person.position, team_rosters.jersey_number as number, string_agg(season_team_id::text, ',') AS season_roster, string_agg(level_id::text,',') 
+        , person.last_name
+        , person.birth_date
+        , person.height
+        , person.person_type
+        , person.team_id
+        , person.position
+        , team_rosters.jersey_number as number
+        , string_agg(season_team_id::text, ',') AS season_roster
+        , string_agg(level_id::text,',') 
         FROM mhac.team_rosters
         INNER JOIN mhac.season_teams_with_names as teams
             ON team_rosters.season_team_id = teams.id 
@@ -193,11 +201,17 @@ def update(id, Player: PlayerCreate, DB=db()):
         
         stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = id, number = Player.player_number)
         DB.execute(stmt)
-        
+    player_height = combine_height(Player.height)
     stmt = text('''UPDATE mhac.person 
     SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, position = :position, height = :height, number = :player_number, person_type = :person_type
     WHERE id = :id''')
-    stmt = stmt.bindparams(first_name = Player.first_name, last_name=Player.last_name, birth_date = Player.birth_date, position=Player.position, height= combine_height(Player.height.feet, Player.height.inches), player_number = Player.player_number, id = Player.id, person_type = '1')
+    stmt = stmt.bindparams(first_name=Player.first_name,
+                           last_name=Player.last_name,
+                           birth_date=Player.birth_date,
+                           position=Player.position,
+                           height=player_height,
+                           player_number=Player.player_number,
+                           id=Player.id, person_type = '1')
 
     try:
         DB.execute(stmt)
@@ -208,7 +222,8 @@ def update(id, Player: PlayerCreate, DB=db()):
         DB.close()
     
     
-def create_player(player: PlayerCreate):
+def create_player(player):
+    print(player)
     DB = db()
 
     message = ''
@@ -217,15 +232,30 @@ def create_player(player: PlayerCreate):
         # player_check_query = player_check_query.bindparams(first_name = player.first_name, last_name = player.last_name, birth_date = player.birth_date)
         # results = DB.execute(player_check_query)
         # if results.rowcount < 1:
+        # height =  #('height', None)
+        # if height:
+        print(player.height)
+        player_height = combine_height(player.height)
+        if player_height == 0:
+            player_height = None
+        # player['height'] = player_height
         player_id = uuid4()
-        stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id) 
-        VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id) 
+        stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, birth_date, height, number, position, person_type, team_id)
+        VALUES (:id, :first_name, :last_name, :birth_date, :height, :number, :position, :person_type, :team_id)
         ON CONFLICT ON CONSTRAINT ux_persons
         DO
-        UPDATE 
+        UPDATE
         SET first_name = :first_name, last_name = :last_name, birth_date = :birth_date, height=:height, number = :number, position=:position
         RETURNING id''')
-        stmt = stmt.bindparams(id = player_id, first_name =player.first_name, last_name = player.last_name, birth_date = player.birth_date, height = player.height, number= player.player_number, position = player.position, person_type = '1', team_id= player.team_id)
+        stmt = stmt.bindparams(id = player_id,
+                               first_name =player.first_name,
+                               last_name = player.last_name,
+                               birth_date = player.birth_date,
+                               height = player_height,
+                               number= player.player_number,
+                               position = player.position,
+                               person_type = '1',
+                               team_id= player.team_id)
         result = DB.execute(stmt).fetchone()
         if result:
             player_id = result[0]
@@ -233,8 +263,8 @@ def create_player(player: PlayerCreate):
         for season_team in player.season_roster:
             stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
             VALUES
-            (:season_team_id, :player_id, :number) 
-            ON CONFLICT ON CONSTRAINT ux_season_team_player_id 
+            (:season_team_id, :player_id, :number)
+            ON CONFLICT ON CONSTRAINT ux_season_team_player_id
             DO UPDATE
             SET jersey_number = :number''')
             stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = player_id, number = player.player_number)
