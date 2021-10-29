@@ -237,7 +237,7 @@ def update(season: SeasonUpdate, session=db()):
         for team in season.season_teams:
             if team.team_id in current_team_list:
                 continue
-            add_team_to_season(season_id=season.season_id, team_id=team.team_id)
+            add_team_to_season(season_id=season.season_id, team_id=team.team_id, session=session)
             
         session.commit()
     except Exception as exc:
