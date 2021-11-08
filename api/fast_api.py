@@ -29,9 +29,6 @@ async def add_process_time_header(request: Request, call_next):
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
     response.headers["Access-Control-Allow-Origin"] = "*"
-    # response.headers["Access-Control-Allow-Origin"] = "*"
-    # response.headers["Access-Control-Allow-Origin"] = "*"
-    # response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
 app.include_router(api_router)
