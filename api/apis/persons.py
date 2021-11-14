@@ -21,7 +21,6 @@ class Height(BaseModel):
     
 class PublicPlayerOut(PersonBase):
     id: UUID
-    # birth_date: Optional[date]
     height: Optional[Height]
     player_number: Optional[int]
     position: Optional[str]
@@ -30,7 +29,7 @@ class PublicPlayerOut(PersonBase):
 
 class PlayerOut(PersonBase):
     id: UUID
-    birth_date: Optional[date]
+    age: Optional[int]
     height: Optional[Height]
     player_number: Optional[int]
     position: Optional[str]
@@ -41,24 +40,24 @@ class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
     id: Optional[UUID]
     season_roster: List[SeasonTeamOut2]
-    birth_date: date
+    age: int
     height: Optional[Height]
     person_type: str
     player_number: Optional[int]
     position: Optional[str]
     
 
-    @validator('birth_date')
-    def age_between(cls, birthday):
-        # print(birthday)
-        min_year = datetime.today().year - 13
-        max_year = datetime.today().year - 19
-        if datetime.today().month < 9:
-            max_year = datetime.today().year - 20
+    # @validator('birth_date')
+    # def age_between(cls, birthday):
+    #     # print(birthday)
+    #     min_year = datetime.today().year - 13
+    #     max_year = datetime.today().year - 19
+    #     if datetime.today().month < 9:
+    #         max_year = datetime.today().year - 20
 
-        if not (birthday >= date(max_year, 9,1)):
-            raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
-        return birthday
+    #     if not (birthday >= date(max_year, 9,1)):
+    #         raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
+    #     return birthday
     
     # TODO: Convert Feet and inches to inches
 
