@@ -230,6 +230,7 @@ def update(season: SeasonUpdate, session=db()):
         current_team_list = [team.team_id for team in current_season_teams]
         incoming_team_list = [team.team_id for team in season.season_teams]
         teams_to_remove = set(current_team_list) - set(incoming_team_list)
+        # teams_to_add = set(incoming_team_list) - set(current_team_list)
         
         for team in teams_to_remove:
             remove_team_by_id(team_id= team, season_id=season.season_id, session=session)
@@ -237,6 +238,7 @@ def update(season: SeasonUpdate, session=db()):
         for team in season.season_teams:
             if team.team_id in current_team_list:
                 continue
+            print(f"adding Team {team}")
             add_team_to_season(season_id=season.season_id, team_id=team.team_id, session=session)
             
         session.commit()
