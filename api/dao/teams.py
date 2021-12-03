@@ -126,13 +126,13 @@ def get_season_teams(slug: str = None) -> List[SeasonTeam]:
     team_name = ''
     if slug:
         if type(slug) == UUID:
-            team_name = text(f""" {base_query} AND slug = :slug """)
+            team_name = text(f"""{base_query}  AND season_id = :slug """)
             team_name = team_name.bindparams(slug=slug)
             result = DB.execute(team_name)
 
     
         else:
-            team_name = text(f"""{base_query}  AND season_id = :slug """)
+            team_name = text(f""" {base_query} AND slug = :slug """)
             team_name = team_name.bindparams(slug=slug)
             result = DB.execute(team_name)
             
