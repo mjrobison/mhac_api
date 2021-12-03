@@ -125,22 +125,20 @@ def get_season_teams(slug: str = None) -> List[SeasonTeam]:
         WHERE archive is null''')
     team_name = ''
     if slug:
-        team_name = text(f""" {base_query} AND slug = :slug """)
-        team_name = team_name.bindparams(slug=slug)
-        result = DB.execute(team_name)
+        if type(slug) == UUID:
+            team_name = text(f""" {base_query} AND slug = :slug """)
+            team_name = team_name.bindparams(slug=slug)
+            result = DB.execute(team_name)
 
     
-        if result.rowcount < 1:
+        else:
             team_name = text(f"""{base_query}  AND season_id = :slug """)
             team_name = team_name.bindparams(slug=slug)
             result = DB.execute(team_name)
-            for row in result:    
-                team_list.append(row_mapper_team(row))
-        
-        else:
-            for row in result:    
-                team_list.append(season_team_row_mapper(row))
-    
+            
+        for row in result:    
+            team_list.append(season_team_row_mapper(row))
+
     else:
         result = DB.execute(base_query)
         for row in result:    
