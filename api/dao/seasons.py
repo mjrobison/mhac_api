@@ -1,40 +1,54 @@
-from sqlalchemy import Column, String
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
-
-from sqlalchemy.sql import text # type: ignore
-from typing import TypedDict, List, Dict, Any, Optional
+from sqlalchemy.sql import text  # type: ignore
+from typing import TypedDict, List, Optional, Dict
 from uuid import uuid4, UUID
-# from sqlalchemy.dialects.postgresql import JSON, UUID
-from datetime import date, timedelta, datetime
-from database import db
+from datetime import date
+from database import db, database_conn
 
-DB = db()
+from .levels import get_level_by_id, Level
+from .teams import TeamOut, admin_get_with_uuid
 
 class Season(TypedDict):
-    level                       = str
-    season_name                        = str
-    season_start_date                  = datetime
-    roster_submission_deadline  = datetime
-    # roster_addition_deadline    = Date
-    tournament_start_date       = datetime
-    sport                       = str
-    year                        = str
-    # archive                     = str
-    # schedule                    = Optional[str]
-    # name                        = str
-    # year                        = str
-    # level                       = int
-    # sport                       = int
-    # start_date                  = Date
-    # roster_submission_deadline  = Date
-    # roster_addition_deadline    = Date
-    # tournament_start_date       = Date
-    # archive                     = str
-    # schedule                    = Optional[str]
-    # slug                        = str
+    level: Dict
+    season_name:  str
+    season_start_date: date
+    roster_submission_deadline: date
+    tournament_start_date: date
+    sport: str
+    year:  str
+    archive: bool
+    slug: Optional[str]
 
-class SeasonUpdate(Season):
-    season_id                   = UUID
+
+class SeasonIn(Season):
+    season_id: Optional[UUID]
+
+
+class SeasonUpdate(TypedDict):
+    season_id: UUID
+    season_name: str
+    season_start_date: Optional[date]
+    roster_submission_deadline: Optional[date]
+    tournament_start_date: Optional[date]
+    sport: str
+    year: str
+    archive: Optional[bool]
+    slug: Optional[str]
+    level: Level
+    season_teams: Optional[List[TeamOut]]
+
+
+class SeasonNew(TypedDict):
+    level: List[Level]
+    season_name:  str
+    season_start_date: date
+    roster_submission_deadline: date
+    tournament_start_date: date
+    sport: str
+    year:  str
+    archive: bool
+    slug: Optional[str]
+    season_teams: Optional[List[TeamOut]]
+
 
 def row_mapper(row) -> Season:
     Season = {
@@ -46,92 +60,281 @@ def row_mapper(row) -> Season:
         'tournament_start_date': row['tournament_start_date'],
         'sport': row['sport_name'],
         'year': row['year'],
-        'slug': row['slug']
+        'slug': row['slug'],
+        'archive': row['archive'] or False
 
     }
     return Season
 
-base_query = '''
-SELECT seasons.id as season_id, seasons.name, seasons.start_date, seasons.roster_submission_deadline, seasons.tournament_start_date,
-sports.sport_name, seasons.slug, levels.level_name, seasons.year
-FROM mhac.seasons 
-INNER JOIN mhac.levels 
-    ON seasons.level_id = levels.id 
-INNER JOIN mhac.sports 
-    ON seasons.sport_id = sports.id
-'''
 
-def get_list(active=None):
+def admin_season_row_mapper(row):
+    season_teams = []
+    if row.season_teams:
+        season_teams = [admin_get_with_uuid(i) for i in row.season_teams.split(',')]
+
+    Season = {
+        'season_id': row['season_id'],
+        'season_name': row['name'],
+        'season_start_date': row['start_date'],
+        'roster_submission_deadline': row['roster_submission_deadline'],
+        'tournament_start_date': row['tournament_start_date'],
+        'sport': row['sport_name'],
+        'year': row['year'],
+        'slug': row['slug'],
+        'level': get_level_by_id(row['level_id']),
+        'archive': row['archive'] or False,
+        'season_teams': season_teams
+    }
+    return Season
+
+
+base_query = '''
+        SELECT seasons.id as season_id, 
+        seasons.name, 
+        seasons.start_date::date, 
+        seasons.roster_submission_deadline::date, 
+        seasons.tournament_start_date::date,
+        sports.sport_name, 
+        seasons.slug, 
+        levels.level_name,
+        levels.id as level_id, 
+        seasons.year,
+        seasons.archive
+        FROM mhac.seasons 
+        INNER JOIN mhac.levels 
+            ON seasons.level_id = levels.id 
+        INNER JOIN mhac.sports 
+            ON seasons.sport_id = sports.id
+        '''
+
+
+def get_list(active=None, session=db()) -> List[Season]:
     season_list = []
     where = ''
     if active:
         where = 'WHERE archive is null'
     stmt = text(f'''{base_query} {where} ''')
-    result = DB.execute(stmt)
-    DB.close()
+    result = session.execute(stmt)
+
     for row in result:
         season_list.append(row_mapper(row))
+    session.close()
     return season_list
 
-def get(slug: str, DB=db()):
+
+def get(slug: str, session=db()) -> Season:
     where = 'WHERE slug = :slug'
     stmt = text(F'''{base_query} {where} ''')
-    result = DB.execute(stmt.bindparams(slug=slug))
-    DB.close()
-    return row_mapper(result.fetchone())
-
-def get_by_id(id: UUID, DB=db()) -> Season:
-    where = 'WHERE seasons.id = :id'
-    stmt = text(F'''{base_query} {where} ''')
-    result = DB.execute(stmt.bindparams(id=id))
+    result = session.execute(stmt.bindparams(slug=slug))
     season = row_mapper(result.fetchone())
-    DB.close()
+    session.close()
     return season
 
-def archive_season(season: UUID):
+
+def get_by_id(id: UUID, db=db()) -> Season:
+    where = 'WHERE seasons.id = :id'
+    stmt = text(F'''{base_query} {where} ''')
+    result = db.execute(stmt.bindparams(id=id))
+    season = row_mapper(result.fetchone())
+    db.close()
+    return season
+
+
+def get_by_year(year: str, session=db()) -> List[Season]:
+    where = 'WHERE seasons.year = :year'
+    stmt = text(F'''{base_query} {where} ''')
+    result = db.execute(stmt.bindparams(year=year))
+    season_list = []
+    for r in result :
+        season_list.append(row_mapper(r))
+
+    session.close()
+    return season_list
+
+
+def archive_season(season: UUID, session=db()):
     stmt = text(f'''UPDATE mhac.seasons
                      SET archive = True 
-                     WHERE season_id = season_id ''')
-    stmt = stmt.bindparams(season_id = season)
-    DB = db()   
-    DB.execute(stmt)
-    DB.commit()
-    DB.close()
+                     WHERE id = season_id ''')
+    stmt = stmt.bindparams(season_id=season)
+
+    session.execute(stmt)
+    session.commit()
+    session.close()
     return {200: "Season Archived"}
 
-def update(season: Season):
-    stmt =text('''UPDATE mhac.seasons
-                  SET name = :name, year = :year, level_id= :level_id, sport_id= :sport_id, start_date= :start_date, roster_submission_deadline= :roster_submission_deadline, tournament_start_date= :tournament_start_date 
-                   WHERE season_id = :season_id ''')
-    stmt = stmt.bindparams(name = season.name, year =season.year, level_id = season.level_id, sport_id = seaon.sport_id, start_date = season.start_date, roster_submission_deadline = season.roster_submission_deadline, tournament_start_date = season.tournament_start_date)
-    DB = db()
-    DB.execute(stmt)
-    DB.commit()
-    DB.close()
-    return {200 : "Season Updated"}
 
-def create(season: Season):
-    DB = db()
-    new_season_id= uuid4()
-    stmt = text('''INSERT INTO mhac.seasons(id, name, year, level_id, sport_id, start_date, roster_submission_deadline, tournament_start_date, archive) 
+def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
+    stmt = text(""" 
+        DELETE FROM mhac.standings
+        WHERE season_id = :season_id
+            AND team_id = :team_id
+    """)
+    stmt = stmt.bindparams(season_id = season_id, team_id = team_id)
+    session.execute(stmt)
+
+    stmt = text("""
+        DELETE FROM mhac.season_teams 
+        WHERE season_id = :season_id and team_id = :team_id
+     """)
+    stmt = stmt.bindparams(season_id = season_id, team_id = team_id)
+    session.execute(stmt)
+
+def add_team_to_season(season_id: UUID, team_id: UUID, session=db()):
+    season_team_id=uuid4()
+
+    stmt = text("""INSERT INTO mhac.season_teams(id, season_id, team_id)
+            VALUES
+            (:id, :season_id, :team_id)
+            """)
+            
+    stmt = stmt.bindparams(id=season_team_id, season_id=season_id, team_id=team_id)
+    try:
+        session.execute(stmt)
+    except Exception as exc:
+        print(str(exc))
+        raise exc
+    stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
+                    VALUES
+            (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
+            ''')
+    stmt = stmt.bindparams(team_id=season_team_id, season_id=season_id)
+    session.execute(stmt)
+
+
+def update(season: SeasonUpdate, session=db()):
+    archive = season.archive
+    if not season.archive:
+        archive = None
+    stmt = text('''UPDATE mhac.seasons
+                  SET name = :name, 
+                      start_date= :start_date, 
+                      roster_submission_deadline= :roster_submission_deadline, 
+                      tournament_start_date= :tournament_start_date,
+                      archive = :archive,
+                      slug = :slug 
+                  WHERE id = :season_id''')
+    stmt = stmt.bindparams(name=season.season_name,
+                           start_date=season.season_start_date,
+                           roster_submission_deadline=season.roster_submission_deadline,
+                           tournament_start_date=season.tournament_start_date,
+                           archive=archive,
+                           slug=season.slug,
+                           season_id=season.season_id)
+    try:
+        session.execute(stmt)
+        stmt = text('''SELECT * FROM mhac.season_teams WHERE season_id = :season_id 
+            ''')
+        stmt = stmt.bindparams(season_id = season.season_id)
+        current_season_teams = session.execute(stmt)
+        current_team_list = [team.team_id for team in current_season_teams]
+        incoming_team_list = [team.team_id for team in season.season_teams]
+        teams_to_remove = set(current_team_list) - set(incoming_team_list)
+        
+        for team in teams_to_remove:
+            remove_team_by_id(team_id= team, season_id=season.season_id, session=session)
+        
+        for team in season.season_teams:
+            if team.team_id in current_team_list:
+                continue
+            add_team_to_season(season_id=season.season_id, team_id=team.team_id, session=session)
+            
+        session.commit()
+    except Exception as exc:
+        print(str(exc))
+        raise exc
+    finally:
+        session.close()
+    return {200: "Success"}
+
+
+def create(season: SeasonNew, level: Level, session=db()):
+    new_season_id = uuid4()
+    slug = season.slug
+    return_statement = {}
+    if season.slug == '' or not season.slug:
+        slug = f"{season.year}_{str(level.level_name).lower()}_basketball"
+    stmt = text('''INSERT INTO mhac.seasons(id, name, year, level_id, sport_id, start_date, roster_submission_deadline, tournament_start_date, archive, slug)
                 VALUES
-                (:id, :name, :year, :level, :sport, :start_date, :roster_submission_deadline, :tournament_start_date, :archive )''')
-    DB.execute(stmt.bindparams(id= new_season_id, name= season.season_name, year = season.year, level = season.level, sport = season.sport, start_date =season.start_date , roster_submission_deadline= season.roster_submission_deadline, tournament_start_date = season.tournament_start_date, archive = None))
-    DB.commit()
-    DB.close()
-    return {200: f'{new_season_id} Added '}
+                (:id, :name, :year, :level, :sport, :season_start_date, :roster_submission_deadline, :tournament_start_date, :archive, :slug )''')
+    # try:
+    stmt = stmt.bindparams(id=new_season_id, name=season.season_name, year=season.year, level=level.id,
+                               sport=1, season_start_date=season.season_start_date,
+                               roster_submission_deadline=season.roster_submission_deadline,
+                               tournament_start_date=season.tournament_start_date, archive=None, slug=slug)
 
-def get_active_year(archive=None):
-    DB = db()
-    stmt = text ('''
-        SELECT DISTINCT name, year FROM mhac.seasons
+    result = session.execute(stmt)
+    print(result)
+    
+    for team in season.season_teams:
+        add_team_to_season(season_id=new_season_id, team_id= team.team_id, session=session)
+        
+    session.commit()
+    return_statement = {200: f'{new_season_id} Added'}
+    # except Exception as exc:
+    #     session.rollback()
+    #     return_statement = {500: f"Problem with creation of {season.season_name}\n {str(exc)}"}
+    # finally:
+    #     session.close()
+    return return_statement
+
+
+def get_active_year(archive=None, db=db()):
+    stmt = text('''
+        SELECT DISTINCT name, year 
+        FROM mhac.seasons
         WHERE archive is NULL
         ORDER BY year desc
     ''')
 
-    result = DB.execute(stmt)
-    DB.close()
+    result = db.execute(stmt)
+    db.close()
 
     return result.fetchone()
 
-        
+
+def get_all_years(db=db()):
+    stmt = text('''
+        SELECT DISTINCT name, year 
+        FROM mhac.seasons
+        ORDER BY year desc
+    ''')
+
+    result = db.execute(stmt)
+    db.close()
+
+    return result.fetchall()
+
+def get_admin_season(db=db()):
+    seasons = []
+    stmt = text(''' 
+    SELECT 
+   		seasons.id::TEXT as season_id, 
+        seasons.name, 
+        seasons.start_date::date, 
+        seasons.roster_submission_deadline::date, 
+        seasons.tournament_start_date::date,
+        sports.sport_name, 
+        seasons.slug::TEXT as slug,
+        levels.id::TEXT as level_id, 
+        seasons.year,
+        seasons.archive,
+        string_agg(season_teams_with_names.id::text, ',') AS season_teams
+    FROM mhac.seasons 
+    INNER JOIN mhac.levels 
+        ON seasons.level_id = levels.id 
+    INNER JOIN mhac.sports 
+        ON seasons.sport_id = sports.id
+    LEFT OUTER JOIN mhac.season_teams_with_names
+        ON seasons.id = season_teams_with_names.season_id
+    GROUP BY seasons.id, seasons.name, seasons.start_date, seasons.tournament_start_date,
+            seasons.roster_submission_deadline, sports.sport_name, seasons.year, seasons.slug,
+            levels.id, seasons.archive
+    ORDER BY seasons.year desc, levels.id
+    ''')
+
+    results = db.execute(stmt)
+    for row in results:
+        seasons.append(admin_season_row_mapper(row))
+    return seasons
+
