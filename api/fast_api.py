@@ -5,8 +5,15 @@ from fastapi import FastAPI, Request, APIRouter
 
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
-from config import config
+
+from config import config, LogConfig
 from apis import api_router
+
+import logging
+from logging.config import dictConfig
+
+dictConfig(LogConfig().dict())
+logger = logging.getLogger("mhac_api")
 
 app = FastAPI(title='MHAC API', version='1.0', description='MHAC API - v1')
 
@@ -17,6 +24,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 def get_settings():
     env = os.environ.get('API_ENV', 'development')
@@ -35,3 +43,6 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 app.include_router(api_router)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,10 +1,19 @@
 import configparser
+from configparser import SafeConfigParser
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Read Config File
-config = configparser.ConfigParser()
-config.read('./db.conf')
+# config = configparser.ConfigParser()
+# config.read(f'{basedir}/db.conf')
+
+# print(config.keys)
+
+filename = f'{basedir}/db.conf'
+if os.path.isfile(filename):
+    config = SafeConfigParser()
+    config.read(filename)
+    # print(config.sections())
 
 db_user = config['DB']['user']
 db_pass = config['DB']['password']
@@ -32,6 +41,37 @@ class DevelopmentConfig(Config):
     DEVELOPMENT = True
     DEBUG = True
 
+
+from pydantic import BaseModel
+from logging.handlers import RotatingFileHandler
+
+class LogConfig(BaseModel):
+    """Logging configuration to be set for the server"""
+
+    LOGGER_NAME: str = "mhac_api"
+    LOG_FORMAT: str = "%(levelprefix)s | %(asctime)s | %(message)s"
+    LOG_LEVEL: str = "DEBUG"
+
+    # Logging config
+    version = 1
+    disable_existing_loggers = False
+    formatters = {
+        "default": {
+            "()": "uvicorn.logging.DefaultFormatter",
+            "fmt": LOG_FORMAT,
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+    }
+    handlers = {
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+        },
+    }
+    loggers = {
+        "mhac_api": {"handlers": ["default"], "level": LOG_LEVEL},
+    }
 
 config = {
     'production': ProductionConfig,

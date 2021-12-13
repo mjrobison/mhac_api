@@ -75,7 +75,6 @@ def get_all_players():
 
 @router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
-    # print(player)
     players.create_player(player)
     return {200: "Success"}
 

@@ -10,8 +10,9 @@ COPY requirements.txt .
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-COPY ./api/fast_api.py .
+ADD ./api .
 
 WORKDIR /app
-ENTRYPOINT ["uvicorn"]
-CMD ["fast_api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+EXPOSE 8000
+# ENTRYPOINT ["uvicorn"]
+# CMD ["fast_api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
