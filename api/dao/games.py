@@ -345,6 +345,7 @@ def add_final_score(game: GameStats, connection=None):
                 DB.commit()
 
     except Exception as exc:
+        DB.rollback()
         print(str(exc))
         raise
 
