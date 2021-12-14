@@ -1,19 +1,17 @@
 import configparser
 from configparser import SafeConfigParser
 import os
-basedir = os.path.abspath(os.path.dirname(__file__))
-
+basedir = os.path.abspath(os.pardir)
+print(basedir)
 # Read Config File
-# config = configparser.ConfigParser()
-# config.read(f'{basedir}/db.conf')
-
-# print(config.keys)
-
 filename = f'{basedir}/db.conf'
 if os.path.isfile(filename):
     config = SafeConfigParser()
     config.read(filename)
     # print(config.sections())
+
+config = configparser.ConfigParser()
+config.read('../../db.conf')
 
 db_user = config['DB']['user']
 db_pass = config['DB']['password']
