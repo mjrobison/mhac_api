@@ -89,22 +89,22 @@ def admin_season_row_mapper(row):
 
 
 base_query = '''
-        SELECT seasons.id as season_id, 
-        seasons.name, 
-        seasons.start_date::date, 
-        seasons.roster_submission_deadline::date, 
-        seasons.tournament_start_date::date,
-        sports.sport_name, 
-        seasons.slug, 
-        levels.level_name,
-        levels.id as level_id, 
-        seasons.year,
-        seasons.archive
-        FROM mhac.seasons 
-        INNER JOIN mhac.levels 
-            ON seasons.level_id = levels.id 
-        INNER JOIN mhac.sports 
-            ON seasons.sport_id = sports.id
+            SELECT seasons.id as season_id, 
+            seasons.name, 
+            seasons.start_date::date, 
+            seasons.roster_submission_deadline::date, 
+            seasons.tournament_start_date::date,
+            sports.sport_name, 
+            seasons.slug, 
+            levels.level_name,
+            levels.id as level_id, 
+            seasons.year,
+            seasons.archive
+            FROM mhac.seasons 
+            INNER JOIN mhac.levels 
+                ON seasons.level_id = levels.id 
+            INNER JOIN mhac.sports 
+                ON seasons.sport_id = sports.id
         '''
 
 
