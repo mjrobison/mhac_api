@@ -21,15 +21,15 @@ class Standings(BaseModel):
     games_behind: float
     win_percentage: float
 
-@router.get('/getStandings', response_model=List[Standings])
+@router.get('/getStandings', response_model=List[Standings], tags=['standings'])
 def get_standings():
     return standings.get()
 
-@router.get('/getStandings/{season_id}', response_model=List[Standings])
+@router.get('/getStandings/{season_id}', response_model=List[Standings], tags=['standings'])
 def get_season_standings(season_id: UUID):
     return standings.get_a_season(season_id)
 
-@router.get('/lookupTeamByStandings/{season_id}/{rank}')
+@router.get('/lookupTeamByStandings/{season_id}/{rank}', tags=['standings'])
 def get_team_from_rank(season_id: UUID, rank:int):
     team = standings.get_team_from_rank(season_id, rank)
     if not team:

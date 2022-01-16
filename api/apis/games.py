@@ -131,8 +131,8 @@ def update_game(game: ScheduleUpdate):
     return games.update(game)
 
 
-@router.get('/getGameResults/{game_id}')  # , response_model=List[GameResultsStatsOut], tags=['games'])
-@router.get('/getGameResults/{game_id}/{team_id}')  # , response_model=List[GameResultsStatsOut], tags=['games'])
+@router.get('/getGameResults/{game_id}', tags=['games'])  # , response_model=List[GameResultsStatsOut], tags=['games'])
+@router.get('/getGameResults/{game_id}/{team_id}', tags=['games'])  # , response_model=List[GameResultsStatsOut], tags=['games'])
 def get_game(game_id: UUID, team_id: UUID = None):
     return games.get_game_results(game_id=game_id, team_id=team_id)
 
@@ -142,7 +142,7 @@ def add_game_results(game_id: UUID, game_scores: GameStats):
     return games.add_games_and_stats(game_scores)
 
 
-@router.post('/addFileGameStats/{game_id}/{team_id}')
+@router.post('/addFileGameStats/{game_id}/{team_id}', tags=['games'])
 async def create_upload_file(game_id: UUID, team_id: UUID, file: UploadFile = File(...)):
     contents = await file.read()
     msg = games.parse_csv(contents, game_id, team_id)
