@@ -1,0 +1,21 @@
+version: "3.7"
+
+services:
+  mhac_api:
+    image: mhac_api
+    ports: 
+      - "8000:8000"
+    volumes:
+      - ./api/:/app
+    
+  postgres:
+    image: postgres:11.5-alpine
+    container_name: "mhac_db"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./db/:/docker-entrypoint-initdb.d
+      
