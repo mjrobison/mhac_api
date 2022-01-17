@@ -12,12 +12,12 @@ router = APIRouter()
 
 
 class Game(BaseModel):
-    game_number: Optional[int]
-    game_date: Optional[date]
-    game_time: Optional[time]
+    game: Optional[int]
+    date: Optional[date]
+    time: Optional[time]
+    game_description: Optional[str]
     home_team_seed: Optional[int]
     away_team_seed: Optional[int]
-    game_description: Optional[str]
     display: bool
     seasons: Season
     winner_to: Optional[int]
@@ -55,6 +55,7 @@ class TournamentGame(BaseModel):
     location: Optional[Location]
     seasons: Season
     display: Optional[bool]
+    winners_from: Optional[List[int]]
 
 
 @router.get('/getTournamentInformation/', tags=['tournament'])
@@ -73,8 +74,8 @@ def get_tournaments(year):
 
 
 @router.post('/addTournamentGame/', tags=['tournament'])
-def add_tournament_game(game: Game):
-    return tournament.create_tournament_game(game=game)
+def add_tournament_game(tournament_game: TournamentGame):
+    return tournament.create_tournament_game(game=tournament_game)
 
 
 @router.post("/updateTournamentGame/", tags=['tournament'])

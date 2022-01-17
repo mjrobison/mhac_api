@@ -142,6 +142,7 @@ def get_tournament(DB=db(), year=None):
 
 
 def create_tournament_game(game, DB=db()):
+    print(game)
     next_game = game.game
     if game.game is None:
         query = text("""SELECT MAX(game_number) + 1 FROM mhac.tournamentgames WHERE season_id = :season_id """)
@@ -174,10 +175,10 @@ def create_tournament_game(game, DB=db()):
         VALUES
         (:game_number, :game_date, :game_time, :home_team_seed, :away_team_seed, :game_description, :season_id, :winner_to, :loser_to)
         """)
-        query = query.bindparams(game_number=next_game, game_date=game.game_date, game_time=game.game_time,
-                                 home_team_seed=game.home_team_seed, away_team_seed=game.away_team_seed,
-                                 game_description=game.game_description, season_id=game.season_id,
-                                 winner_to=game.winner_to, loser_to=game.loser_to)
+        query = query.bindparams(game_number=next_game, game_date=game.date, game_time=game.time,
+                                 home_team_seed=game.matchup.team1Seed, away_team_seed=game.matchup.team2Seed,
+                                 game_description=game.game_description, season_id=game.seasons.season_id,
+                                 winner_to=game.matchup.winner_to, loser_to=game.matchup.loser_to)
 
         DB.execute(query)
         DB.commit()
