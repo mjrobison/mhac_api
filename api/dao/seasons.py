@@ -166,6 +166,34 @@ def archive_season(season: UUID, session=db()):
 
 def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
     stmt = text(""" 
+    DELETE FROM mhac.basketball_stats 
+    WHERE game_id IN (SELECT game_id 
+                      FROM mhac.games where home_team_id = :team_id 
+                            or away_team_id = :team_id
+                     );
+    """)
+    stmt = stmt.bindparams(team_id = team_id)
+    session.execute(stmt)
+
+    stmt = text(""" 
+    DELETE FROM mhac.game_results 
+    WHERE game_id IN (SELECT game_id FROM mhac.games where home_team_id = :team_id or away_team_id =:team_id);
+    """)
+    stmt = stmt.bindparams(team_id = team_id)
+    session.execute(stmt)
+
+    stmt = text(""" 
+    DELETE FROM mhac.schedule 
+    WHERE game_id IN (SELECT game_id FROM mhac.games where home_team_id = :team_id or away_team_id =:team_id);
+    """)
+    stmt = stmt.bindparams(team_id = team_id)
+    session.execute(stmt)
+
+    stmt= text(""" 
+    DELETE FROM mhac.games where where home_team_id = :team_id or away_team_id = :team_id);
+    """)
+
+    stmt = text(""" 
         DELETE FROM mhac.standings
         WHERE season_id = :season_id
             AND team_id = :team_id

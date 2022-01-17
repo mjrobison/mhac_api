@@ -7,8 +7,8 @@
 			"platform": "python",
 			"dockerBuild": {
 				"tag": "mhac_api",
-				"dockerfile": "Dockerfile",
-				"context": ".",
+				"dockerfile": "${workspaceFolder}/Dockerfile",
+				"context": "${workspaceFolder}",
 				"pull": true
 			}
 		},
@@ -18,6 +18,14 @@
 			"dependsOn": [
 				"docker-build"
 			],
+			"dockerRun": {
+				"ports": [
+					{
+						"containerPort": 8000,
+						"hostPort": 8000
+					}
+				]
+			},
 			"python": {
 				"args": [
 					"fast_api:app",

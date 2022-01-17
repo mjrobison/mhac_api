@@ -14,9 +14,9 @@ class SportBase(BaseModel):
 class SportOut(SportBase):
     sport_id: int
 
-@router.get('/getSport/{id}', response_model=SportOut, tags=['sport'])
-def get_sport(id: int):
-    sport = sports.get(id)
+@router.get('/getSport/{sport_id}', response_model=SportOut, tags=['sport'])
+def get_sport(sport_id: int):
+    sport = sports.get(sport_id)
     if not sport:
         raise HTTPException(status_code=404, detail="Sport not found")
     return sport
