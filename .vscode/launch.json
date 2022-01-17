@@ -12,11 +12,16 @@
       "python": {
         "pathMappings": [
           {
-            "localRoot": "${workspaceFolder}/api",
+            "localRoot": "${workspaceFolder}",
             "remoteRoot": "/app"
           }
         ],
-        "projectType": "fastapi"
+        "projectType": "flask"
+      },
+      "dockerServerReadyAction": {
+        "action": "openExternally",
+        "pattern": "Running on (http?://\\S+|[0-9]+)",
+        "uriFormat": "%s://localhost:%s/"
       }
     },
     {

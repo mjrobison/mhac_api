@@ -14,5 +14,5 @@ ADD ./api .
 
 WORKDIR /app
 EXPOSE 8000
-# ENTRYPOINT ["uvicorn"]
-# CMD ["fast_api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+ENTRYPOINT ["uvicorn"]
+CMD ["fast_api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
