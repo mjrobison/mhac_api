@@ -32,7 +32,7 @@ def post_websocket_url(websocket_url, DB=db()):
     Update mhac.websocket
     set websocket_url = :url, websocket_port = :port 
     ''')
-    stmt = stmt.bindparams(url=web_address.geturl(), port=web_address.port)
+    stmt = stmt.bindparams(url=f'{web_address.scheme}://{web_address.hostname}', port=web_address.port)
     try:
         DB.execute(stmt)
         DB.commit()

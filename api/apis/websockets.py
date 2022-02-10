@@ -17,8 +17,12 @@ class WebSocketModel(BaseModel):
 
 @router.get('/websocketUrl', tags=['obs', 'livestream'], response_model=WebSocketLocation)
 def get_websocket_url() -> WebSocketLocation:
+    
     results = websockets.get_websocket_url()
-    return f"{results['websocket_url']}:{results['websocket_port']}"
+    if not results:
+        result = {'webSocketUrl': f"wss://localhost:4444"}
+
+    return {'webSocketUrl': f"{results['websocket_url']}:{results['websocket_port']}"}
 
 @router.post('/websocketUrl',  status_code=201, tags=['obs', 'livestream'])
 def post_websocket_url(websocket_url: WebSocketModel):
