@@ -49,7 +49,7 @@ class SeasonTeamOut2(TeamBase):
 
 
 @router.get('/getTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
-def getTeam(slug = None):
+def getTeam(slug=None):
     if slug:
         return teams.get(slug=slug)
     else:
@@ -67,6 +67,7 @@ async def get():
             tags=['teams'])
 def getSeasonTeams(slug: str = None):
     return teams.get_season_teams(slug)
+
 
 @router.get('/getSeasonTeams/{slug}/{seasonid}', response_model=SeasonTeamOut2, summary="Get an invididual team",
             tags=['teams'])
