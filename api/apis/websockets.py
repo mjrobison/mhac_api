@@ -20,7 +20,7 @@ def get_websocket_url() -> WebSocketLocation:
     
     results = websockets.get_websocket_url()
     if not results:
-        result = {'webSocketUrl': f"wss://localhost:4444"}
+        results = {'websocket_url': f"wss://localhost", "websocket_port": 4444}
 
     return {'webSocketUrl': f"{results['websocket_url']}:{results['websocket_port']}"}
 
