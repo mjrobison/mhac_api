@@ -15,7 +15,7 @@ class WebSocketModel(BaseModel):
     webSocketUrl: str
 
 
-@router.get('/websocketUrl', tags=['obs', 'livestream'], response_model=WebSocketLocation)
+@router.get('/websocketUrl', tags=['obs', 'livestream']) #, response_model=WebSocketLocation)
 def get_websocket_url() -> WebSocketLocation:
     
     results = websockets.get_websocket_url()

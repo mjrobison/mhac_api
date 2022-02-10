@@ -21,9 +21,10 @@ def get_websocket_url(DB=db()):
     '''
     
     webSocketUrl = DB.execute(stmt).fetchone()
-    print(webSocketUrl)
+    
     DB.close()
-
+    if not webSocketUrl:
+        webSocketUrl = None
     return webSocketUrl
 
 def post_websocket_url(websocket_url, DB=db()):
