@@ -5,4 +5,5 @@ psycopg2
 python-multipart
 python-dateutil
 python-jose
-
+# websockets
+# simpleobsws
