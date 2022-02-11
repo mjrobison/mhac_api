@@ -14,6 +14,8 @@ from apis import api_router
 import logging
 from logging.config import dictConfig
 
+from typing import List
+
 dictConfig(LogConfig().dict())
 logger = logging.getLogger("mhac_api")
 
@@ -44,7 +46,6 @@ async def add_process_time_header(request: Request, call_next):
     # response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
-app.include_router(api_router)
 
 
 html = """
@@ -65,8 +66,7 @@ html = """
         <script>
             var client_id = Date.now()
             document.querySelector("#ws-id").textContent = client_id;
-            // var ws = new WebSocket(`ws://192.168.1.82:8000/ws/${client_id}`);
-            var ws = new WebSocket(`ws://192.168.1.74:4444`);
+            var ws = new WebSocket(`ws://127.0.0.1:8003/ws/${client_id}`);
             ws.onmessage = function(event) {
                 var messages = document.getElementById('messages')
                 var message = document.createElement('li')
@@ -98,35 +98,35 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
 
     async def send_personal_message(self, message: str, websocket: WebSocket):
-        print(json.dumps(message, indent=3))
-        await websocket.send_text(json.dumps(message))
+        await websocket.send_text(message)
 
     async def broadcast(self, message: str):
         for connection in self.active_connections:
             await connection.send_text(message)
 
 
-# manager = ConnectionManager()
-
-# @app.get("/")
-# async def get():
-#     return HTMLResponse(html)
+manager = ConnectionManager()
 
 
-# @app.websocket("/ws/{client_id}")
-# async def websocket_endpoint(websocket: WebSocket, client_id: int):
-#     await manager.connect(websocket)
-#     try:
-#         while True:
-#             data = await websocket.receive_text()
-#             await manager.send_personal_message(f"You wrote: {data}", websocket)
-#             await manager.broadcast(f"{data}")
-#     except WebSocketDisconnect:
-#         manager.disconnect(websocket)
-#         await manager.broadcast(f"Client #{client_id} left the chat")
+@app.get("/")
+async def get():
+    return HTMLResponse(html)
 
-# async def get_last_state(game_id):
-#     return '{"game_time":"7:55", "clock_status": "running}'
+
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: int):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await manager.send_personal_message(f"You wrote: {data}", websocket)
+            await manager.broadcast(f"Client #{client_id} says: {data}")
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        await manager.broadcast(f"Client #{client_id} left the chat")
+
+
+app.include_router(api_router)
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8000)
