@@ -166,7 +166,7 @@ def get_season_team(slug: str, seasonid: str) -> SeasonTeam:
 
 def get_list(DB=db()) -> List[TeamOut]:
     team_list = []
-    stmt = text('''SELECT * FROM mhac.teams''')
+    stmt = text('''SELECT * FROM mhac.teams WHERE active''')
     result = DB.execute(stmt)
 
     for row in result:
@@ -252,4 +252,5 @@ def get_team_count(DB=db(), season_id=None):
 
     results = DB.execute(query).fetchone()
     results = results[0]
+    print(results)
     return results
