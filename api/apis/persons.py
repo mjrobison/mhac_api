@@ -28,7 +28,7 @@ class PlayerOut(PersonBase):
 
 class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
-    id: UUID
+    id: Optional[UUID]
     first_name: str
     last_name: str
     birth_date: date
@@ -36,6 +36,7 @@ class PlayerIn(PersonBase):
     person_type: str
     number: Optional[int]
     position: Optional[str]
+    team_id: UUID
 
     @validator('birth_date')
     def age_between(cls, birthday):
@@ -61,6 +62,8 @@ def get_team_players(slug):
 
 @router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
+    # TODO: Get a Base team
+    # TODO: GENERATE A UUID if not present
     # try:
         #TODO: Maybe some logic here?
     players.create_player(player)

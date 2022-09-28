@@ -102,7 +102,6 @@ def game_result_row_mapper(row) -> Player:
     }
     return Player
             
-
 def get(game_id) -> Game:
     DB = db()
     stmt = text('''SELECT * FROM mhac.games WHERE game_id = :game_id ''')
@@ -272,3 +271,53 @@ def get_game_results(game_id: UUID, team_id: UUID) -> List[Player]:
     for row in results:
         player_list.append(game_result_row_mapper(row))
     return player_list
+
+def get_team_games(season_id: UUID, slug:str):
+    DB = db()
+    stmt = text('''SELECT * 
+    FROM mhac.schedule
+    INNER JOIN mhac.games 
+        ON schedule.game_id = games.game_id
+    INNER JOIN mhac.season_teams_with_names as home_team
+        ON schedule.season_id = home_team.season_id
+        AND games.home_team_id = home_team.id
+    INNER JOIN mhac.season_teams_with_names as away_team
+        ON schedule.season_id = away_team.season_id
+        AND games.away_team_id = away_team.id
+    WHERE schedule.season_id = :season_id
+        AND (home_team.slug = :team_slug
+        OR away_team.slug = :team_slug)
+    ''')
+
+    stmt = stmt.bindparams(team_slug = sug, season_id=season_id)
+    results = DB.execute(stmt)
+    DB.close()
+    return results
+
+
+def get_program_schedule(slug: str):
+    DB = db()
+    stmt = text(""" 
+    SELECT 
+        mhac.schedule.id AS mhac_schedule_id
+        , mhac.schedule.game_id AS mhac_schedule_game_id
+        , mhac.schedule.game_date AS mhac_schedule_game_date
+        , mhac.schedule.game_time AS mhac_schedule_game_time
+        , mhac.schedule.season_id AS mhac_schedule_season_id
+        , mhac.schedule.neutral_site AS mhac_schedule_neutral_site
+        , mhac.games.game_id AS mhac_games_game_id
+        , mhac.games.home_team_id AS mhac_games_home_team_id, mhac.games.away_team_id AS mhac_games_away_team_id, mhac.games.final_home_score AS mhac_games_final_home_score, mhac.games.final_away_score AS mhac_games_final_away_score, home_team.id AS home_team_id, home_team.season_id AS home_team_season_id, home_team.team_id AS home_team_team_id, home_team.team_name AS home_team_team_name, home_team.team_mascot AS home_team_team_mascot, home_team.address_id AS home_team_address_id, home_team.main_color AS home_team_main_color, home_team.secondary_color AS home_team_secondary_color, home_team.website AS home_team_website, home_team.logo_color AS home_team_logo_color, home_team.logo_grey AS home_team_logo_grey, home_team.slug AS home_team_slug, home_team.level_name AS home_team_level_name, away_team.id AS away_team_id, away_team.season_id AS away_team_season_id, away_team.team_id AS away_team_team_id, away_team.team_name AS away_team_team_name, away_team.team_mascot AS away_team_team_mascot, away_team.address_id AS away_team_address_id, away_team.main_color AS away_team_main_color, away_team.secondary_color AS away_team_secondary_color, away_team.website AS away_team_website, away_team.logo_color AS away_team_logo_color, away_team.logo_grey AS away_team_logo_grey, away_team.slug AS away_team_slug, away_team.level_name AS away_team_level_name, mhac.addresses.id AS mhac_addresses_id, mhac.addresses.name AS mhac_addresses_name, mhac.addresses.address_line_1 AS mhac_addresses_address_line_1, mhac.addresses.address_line_2 AS mhac_addresses_address_line_2, mhac.addresses.city AS mhac_addresses_city, mhac.addresses.state AS mhac_addresses_state, mhac.addresses.postal_code AS mhac_addresses_postal_code
+    FROM mhac.games 
+    JOIN mhac.schedule 
+        ON mhac.games.game_id = mhac.schedule.game_id 
+    JOIN mhac.season_teams_with_names AS home_team 
+        ON mhac.games.home_team_id = home_team.id 
+    JOIN mhac.season_teams_with_names AS away_team 
+        ON mhac.games.away_team_id = away_team.id 
+    JOIN mhac.addresses 
+        ON home_team.address_id = mhac.addresses.id
+    JOIN mhac.seasons
+        ON mhac.schedule.season_id = mhac.seasons.id
+    WHERE mhac.seasons.archive is null
+    ORDER BY mhac.schedule.game_date
+    """)

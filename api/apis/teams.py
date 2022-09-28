@@ -32,13 +32,13 @@ class SeasonTeam(BaseModel):
 class SeasonTeamOut(SeasonTeam):
     season_team_id: UUID
 
-@router.get('/getTeams', response_model=List[TeamOut], summary="Get All Teams", tags=['teams'])
-async def get():
-    return teams.get_list()
-
 @router.get('/getTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
 def getTeam(slug):
     return teams.get(slug)
+
+@router.get('/getTeams', response_model=List[TeamOut], summary="Get All Teams", tags=['teams'])
+async def get():
+    return teams.get_list()
 
 @router.get('/getSeasonTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
 def getSeasonTeams(slug):
