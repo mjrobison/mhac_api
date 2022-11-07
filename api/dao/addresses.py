@@ -3,22 +3,21 @@ from sqlalchemy import Column, String
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
 
 from sqlalchemy.sql import text # type: ignore
-from typing import TypedDict, List, Dict, Any, Optional
-from uuid import uuid4
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from typing import TypedDict, Optional
+from sqlalchemy.dialects.postgresql import UUID
 
-from database import db, get_db
+from database import db
 
 base_query = text('''SELECT * FROM mhac.addresses ''')
 
 class Address(TypedDict):
-    address_id = UUID
-    location_name = Optional[str]
-    address_line_1 = str
-    address_line_2 = Optional[str]
-    city = str
-    state = str
-    postal_code = str
+    address_id: UUID
+    location_name: Optional[str]
+    address_line_1: str
+    address_line_2: Optional[str]
+    city: str
+    state: str
+    postal_code: str
 
 
 def row_mapper(row) -> Address:
@@ -33,19 +32,20 @@ def row_mapper(row) -> Address:
     }
     return Address
 
-def get_address_with_id(id:UUID):
-    DB = db()
+async def get_address_with_id(id:UUID):
+    
     query = text(f'''{base_query} WHERE id = :id ''')
 
     query = query.bindparams(id = id)
-    results = DB.execute(query).fetchone()
+    
+    with db.begin() as DB:
+        results = DB.execute(query).all()
     
     if results:
         result = row_mapper(results)
-        DB.close()
+        print(result)
         return result
-    
-    DB.close()
+
     raise HTTPException(status_code=404)
 
     
