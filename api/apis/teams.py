@@ -26,6 +26,7 @@ class TeamOut(TeamBase):
     address: Optional[Address]
     season_id: Optional[UUID]
     level_name: Optional[str]
+    active: bool
 
 
 class TeamUpdate(TeamBase):

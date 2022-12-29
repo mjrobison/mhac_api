@@ -3,8 +3,9 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel
 from uuid import UUID
 from datetime import datetime, date
+from dao.addresses import get_address_with_id, all_addresses
 
-
+router = APIRouter()
 
 class Address(BaseModel):
     address_id: UUID
@@ -14,3 +15,11 @@ class Address(BaseModel):
     city: str
     state: str
     postal_code: str
+
+@router.get('/address/{address_id}', response_model=Address, tags=['address', 'teams'])
+def address(address_id: UUID):
+   return get_address_with_id(address_id)
+
+@router.get('/addresses', response_model=List[Address])
+def allAddresses():
+    return all_addresses()

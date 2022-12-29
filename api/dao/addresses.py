@@ -48,4 +48,17 @@ def get_address_with_id(id:UUID):
     DB.close()
     raise HTTPException(status_code=404)
 
+def all_addresses():
+    address_list = []
+    query = text(f'''{base_query}''')
+    DB = db()
+    # cur = DB.cursor()
+    results = DB.execute(query).fetchall()
+    
+    if results:
+        for row in results:
+            address_list.append(row_mapper(row))
+    return address_list
+
+
     

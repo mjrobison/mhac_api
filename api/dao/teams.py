@@ -27,6 +27,7 @@ class TeamOut(Team):
     team_id: UUID
     address: Optional[Address]
     season_id: Optional[UUID]
+    active: Boolean
 
 
 class SeasonTeam(Team):
@@ -54,6 +55,7 @@ def row_mapper(row) -> TeamOut:
         'logo_color': row['logo_color'],
         'logo_grey': row['logo_grey'],
         'slug': row['slug'],
+        'active': row['active'],
         'address': get_address_with_id(row['address_id'])
     }
     return Team
@@ -210,10 +212,10 @@ def create(team: Team):
     # TODO: Validate SeasonId
     stmt = text('''INSERT INTO mhac.teams (id,team_name,team_mascot,address_id,main_color,secondary_color,website,logo_color,logo_grey,slug)
                    VALUES
-                    (id,:team_name,:team_mascot,:address_id,:main_color,:secondary_color,:website,:logo_color,:logo_grey,:slug)''')
-    stmt = stmt.bindparams(id=uuid4, team_name=team_name, team_mascot=team_mascot, address_id=address_id,
-                           main_color=main_color, secondary_color=secondary_color, website=website,
-                           logo_color=logo_color, logo_grey=logo_grey, slug=slug)
+                    (uuid_generate_v4(),:team_name,:team_mascot,:address_id,:main_color,:secondary_color,:website,:logo_color,:logo_grey,:slug)''')
+    stmt = stmt.bindparams(team_name=team.team_name, team_mascot=team.team_mascot, address_id='1        ',
+                           main_color=team.main_color, secondary_color=team.secondary_color, website=team.website,
+                           logo_color=team.logo_color, logo_grey=team.logo_grey, slug=team.slug)
 
     results = DB.execute(stmt)
     DB.commit()
