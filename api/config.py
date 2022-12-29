@@ -14,6 +14,7 @@ print(filename)
 config = configparser.ConfigParser()
 config.read(filename)
 
+
 db_user = config['DB']['user']
 db_pass = config['DB']['password']
 db_host = config['DB']['host']
