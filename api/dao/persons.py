@@ -156,6 +156,7 @@ def get_team_list(slug, season_level: Optional[str] = None, DB=db()):
     
     return player_list
 
+
 def update(id, Player: PlayerCreate, DB=db()):
     #TODO: Compare incoming with existing and update the new field
     #TODO: Remove a seasonTeam

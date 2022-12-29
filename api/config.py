@@ -11,7 +11,7 @@ if os.path.isfile(filename):
     # print(config.sections())
 
 config = configparser.ConfigParser()
-config.read('../../db.conf')
+config.read('db.conf')
 
 db_user = config['DB']['user']
 db_pass = config['DB']['password']
