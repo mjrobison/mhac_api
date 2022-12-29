@@ -13,15 +13,15 @@ from .persons import Person
 DB = db()
 
 class Coach(Person):
-    first_name= str 
-    last_name= str 
+    first_name= str
+    last_name= str
     person_type = int
     team_id = str
 
 class CoachOut(Coach):
     id: UUID
-    first_name= str 
-    last_name= str 
+    first_name= str
+    last_name= str
     person_type = int
     team_id = str
 
@@ -45,8 +45,8 @@ def create_coach(coach: Coach):
     result = DB.execute(stmt)
     DB.commit()
     DB.close()
-    
-    
+
+
 def get_coach(id) -> CoachOut:
     DB = db()
     stmt = text('''SELECT person.* FROM mhac.person WHERE id = :id ''')
@@ -69,7 +69,7 @@ def get_coach_list(person_type) -> List[CoachOut]:
     DB.close()
     for row in result:
         player_list.append(coach_row_mapper(row))
-    
+
     return player_list
 
 def get_all_coaches() -> List[CoachOut]:
