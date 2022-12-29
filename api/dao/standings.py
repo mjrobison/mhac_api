@@ -126,7 +126,7 @@ def add_to_standings(team_id, event, database):
         database.execute(stmt)
 
         query = text('''SELECT season_id FROM mhac.standings where team_id = :team_id ''')
-        stmt = update.bindparams(team_id = team_id)
+        stmt = query.bindparams(team_id = team_id)
         season_id = database.execute(stmt).fetchone()
 
         update_standings_rank(season_id=season_id[0], DB=database)

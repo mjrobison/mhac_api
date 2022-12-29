@@ -89,22 +89,22 @@ def admin_season_row_mapper(row):
 
 
 base_query = '''
-        SELECT seasons.id as season_id, 
-        seasons.name, 
-        seasons.start_date::date, 
-        seasons.roster_submission_deadline::date, 
-        seasons.tournament_start_date::date,
-        sports.sport_name, 
-        seasons.slug, 
-        levels.level_name,
-        levels.id as level_id, 
-        seasons.year,
-        seasons.archive
-        FROM mhac.seasons 
-        INNER JOIN mhac.levels 
-            ON seasons.level_id = levels.id 
-        INNER JOIN mhac.sports 
-            ON seasons.sport_id = sports.id
+            SELECT seasons.id as season_id, 
+            seasons.name, 
+            seasons.start_date::date, 
+            seasons.roster_submission_deadline::date, 
+            seasons.tournament_start_date::date,
+            sports.sport_name, 
+            seasons.slug, 
+            levels.level_name,
+            levels.id as level_id, 
+            seasons.year,
+            seasons.archive
+            FROM mhac.seasons 
+            INNER JOIN mhac.levels 
+                ON seasons.level_id = levels.id 
+            INNER JOIN mhac.sports 
+                ON seasons.sport_id = sports.id
         '''
 
 
@@ -165,6 +165,34 @@ def archive_season(season: UUID, session=db()):
 
 
 def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
+    stmt = text(""" 
+    DELETE FROM mhac.basketball_stats 
+    WHERE game_id IN (SELECT game_id 
+                      FROM mhac.games where home_team_id = :team_id 
+                            or away_team_id = :team_id
+                     );
+    """)
+    stmt = stmt.bindparams(team_id = team_id)
+    session.execute(stmt)
+
+    stmt = text(""" 
+    DELETE FROM mhac.game_results 
+    WHERE game_id IN (SELECT game_id FROM mhac.games where home_team_id = :team_id or away_team_id =:team_id);
+    """)
+    stmt = stmt.bindparams(team_id = team_id)
+    session.execute(stmt)
+
+    stmt = text(""" 
+    DELETE FROM mhac.schedule 
+    WHERE game_id IN (SELECT game_id FROM mhac.games where home_team_id = :team_id or away_team_id =:team_id);
+    """)
+    stmt = stmt.bindparams(team_id = team_id)
+    session.execute(stmt)
+
+    stmt= text(""" 
+    DELETE FROM mhac.games where where home_team_id = :team_id or away_team_id = :team_id);
+    """)
+
     stmt = text(""" 
         DELETE FROM mhac.standings
         WHERE season_id = :season_id
@@ -230,6 +258,7 @@ def update(season: SeasonUpdate, session=db()):
         current_team_list = [team.team_id for team in current_season_teams]
         incoming_team_list = [team.team_id for team in season.season_teams]
         teams_to_remove = set(current_team_list) - set(incoming_team_list)
+        # teams_to_add = set(incoming_team_list) - set(current_team_list)
         
         for team in teams_to_remove:
             remove_team_by_id(team_id= team, season_id=season.season_id, session=session)
@@ -237,6 +266,7 @@ def update(season: SeasonUpdate, session=db()):
         for team in season.season_teams:
             if team.team_id in current_team_list:
                 continue
+            print(f"adding Team {team}")
             add_team_to_season(season_id=season.season_id, team_id=team.team_id, session=session)
             
         session.commit()

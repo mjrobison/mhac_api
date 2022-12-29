@@ -25,7 +25,7 @@ class PublicPlayerOut(PersonBase):
     player_number: Optional[int]
     position: Optional[str]
     age: Optional[int]
-    season_roster: Optional[List[SeasonTeamOut2]]
+    # season_roster: Optional[List[SeasonTeamOut2]]
 
 class PlayerOut(PersonBase):
     id: UUID
@@ -45,7 +45,6 @@ class PlayerIn(PersonBase):
     person_type: str
     player_number: Optional[int]
     position: Optional[str]
-    
 
     # @validator('birth_date')
     # def age_between(cls, birthday):
@@ -65,17 +64,17 @@ class PlayerIn(PersonBase):
 #TODO: Move to Rosters
 @router.get('/getPlayers/{slug}', response_model=List[PublicPlayerOut], summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
-    # print(players.get_team_list(slug))
     return players.get_team_list(slug)
 
-@router.get('/getPlayers', response_model=List[PublicPlayerOut], summary="Get all players", tags=['players']  )
-def get_all_players():
-    return players.get_list(person_type='Player')
+@router.get('/getPlayers', summary="Get all players", tags=['players']  )
+async def get_all_players():
+    rosters = await players.get_list(person_type='Player')
+    # print(rosters)
+    return 'rosters'
 
 
 @router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
-    # print(player)
     players.create_player(player)
     return {200: "Success"}
 
@@ -103,6 +102,7 @@ def get_team_roster(season_team: UUID):
 def get_team_players(slug):
     return players.get_team_list(slug)
 
-@router.get('/getAdminPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
+
+@router.get('/getAdminPlayers', summary="Get all players", tags=['players']  )
 def get_all_players():
     return players.get_list(person_type='Player')

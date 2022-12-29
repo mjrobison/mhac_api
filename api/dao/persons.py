@@ -10,8 +10,9 @@ from database import db
 
 from .teams import get_with_uuid as get_team, SeasonTeam
 from .levels import get_level_by_id
+from database import db
 
-DB = db()
+# DB = db()
 
 class Height(TypedDict):
     feet: Optional[int]
@@ -51,7 +52,6 @@ def calc_age(birth_date):
     return relativedelta(date.today(), birth_date).years
 
 def break_height(inches):
-    # print(inches)
     if inches:
         feet = int(int(inches)/12)
         inches = int(int(inches) % 12)
@@ -68,8 +68,6 @@ def player_row_mapper(row) -> PlayerReturn:
         'id': row['id'],
         'first_name': row['first_name'],
         'last_name': row['last_name'],
-        # 'age': calc_age(row['birth_date']),
-        # 'birth_date': row['birth_date'],
         'age': row['age'],
         'height': {
             'feet': feet,
@@ -98,15 +96,20 @@ def get(id) -> Person:
     else:
         return PlayerCreate
 
-def get_list(person_type) -> List[Person]:
-    DB = db()
+async def get_list(person_type=None):
     player_list = []
-    stmt = text('''SELECT person.* FROM mhac.person INNER JOIN mhac.person_type ON person.person_type = person_type.id WHERE person_type.type = :person_type ''')
-    result = DB.execute(stmt.bindparams(person_type = person_type))
+    stmt = text('''SELECT person.* 
+                    FROM mhac.person 
+                    INNER JOIN mhac.person_type 
+                        ON person.person_type = person_type.id 
+                    WHERE person_type.type = :person_type ''')
+    stmt = stmt.bindparams(person_type=person_type)
+    with db.begin() as DB:
+        result = await DB.execute(stmt)
     
     for row in result:
         player_list.append(player_row_mapper(row))
-    DB.close()
+
     return player_list
 
 def get_team_list(slug, season_level: Optional[str] = None, DB=db()):
@@ -153,6 +156,7 @@ def get_team_list(slug, season_level: Optional[str] = None, DB=db()):
     
     return player_list
 
+
 def update(id, Player: PlayerCreate, DB=db()):
     #TODO: Compare incoming with existing and update the new field
     #TODO: Remove a seasonTeam
@@ -167,7 +171,8 @@ def update(id, Player: PlayerCreate, DB=db()):
     """)
 
     query = query.bindparams(player_id = Player.id)
-    results = DB.execute(query).fetchall()
+    with db.begin() as DB:
+        results = DB.execute(query).fetchall()
 
     if len(results) > len(Player.season_roster):
         
@@ -186,7 +191,10 @@ def update(id, Player: PlayerCreate, DB=db()):
         SET jersey_number = :number''')
         
         stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = id, number = Player.player_number)
-        DB.execute(stmt)
+        with db.begin() as DB:
+            DB.execute(stmt)
+            DB.commit()
+
     player_height = combine_height(Player.height)
     stmt = text('''UPDATE mhac.person 
     SET first_name = :first_name, last_name = :last_name, age = :age, position = :position, height = :height, number = :player_number, person_type = :person_type
@@ -200,8 +208,9 @@ def update(id, Player: PlayerCreate, DB=db()):
                            id=Player.id, person_type = '1')
 
     try:
-        DB.execute(stmt)
-        DB.commit()
+        with db.begin() as DB:
+            DB.execute(stmt)
+            DB.commit()
     except Exception as exc:
         print(str(exc))
     finally:

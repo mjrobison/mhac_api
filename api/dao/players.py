@@ -6,29 +6,29 @@ from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4, UUID
 # from sqlalchemy.dialects.postgresql import JSON, UUID
 from datetime import date, timedelta, datetime
-from database import db
+from database import db, database_conn
 
 from .persons import Person
 
-DB = db()
+# DB = db()
 
 class PlayerCreate(Person):
     birth_date: Date 
-    height= Optional[str]
-    number = int
-    position = str
+    height: Optional[str]
+    number: int
+    position: str
 
 def player_row_mapper(row) -> PlayerCreate:
     PlayerCreate = {
         'id': row['id'],
         'first_name': row['first_name'],
         'last_name': row['last_name'],
-        'birth_date': row['birth_date'],
+        'age': row['age'],
         'height': row['height'],
         #TODO: Provide a lookup, 
         'person_type': row['person_type'],
         'team_id': row['team_id'],
-        'number': row['number'],
+        'player_number': row['number'],
         'position': row['position']
     }
     return PlayerCreate
@@ -45,22 +45,28 @@ def get(id) -> PlayerCreate:
     else:
         return PlayerCreate
 
-def get_list() -> List[PlayerCreate]:
-    DB = db()
-    player_list = []
-    stmt = text('''SELECT person.* FROM mhac.person INNER JOIN mhac.person_type ON person.person_type = person_type.id WHERE person_type.type = 'Player' ''')
-    result = DB.execute(stmt)
-    DB.close()
-    for row in result:
-        player_list.append(player_row_mapper(row))
+# async def get_list(person_type=None):
+#     player_list = []
+#     stmt = text('''SELECT person.* 
+#                     FROM mhac.person 
+#                     INNER JOIN mhac.person_type 
+#                         ON person.person_type = person_type.id 
+#                     WHERE person_type.type = 'Player' ''')
+#     async with database_conn as DB:
+#         result = DB.execute(stmt)
     
-    return player_list
+#     for row in result:
+#         player_list.append(player_row_mapper(row))
+    
+#     return player_list
 
-def get_team_list(slug):
+async def get_team_list(slug):
     player_list = []
     stmt = text('''SELECT * FROM mhac.person INNER JOIN mhac.person_type ON person.person_type = person_type.id WHERE person_type.type = 'Player' and slug = :slug''')
-    stmt = stmt.bindparams(team_id = team_id)
-    result = DB.execute(stmt)
+    stmt = stmt.bindparams(slug = slug)
+    async with database_conn as DB:
+        result = DB.execute(stmt)
+    
     for row in result:
         player_list.append(player_row_mapper(row))
     

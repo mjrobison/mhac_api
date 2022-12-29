@@ -26,6 +26,7 @@ class TeamOut(TeamBase):
     address: Optional[Address]
     season_id: Optional[UUID]
     level_name: Optional[str]
+    active: bool
 
 
 class TeamUpdate(TeamBase):
@@ -39,7 +40,7 @@ class SeasonTeam(BaseModel):
 
 class SeasonTeamOut(SeasonTeam):
     season_team_id: UUID
-
+    
 
 class SeasonTeamOut2(TeamBase):
     team_id: UUID
@@ -48,9 +49,16 @@ class SeasonTeamOut2(TeamBase):
     # select_team_name: str
 
 
+class TeamIn(TeamBase):
+    active: bool
+
+
 @router.get('/getTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
-def getTeam(slug):
-    return teams.get(slug=slug)
+def getTeam(slug=None):
+    if slug:
+        return teams.get(slug=slug)
+    else:
+        return teams.get_list()
 
 
 @router.get('/getTeams', response_model=List[TeamOut], summary="Get All Teams", tags=['teams'])
@@ -64,6 +72,7 @@ async def get():
             tags=['teams'])
 def getSeasonTeams(slug: str = None):
     return teams.get_season_teams(slug)
+    
 
 @router.get('/getSeasonTeams/{slug}/{seasonid}', response_model=SeasonTeamOut2, summary="Get an invididual team",
             tags=['teams'])
@@ -77,10 +86,11 @@ async def add_to_season(season_team: SeasonTeam):
 
 
 @router.post('/createTeam', tags=['teams'])
-async def create_team(team: TeamBase):
-    return teams.create(team)
+def create_team(team: TeamIn):
+    results = teams.create(team)
+    return results
 
 
 @router.get('/getTeamCount/{season_id}', tags=['teams'])
-async def count_teams(season_id):
+def count_teams(season_id):
     return teams.get_team_count(season_id=season_id)
