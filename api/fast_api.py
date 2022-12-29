@@ -39,8 +39,6 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
     # response.headers["Access-Control-Allow-Origin"] = "https://mhacsports.com"
     response.headers["Access-Control-Allow-Origin"] = "*"
-    # response.headers["Access-Control-Allow-Origin"] = "*"
-    # response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
 
