@@ -45,7 +45,6 @@ class PlayerIn(PersonBase):
     person_type: str
     player_number: Optional[int]
     position: Optional[str]
-    
 
     # @validator('birth_date')
     # def age_between(cls, birthday):

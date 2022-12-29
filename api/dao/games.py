@@ -170,7 +170,7 @@ def game_result_row_mapper(row) -> Player:
               }
               }
     return Player
-
+    
 
 def final_score_mapper(row) -> FinalScores:
     final_score = {
@@ -466,6 +466,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
     player_list = []
     for row in results:
         player_list.append(game_result_row_mapper(row))
+        
     game['player_stats'] = player_list
 
     return game

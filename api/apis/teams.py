@@ -40,7 +40,7 @@ class SeasonTeam(BaseModel):
 
 class SeasonTeamOut(SeasonTeam):
     season_team_id: UUID
-
+    
 
 class SeasonTeamOut2(TeamBase):
     team_id: UUID
@@ -72,7 +72,7 @@ async def get():
             tags=['teams'])
 def getSeasonTeams(slug: str = None):
     return teams.get_season_teams(slug)
-
+    
 
 @router.get('/getSeasonTeams/{slug}/{seasonid}', response_model=SeasonTeamOut2, summary="Get an invididual team",
             tags=['teams'])
