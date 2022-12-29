@@ -99,7 +99,6 @@ def update_season(seasonsUpdate: List[SeasonUpdate]):
     errors = []
     try:
         for season in seasonsUpdate:
-            # print(season)
             seasons.update(season)
     except Exception as exc:
         print(str(exc))

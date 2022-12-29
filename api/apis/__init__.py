@@ -10,7 +10,8 @@ from .levels import router as levels
 from .stats import router as stats
 from .coaches import router as coaches
 from .tournament import router as tournament
-
+from .websockets import router as websockets
+from .addresses import router as addresses
 api_router = APIRouter()
 
 root_path = '/'
@@ -24,3 +25,5 @@ api_router.include_router(levels)
 api_router.include_router(stats)
 api_router.include_router(coaches)
 api_router.include_router(tournament)
+api_router.include_router(websockets)
+api_router.include_router(addresses)

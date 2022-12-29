@@ -4,14 +4,14 @@ RUN apt-get update && \
     apt-get install -y netcat-openbsd gcc python3-dev libpq-dev && \
     apt-get clean
     
-WORKDIR /app
-
-COPY requirements.txt .
-
-RUN pip3 install --no-cache-dir -r requirements.txt
-
-COPY ./api/fast_api.py .
+ADD requirements.txt .
+RUN python -m pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app
+ADD ./api .
+
+# WORKDIR /app
+EXPOSE 8000
 ENTRYPOINT ["uvicorn"]
 CMD ["fast_api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

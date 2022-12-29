@@ -255,6 +255,10 @@ def add_period_score(game: GameResult, game_id: UUID, database=None):
         period = 'OT-' + str(num_period - 4)
 
     for score in game:
+        if not score.home_score:
+            score.home_score = 0
+        if not score.away_score:
+            score.away_score = 0
         i = 1
         stmt = text('''INSERT INTO mhac.game_results(game_id, period, home_score, away_score, game_order) 
                     VALUES 
@@ -268,6 +272,7 @@ def add_period_score(game: GameResult, game_id: UUID, database=None):
     if database is None:
         DB.commit()
         return {200: "Success"}
+    return
 
 
 def add_final_score(game: GameStats, connection=None):
@@ -340,9 +345,9 @@ def add_final_score(game: GameStats, connection=None):
                 DB.commit()
 
     except Exception as exc:
-        print(str(exc))
         DB.rollback()
-        raise HTTPException(status_code=400, detail="There was a problem updating the game")
+        print(str(exc))
+        raise
 
     return
 
@@ -853,22 +858,24 @@ def add_stats(player_stats, game_id, team_id, connection=None):
     return "200"
 
 
-def add_games_and_stats(game: GameStats):
+def add_games_and_stats(game: GameStats, DB = db()):
     game_id = game.game_id
     team_id = game.team_id
-    DB = db()
 
     final_scores = game.final_scores
-    add_period_score(game.game_scores, game_id, database=DB)
-    add_stats(game.player_stats, game_id, team_id)
 
-    if final_scores.home_score is not None or final_scores.away_score is not None:
-        add_final_score(game, DB)
     try:
-        DB.commit()
-    except Exception as exc:
-        print(str(exc))
+        add_period_score(game.game_scores, game_id, database=DB)
+        add_stats(game.player_stats, game_id, team_id)
 
+        if final_scores.home_score is not None or final_scores.away_score is not None:
+            add_final_score(game, DB)
+        DB.commit()
+        
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="There was a problem updating the game")
+
+    return {200: "Success"}
 
 def stats_by_season_and_team(season_id, team_id):
     DB = db()

@@ -21,16 +21,15 @@ class Height(BaseModel):
     
 class PublicPlayerOut(PersonBase):
     id: UUID
-    # birth_date: Optional[date]
     height: Optional[Height]
     player_number: Optional[int]
     position: Optional[str]
     age: Optional[int]
-    season_roster: Optional[List[SeasonTeamOut2]]
+    # season_roster: Optional[List[SeasonTeamOut2]]
 
 class PlayerOut(PersonBase):
     id: UUID
-    birth_date: Optional[date]
+    age: Optional[int]
     height: Optional[Height]
     player_number: Optional[int]
     position: Optional[str]
@@ -41,24 +40,24 @@ class PlayerIn(PersonBase):
     #TODO: Lookup the season start_date for the Validator
     id: Optional[UUID]
     season_roster: List[SeasonTeamOut2]
-    birth_date: date
+    age: int
     height: Optional[Height]
     person_type: str
     player_number: Optional[int]
     position: Optional[str]
     
 
-    @validator('birth_date')
-    def age_between(cls, birthday):
-        # print(birthday)
-        min_year = datetime.today().year - 13
-        max_year = datetime.today().year - 19
-        if datetime.today().month < 9:
-            max_year = datetime.today().year - 20
+    # @validator('birth_date')
+    # def age_between(cls, birthday):
+    #     # print(birthday)
+    #     min_year = datetime.today().year - 13
+    #     max_year = datetime.today().year - 19
+    #     if datetime.today().month < 9:
+    #         max_year = datetime.today().year - 20
 
-        if not (birthday >= date(max_year, 9,1)):
-            raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
-        return birthday
+    #     if not (birthday >= date(max_year, 9,1)):
+    #         raise ValueError("Player must be 18 or younger on September 1st, of the current season.")
+    #     return birthday
     
     # TODO: Convert Feet and inches to inches
 
@@ -66,17 +65,17 @@ class PlayerIn(PersonBase):
 #TODO: Move to Rosters
 @router.get('/getPlayers/{slug}', response_model=List[PublicPlayerOut], summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
-    # print(players.get_team_list(slug))
     return players.get_team_list(slug)
 
-@router.get('/getPlayers', response_model=List[PublicPlayerOut], summary="Get all players", tags=['players']  )
-def get_all_players():
-    return players.get_list(person_type='Player')
+@router.get('/getPlayers', summary="Get all players", tags=['players']  )
+async def get_all_players():
+    rosters = await players.get_list(person_type='Player')
+    # print(rosters)
+    return 'rosters'
 
 
 @router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
-    # print(player)
     players.create_player(player)
     return {200: "Success"}
 
@@ -104,6 +103,7 @@ def get_team_roster(season_team: UUID):
 def get_team_players(slug):
     return players.get_team_list(slug)
 
-@router.get('/getAdminPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
+
+@router.get('/getAdminPlayers', summary="Get all players", tags=['players']  )
 def get_all_players():
     return players.get_list(person_type='Player')
