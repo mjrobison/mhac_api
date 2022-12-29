@@ -29,6 +29,7 @@ class TeamOut(Team):
     team_id: UUID
     address: Optional[Address]
     season_id: Optional[UUID]
+    active: Boolean
 
 
 class SeasonTeam(Team):
@@ -56,7 +57,8 @@ def row_mapper(row) -> TeamOut:
         'logo_color': row['logo_color'],
         'logo_grey': row['logo_grey'],
         'slug': row['slug'],
-        # 'address': get_address_with_id(row['address_id'])
+        'active': row['active'],
+        'address': get_address_with_id(row['address_id'])
     }
     return Team
 
