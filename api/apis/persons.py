@@ -70,7 +70,7 @@ def get_team_players(slug):
 async def get_all_players():
     rosters = await players.get_list(person_type='Player')
     # print(rosters)
-    return 'rosters'
+    return rosters
 
 
 @router.post('/addPlayer', tags=['players'])

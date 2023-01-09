@@ -20,6 +20,6 @@ class Address(BaseModel):
 def address(address_id: UUID):
    return get_address_with_id(address_id)
 
-@router.get('/addresses', response_model=List[Address])
+@router.get('/addresses', response_model=List[Address], tags=['address'])
 def allAddresses():
     return all_addresses()

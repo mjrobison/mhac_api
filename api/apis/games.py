@@ -108,7 +108,6 @@ class GameResultsStatsOut(PlayerOut):
 
 @router.post('/addGame', tags=['games'])
 def add_game(game: Schedule):
-    # print(game)
     if game.neutral_site == '':
         game.neutral_site = False
     return games.create(game)
@@ -126,8 +125,6 @@ def update_period(game_result: GameResult):
 
 @router.post('/updateGame', tags=['games'])
 def update_game(game: ScheduleUpdate):
-    # print(game)
-    # return ''
     return games.update(game)
 
 

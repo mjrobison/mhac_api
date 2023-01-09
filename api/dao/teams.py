@@ -189,7 +189,8 @@ def get_with_uuid(id: UUID) -> SeasonTeam:
         row = result.fetchone()
     
     if row is None:
-        raise LookupError(f'Could not find key value with id: {id}')
+        # raise LookupError(f'Could not find key value with id: {id}')
+        return ''
     else:
         key = season_team_row_mapper(row)
         return key
