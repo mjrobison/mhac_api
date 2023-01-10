@@ -42,7 +42,6 @@ def game_result_row_mapper(row):
 
 
 def stats_by_season_and_team(season_id, team_id):
-    DB = db()
     data_all = []
     base_query = text("""SELECT st.season_id, player_id, number AS player_number, bs.team_id, p.first_name, p.last_name, t.team_name
                 , SUM(field_goals_attempted) AS field_goals_attempted
@@ -91,7 +90,8 @@ def stats_by_season_and_team(season_id, team_id):
                        {group_by} ''')
         stmt = stmt.bindparams(team_id = team_id)
 
-    results = DB.execute(stmt)
+    with db.begin() as DB:
+        results = DB.execute(stmt)
 
     stats = {}
     stats['season_id'] = season_id
@@ -109,6 +109,7 @@ def stats_by_season_and_team(season_id, team_id):
         free_throw_percentage = 0.0
         if r.free_throws_attempted != 0:
             free_throw_percentage = float(r.free_throws_made)/float(r.free_throws_attempted)
+        
         data = {
             "team_id": r.team_id,
             "team_name": r.team_name,
