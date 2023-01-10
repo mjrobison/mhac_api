@@ -21,13 +21,13 @@ logger = logging.getLogger(__name__)
 #TODO: Matt Implement sorting/games behind
 
 class Standings(TypedDict):
-    team_id = Team
-    season_id = Season
-    wins = int
-    losses = int
-    games_played = int
-    games_behind = float
-    win_percentage = float
+    team_id: Team
+    season_id: Season
+    wins: int
+    losses: int
+    games_played: int
+    games_behind: float
+    win_percentage: float
 
 def row_mapper(row, leader=None) -> Standings:
     games_behind= 0.0    
