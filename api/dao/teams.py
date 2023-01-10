@@ -255,7 +255,7 @@ def get_team_count(season_id=None):
         """SELECT COUNT(*) FROM mhac.season_teams_with_names INNER JOIN mhac.standings ON season_teams_with_names.id = standings.team_id WHERE season_teams_with_names.season_id = :season_id AND standings_rank <> 99""")
     query = query.bindparams(season_id=season_id)
 
-    with db.begin as DB:
+    with db.begin() as DB:
         results = DB.execute(query).one()
-        print(results)
+        
     return results
