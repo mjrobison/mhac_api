@@ -32,18 +32,16 @@ def row_mapper(row) -> Address:
     }
     return Address
 
-async def get_address_with_id(id:UUID):
-    
+def get_address_with_id(id:UUID):
     query = text(f'''{base_query} WHERE id = :id ''')
-
     query = query.bindparams(id = id)
     
     with db.begin() as DB:
-        results = DB.execute(query).all()
-    
+        results = DB.execute(query).fetchall()
+        
     if results:
-        result = row_mapper(results)
-        print(result)
+        for row in results:
+            result = row_mapper(row)
         return result
 
     raise HTTPException(status_code=404)
@@ -51,12 +49,12 @@ async def get_address_with_id(id:UUID):
 def all_addresses():
     address_list = []
     query = text(f'''{base_query}''')
-    DB = db()
-    # cur = DB.cursor()
-    results = DB.execute(query).fetchall()
+    with db.begin() as DB:
+        results = DB.execute(query).fetchall()
     
     if results:
         for row in results:
+            print(row)
             address_list.append(row_mapper(row))
     return address_list
 

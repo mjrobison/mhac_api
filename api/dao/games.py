@@ -181,33 +181,35 @@ def final_score_mapper(row) -> FinalScores:
 
 
 def get(game_id) -> Game:
-    DB = db()
     stmt = text('''SELECT * FROM mhac.games WHERE game_id = :game_id ''')
     stmt = stmt.bindparams(game_id=game_id)
-    results = DB.execute(stmt)
-    DB.close()
+    with db.begin() as DB:
+        results = DB.execute(stmt)
+
     return results.fetchone()
 
 
 def create(game: Schedule):
-    # Check for active season?
+    schedule_stmt = text('''INSERT INTO mhac.schedule (game_id, game_date, game_time, season_id, neutral_site) 
+                   VALUES
+                   (:game_id, :game_date, :game_time, :season_id, :neutral_site) ''')
 
-    DB = db()
+    # Check for active season?
     game_id = uuid4()
     stmt = text(
         '''INSERT INTO mhac.games(game_id, home_team_id, away_team_id) VALUES (:game_id, :home_team, :away_team) ''')
     stmt = stmt.bindparams(game_id=game_id, home_team=game.home_team, away_team=game.away_team)
-    DB.execute(stmt)
-
-    stmt = text('''INSERT INTO mhac.schedule (game_id, game_date, game_time, season_id, neutral_site) 
-                   VALUES
-                   (:game_id, :game_date, :game_time, :season_id, :neutral_site) ''')
-
-    stmt = stmt.bindparams(game_id=game_id, game_date=game.date, game_time=game.time, season_id=game.season,
-                           neutral_site=game.neutral_site)
-    DB.execute(stmt)
-    DB.commit()
-    DB.close()
+    
+    schedule_stmt = schedule_stmt.bindparams(game_id=game_id, game_date=game.date, game_time=game.time, season_id=game.season,
+                    neutral_site=game.neutral_site)
+    with db.begin() as DB:
+        try:
+            DB.execute(stmt)
+            DB.execute(schedule_stmt)
+            DB.commit()
+        except Exception as exc:
+            print(str(exc))
+            DB.rollback()
 
     return {200: "success"}
 
@@ -218,30 +220,27 @@ def get_list():
 
 def update(game: Schedule):
     # TODO: This Call isn't correct yet
-    DB = db()
+    
     game_id = game.game_id
-    # stmt = text('''INSERT INTO mhac.games(game_id, home_team_id, away_team_id) VALUES (:game_id, :home_team, :away_team) ''')
-
-    try:
-        stmt = text("""UPDATE mhac.games
+    stmt = text("""UPDATE mhac.games
         SET home_team_id = :home_team, away_team_id = :away_team
         WHERE game_id = :game_id """)
-        stmt = stmt.bindparams(game_id=game_id, home_team=game.home_team, away_team=game.away_team)
-        DB.execute(stmt)
+    stmt = stmt.bindparams(game_id=game_id, home_team=game.home_team, away_team=game.away_team)
+    
+    with db.begin() as DB:
+        try:
+            DB.execute(stmt)
 
-        stmt = text('''UPDATE mhac.schedule 
-                    SET game_date= :game_date, game_time = :game_time, season_id = :season_id 
-                    WHERE game_id = :game_id
-                   ''')
-        stmt = stmt.bindparams(game_date=game.date, game_time=game.time, season_id=game.season, game_id=game_id)
-        DB.execute(stmt)
-        DB.commit()
-    except Exception as exc:
-        print(str(exc))
-        raise
-    finally:
-        DB.close()
-
+            stmt = text('''UPDATE mhac.schedule 
+                        SET game_date= :game_date, game_time = :game_time, season_id = :season_id 
+                        WHERE game_id = :game_id
+                    ''')
+            stmt = stmt.bindparams(game_date=game.date, game_time=game.time, season_id=game.season, game_id=game_id)
+            DB.execute(stmt)
+            DB.commit()
+        except Exception as exc:
+            print(str(exc))
+            raise
 
 def add_period_score(game: GameResult, game_id: UUID, database=None):
     # Game Order is for display purposes since it built the possibility of OT to be OT1, OT2, OT3. It is the actual period number
@@ -287,7 +286,7 @@ def add_final_score(game: GameStats, connection=None):
     stmt = text('''SELECT * FROM mhac.game_results WHERE game_id = :game_id ''')
     stmt = stmt.bindparams(game_id=game.game_id)
     results = DB.execute(stmt)
-    # print(results, results.rowcount, str(results))
+    
     if results.rowcount > 0:
         home_score = 0
         away_score = 0
@@ -859,7 +858,7 @@ def add_stats(player_stats, game_id, team_id, connection=None):
     return "200"
 
 
-def add_games_and_stats(game: GameStats, DB = db()):
+def add_games_and_stats(game: GameStats):
     game_id = game.game_id
     team_id = game.team_id
 
@@ -868,10 +867,10 @@ def add_games_and_stats(game: GameStats, DB = db()):
     try:
         add_period_score(game.game_scores, game_id, database=DB)
         add_stats(game.player_stats, game_id, team_id)
-
-        if final_scores.home_score is not None or final_scores.away_score is not None:
-            add_final_score(game, DB)
-        DB.commit()
+        with db.begin() as DB:
+            if final_scores.home_score is not None or final_scores.away_score is not None:
+                add_final_score(game, DB)
+            DB.commit()
         
     except Exception as exc:
         raise HTTPException(status_code=400, detail="There was a problem updating the game")
@@ -879,7 +878,6 @@ def add_games_and_stats(game: GameStats, DB = db()):
     return {200: "Success"}
 
 def stats_by_season_and_team(season_id, team_id):
-    DB = db()
     base_query = text("""SELECT 
     st.season_id, player_id, number AS player_number, bs.team_id, p.first_name, p.last_name, t.team_name
                 , SUM(field_goals_attempted) AS field_goals_attempted
@@ -928,8 +926,9 @@ def stats_by_season_and_team(season_id, team_id):
                        {where} 
                        {group_by} ''')
         stmt = stmt.bindparams(team_id=team_id)
-
-    results = DB.execute(stmt)
+    
+    with db.begin() as DB:
+        results = DB.execute(stmt)
 
     stats = {}
     stats['season_id'] = season_id

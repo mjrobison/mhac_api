@@ -1,10 +1,12 @@
-from fastapi import Depends
-from sqlalchemy import Column, String
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
+from fastapi import HTTPException
+# from sqlalchemy import Column, String
+from sqlalchemy import Boolean
 
 from sqlalchemy.sql import text  # type: ignore
 from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4, UUID
+
+from psycopg2.errors import ForeignKeyViolation
 
 from .addresses import get_address_with_id, Address
 from database import db
@@ -99,11 +101,13 @@ def row_mapper_team(row) -> TeamOut:
 
 def get(slug: str) -> List[Team]:
     team_list = []
-    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null''')
+    stmt = text('''SELECT *, true as active FROM mhac.season_teams_with_names 
+                    WHERE slug = :slug and archive is null''')
     stmt = stmt.bindparams(slug=slug)
     with db.begin() as DB:
         result = DB.execute(stmt).all()
         for row in result:
+            print(row_mapper(row))
             team_list.append(row_mapper(row))
     
     return team_list
@@ -121,26 +125,33 @@ def _get_slug_by_level_id(id: str):
     return team_list[0]
 
 
-def get_season_teams(slug: str = None) -> List[SeasonTeam]:
+def get_season_teams(slug = None) -> List[SeasonTeam]:
     team_list = []
-
-    print(f"\n\n{slug}\n\n")
 
     base_query = text(f'''SELECT * FROM mhac.season_teams_with_names 
         WHERE archive is null''')
     team_name = ''
     with db.begin() as DB:
         if slug:
-            if type(slug) == UUID:
+            # if type(slug) == UUID:
+            try:
+                season_id = UUID(slug)
                 team_name = text(f"""{base_query}  AND season_id = :slug """)
-                team_name = team_name.bindparams(slug=slug)
+                team_name = team_name.bindparams(slug=season_id)
+                print(team_name)
                 result = DB.execute(team_name)
 
         
-            else:
+            except ValueError:
                 team_name = text(f""" {base_query} AND slug = :slug """)
                 team_name = team_name.bindparams(slug=slug)
+                print(team_name)
                 result = DB.execute(team_name)
+                if result.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="didn't find any teams")
+            else:
+                raise HTTPException(status_code=404, detail="didn't find any teams")
+
                 
             for row in result:    
                 team_list.append(season_team_row_mapper(row))
@@ -189,7 +200,8 @@ def get_with_uuid(id: UUID) -> SeasonTeam:
         row = result.fetchone()
     
     if row is None:
-        raise LookupError(f'Could not find key value with id: {id}')
+        # raise LookupError(f'Could not find key value with id: {id}')
+        return ''
     else:
         key = season_team_row_mapper(row)
         return key
@@ -233,28 +245,38 @@ def create(team: TeamIn):
 def add_to_season(season_team: SeasonTeam):
     stmt = text('''INSERT INTO mhac.season_teams (id, season_id, team_id)
                    VALUES
-                    (:id, :season_id, :team_id)''')
-    stmt = stmt.bindparams(id=uuid4, season_id=season_team.season_id, team_id=season_team.team_id)
+                    (uuid_generate_v4(), :season_id, :team_id)''')
+    stmt = stmt.bindparams(season_id=season_team.season_id, team_id=season_team.team_id)
     
     with db.begin() as DB:
-        DB.execute(stmt)
-        stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
-        VALUES
-        (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
-        ''')
-        stmt = stmt.bindparams(team_id=season_team.team_id, season_id=season_team.season_id)
-        DB.execute(stmt)
-        DB.commit()
+        try:
+            DB.execute(stmt)
+            stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
+            VALUES
+            (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
+            ''')
+            stmt = stmt.bindparams(team_id=season_team.team_id, season_id=season_team.season_id)
+            DB.execute(stmt)
+            DB.commit()
+        except ForeignKeyViolation as exc:
+            print(str(exc))
+            DB.rollback()
+            return ForeignKeyViolation 
 
     return season_team
 
 
 def get_team_count(season_id=None):
     query = text(
-        """SELECT COUNT(*) FROM mhac.season_teams_with_names INNER JOIN mhac.standings ON season_teams_with_names.id = standings.team_id WHERE season_teams_with_names.season_id = :season_id AND standings_rank <> 99""")
+        """SELECT COUNT(*) 
+        FROM mhac.season_teams_with_names 
+        INNER JOIN mhac.standings 
+            ON season_teams_with_names.id = standings.team_id 
+        WHERE season_teams_with_names.season_id = :season_id 
+            --AND standings_rank <> 99""")
     query = query.bindparams(season_id=season_id)
 
-    with db.begin as DB:
+    with db.begin() as DB:
         results = DB.execute(query).one()
-        print(results)
+        
     return results

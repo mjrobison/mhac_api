@@ -21,13 +21,13 @@ logger = logging.getLogger(__name__)
 #TODO: Matt Implement sorting/games behind
 
 class Standings(TypedDict):
-    team_id = Team
-    season_id = Season
-    wins = int
-    losses = int
-    games_played = int
-    games_behind = float
-    win_percentage = float
+    team_id: Team
+    season_id: Season
+    wins: int
+    losses: int
+    games_played: int
+    games_behind: float
+    win_percentage: float
 
 def row_mapper(row, leader=None) -> Standings:
     games_behind= 0.0    
@@ -49,7 +49,7 @@ def row_mapper(row, leader=None) -> Standings:
     return Standings
 
 def get_a_season(id) -> Standings:
-    DB = db()
+    
     stmt = text(f'''SELECT * FROM mhac.standings
     INNER JOIN mhac.season_teams_with_names
         ON standings.season_id = season_teams_with_names.season_id
@@ -59,9 +59,9 @@ def get_a_season(id) -> Standings:
     WHERE standings.season_id = :id
     ORDER BY win_percentage DESC, wins desc''')
     stmt = stmt.bindparams(id=id)
-    result = DB.execute(stmt)
+    with db.begin() as DB:
+        result = DB.execute(stmt)
 
-    DB.close()
     standings_list = []
     i = 1 
     leader = {}
@@ -76,7 +76,7 @@ def get_a_season(id) -> Standings:
     return standings_list
 
 def get(level=None) -> Standings:
-    DB = db()
+    
     where = """AND level_name = '18U Boys' """  
     if level:
         where = """AND level_name = :level """
@@ -89,7 +89,10 @@ def get(level=None) -> Standings:
         WHERE seasons.archive is null
         {where}
         ORDER BY win_percentage DESC, wins desc''')
-    result = DB.execute(stmt)
+    
+    with db.begin() as DB:
+        result = DB.execute(stmt)
+    
     standings_list = []
     i = 1 
     leader = {}
@@ -101,7 +104,7 @@ def get(level=None) -> Standings:
 
         standings_list.append(row_mapper(row, leader))
         i += 1 
-    DB.close()
+    
     return standings_list
 
 def add_to_standings(team_id, event, database):
@@ -181,33 +184,34 @@ def get_team_from_rank(season_id, rank, DB=db()):
     else:
         return None
 
-def update_all_active_seasons(DB=db()):
+def update_all_active_seasons():
     query = text('''SELECT * FROM mhac.seasons WHERE archive is null''')
-    results =  DB.execute(query)
+    with db.begin() as DB:
+        results =  DB.execute(query)
 
-    for season in results:
-        update_standings_rank(season[0], DB)
+        for season in results:
+            try:
+                update_standings_rank(season[0], DB)
+                DB.commit()
+            except Exception as exc:
+                print(str(exc))
+                DB.rollback()
+                break
 
 
-def update_standings_rank(season_id, DB= db()):
+def update_standings_rank(season_id, DB=db()):
     # using the season_id determine if a change needs to be made
-
     # if needed apply the update
-    try:
 
-        # query = text('''SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc), * FROM mhac.standings WHERE season_id = :season_id;''')
-
-        query = text('''UPDATE mhac.standings                                                                                                                                       
-                    SET standings_rank = rn
-                    FROM (SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc) as rn, * FROM mhac.standings WHERE season_id = :season_id) as r
-                    WHERE standings.season_id = r.season_id 
-                    AND standings.team_id = r.team_id; 
-                ''')
-        query = query.bindparams(season_id = season_id)
-        DB.execute(query)
-        DB.commit()
-    except Exception as exc:
-        raise
+    query = text('''UPDATE mhac.standings                                                                                                                                       
+                SET standings_rank = rn
+                FROM (SELECT ROW_NUMBER() OVER (PARTITION BY season_id ORDER BY win_percentage desc) as rn, * FROM mhac.standings WHERE season_id = :season_id) as r
+                WHERE standings.season_id = r.season_id 
+                AND standings.team_id = r.team_id; 
+            ''')
+    query = query.bindparams(season_id = season_id)
+    DB.execute(query)
+        
 
 
 def force_standings_rank(team_id, rank, DB=db()):

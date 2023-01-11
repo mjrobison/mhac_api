@@ -108,63 +108,70 @@ base_query = '''
         '''
 
 
-def get_list(active=None, session=db()) -> List[Season]:
+def get_list(active=None) -> List[Season]:
     season_list = []
     where = ''
     if active:
         where = 'WHERE archive is null'
     stmt = text(f'''{base_query} {where} ''')
-    result = session.execute(stmt)
+    with db.begin() as DB:
+        result = DB.execute(stmt)
 
     for row in result:
         season_list.append(row_mapper(row))
-    session.close()
+    
     return season_list
 
 
-def get(slug: str, session=db()) -> Season:
+def get(slug: str) -> Season:
     where = 'WHERE slug = :slug'
     stmt = text(F'''{base_query} {where} ''')
-    result = session.execute(stmt.bindparams(slug=slug))
-    season = row_mapper(result.fetchone())
-    session.close()
+    with db.begin() as DB:
+        result = DB.execute(stmt.bindparams(slug=slug))
+        season = row_mapper(result.fetchone())
+    
     return season
 
 
-def get_by_id(id: UUID, db=db()) -> Season:
+def get_by_id(id: UUID) -> Season:
     where = 'WHERE seasons.id = :id'
     stmt = text(F'''{base_query} {where} ''')
-    result = db.execute(stmt.bindparams(id=id))
-    season = row_mapper(result.fetchone())
-    db.close()
+    with db.begin() as DB:
+        result = DB.execute(stmt.bindparams(id=id))
+        season = row_mapper(result.fetchone())
     return season
 
 
-def get_by_year(year: str, session=db()) -> List[Season]:
+def get_by_year(year: str) -> List[Season]:
     where = 'WHERE seasons.year = :year'
     stmt = text(F'''{base_query} {where} ''')
-    result = db.execute(stmt.bindparams(year=year))
+    with db.begin() as DB:
+        result = DB.execute(stmt.bindparams(year=year))
+    
     season_list = []
     for r in result :
         season_list.append(row_mapper(r))
 
-    session.close()
     return season_list
 
 
-def archive_season(season: UUID, session=db()):
+def archive_season(season: UUID):
     stmt = text(f'''UPDATE mhac.seasons
                      SET archive = True 
                      WHERE id = season_id ''')
     stmt = stmt.bindparams(season_id=season)
-
-    session.execute(stmt)
-    session.commit()
-    session.close()
+    with db.begin() as DB:
+        try:
+            DB.execute(stmt)
+            DB.commit()
+        except Exception as exc:
+            print(str(exc))
+            return {500: 'problem'}
+    
     return {200: "Season Archived"}
 
 
-def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
+def remove_team_by_id(team_id: UUID, season_id: UUID, DB):
     stmt = text(""" 
     DELETE FROM mhac.basketball_stats 
     WHERE game_id IN (SELECT game_id 
@@ -173,21 +180,21 @@ def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
                      );
     """)
     stmt = stmt.bindparams(team_id = team_id)
-    session.execute(stmt)
+    DB.execute(stmt)  
 
     stmt = text(""" 
     DELETE FROM mhac.game_results 
     WHERE game_id IN (SELECT game_id FROM mhac.games where home_team_id = :team_id or away_team_id =:team_id);
     """)
     stmt = stmt.bindparams(team_id = team_id)
-    session.execute(stmt)
+    DB.execute(stmt)
 
     stmt = text(""" 
     DELETE FROM mhac.schedule 
     WHERE game_id IN (SELECT game_id FROM mhac.games where home_team_id = :team_id or away_team_id =:team_id);
     """)
     stmt = stmt.bindparams(team_id = team_id)
-    session.execute(stmt)
+    DB.execute(stmt)
 
     stmt= text(""" 
     DELETE FROM mhac.games where where home_team_id = :team_id or away_team_id = :team_id);
@@ -199,16 +206,16 @@ def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
             AND team_id = :team_id
     """)
     stmt = stmt.bindparams(season_id = season_id, team_id = team_id)
-    session.execute(stmt)
+    DB.execute(stmt)
 
     stmt = text("""
         DELETE FROM mhac.season_teams 
         WHERE season_id = :season_id and team_id = :team_id
-     """)
+    """)
     stmt = stmt.bindparams(season_id = season_id, team_id = team_id)
-    session.execute(stmt)
+    DB.execute(stmt)
 
-def add_team_to_season(season_id: UUID, team_id: UUID, session=db()):
+def add_team_to_season(season_id: UUID, team_id: UUID, DB):
     season_team_id=uuid4()
 
     stmt = text("""INSERT INTO mhac.season_teams(id, season_id, team_id)
@@ -217,20 +224,22 @@ def add_team_to_season(season_id: UUID, team_id: UUID, session=db()):
             """)
             
     stmt = stmt.bindparams(id=season_team_id, season_id=season_id, team_id=team_id)
+
     try:
-        session.execute(stmt)
+        DB.execute(stmt)
+
+        stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
+                        VALUES
+                (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
+                ''')
+        stmt = stmt.bindparams(team_id=season_team_id, season_id=season_id)
+        DB.execute(stmt)
     except Exception as exc:
         print(str(exc))
         raise exc
-    stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
-                    VALUES
-            (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
-            ''')
-    stmt = stmt.bindparams(team_id=season_team_id, season_id=season_id)
-    session.execute(stmt)
 
 
-def update(season: SeasonUpdate, session=db()):
+def update(season: SeasonUpdate):
     archive = season.archive
     if not season.archive:
         archive = None
@@ -249,36 +258,36 @@ def update(season: SeasonUpdate, session=db()):
                            archive=archive,
                            slug=season.slug,
                            season_id=season.season_id)
-    try:
-        session.execute(stmt)
-        stmt = text('''SELECT * FROM mhac.season_teams WHERE season_id = :season_id 
-            ''')
-        stmt = stmt.bindparams(season_id = season.season_id)
-        current_season_teams = session.execute(stmt)
-        current_team_list = [team.team_id for team in current_season_teams]
-        incoming_team_list = [team.team_id for team in season.season_teams]
-        teams_to_remove = set(current_team_list) - set(incoming_team_list)
-        # teams_to_add = set(incoming_team_list) - set(current_team_list)
-        
-        for team in teams_to_remove:
-            remove_team_by_id(team_id= team, season_id=season.season_id, session=session)
-        
-        for team in season.season_teams:
-            if team.team_id in current_team_list:
-                continue
-            print(f"adding Team {team}")
-            add_team_to_season(season_id=season.season_id, team_id=team.team_id, session=session)
+    with db.begin() as DB:
+        try:
+            DB.execute(stmt)
+            stmt = text('''SELECT * FROM mhac.season_teams WHERE season_id = :season_id 
+                ''')
+            stmt = stmt.bindparams(season_id = season.season_id)
+            current_season_teams = DB.execute(stmt)
+            current_team_list = [team.team_id for team in current_season_teams]
+            incoming_team_list = [team.team_id for team in season.season_teams]
+            teams_to_remove = set(current_team_list) - set(incoming_team_list)
+            # teams_to_add = set(incoming_team_list) - set(current_team_list)
             
-        session.commit()
-    except Exception as exc:
-        print(str(exc))
-        raise exc
-    finally:
-        session.close()
+            for team in teams_to_remove:
+                remove_team_by_id(team_id= team, season_id=season.season_id, DB=DB)
+            
+            for team in season.season_teams:
+                if team.team_id in current_team_list:
+                    continue
+                print(f"adding Team {team}")
+                add_team_to_season(season_id=season.season_id, team_id=team.team_id, DB=DB)
+                
+            DB.commit()
+        except Exception as exc:
+            print(str(exc))
+            raise exc
+
     return {200: "Success"}
 
 
-def create(season: SeasonNew, level: Level, session=db()):
+def create(season: SeasonNew, level: Level):
     new_season_id = uuid4()
     slug = season.slug
     return_statement = {}
@@ -293,49 +302,47 @@ def create(season: SeasonNew, level: Level, session=db()):
                                roster_submission_deadline=season.roster_submission_deadline,
                                tournament_start_date=season.tournament_start_date, archive=None, slug=slug)
 
-    result = session.execute(stmt)
-    print(result)
+    with db.begin() as DB:
+        result = DB.execute(stmt)
     
-    for team in season.season_teams:
-        add_team_to_season(season_id=new_season_id, team_id= team.team_id, session=session)
+    
+        for team in season.season_teams:
+            add_team_to_season(season_id=new_season_id, team_id= team.team_id, DB=DB)
         
-    session.commit()
+        DB.commit()
+    
     return_statement = {200: f'{new_season_id} Added'}
-    # except Exception as exc:
-    #     session.rollback()
-    #     return_statement = {500: f"Problem with creation of {season.season_name}\n {str(exc)}"}
-    # finally:
-    #     session.close()
     return return_statement
 
 
-def get_active_year(archive=None, db=db()):
+def get_active_year(archive=None):
     stmt = text('''
         SELECT DISTINCT name, year 
         FROM mhac.seasons
         WHERE archive is NULL
         ORDER BY year desc
     ''')
+    with db.begin() as DB:
+        result = DB.execute(stmt)
+        result = result.fetchone()
 
-    result = db.execute(stmt)
-    db.close()
-
-    return result.fetchone()
+    return result
 
 
-def get_all_years(db=db()):
+def get_all_years():
     stmt = text('''
         SELECT DISTINCT name, year 
         FROM mhac.seasons
         ORDER BY year desc
     ''')
+    with db.begin() as DB:
+        result = DB.execute(stmt)
+        result = result.fetchall()
 
-    result = db.execute(stmt)
-    db.close()
+    return result
+    
 
-    return result.fetchall()
-
-def get_admin_season(db=db()):
+def get_admin_season():
     seasons = []
     stmt = text(''' 
     SELECT 
@@ -363,8 +370,9 @@ def get_admin_season(db=db()):
     ORDER BY seasons.year desc, levels.id
     ''')
 
-    results = db.execute(stmt)
-    for row in results:
-        seasons.append(admin_season_row_mapper(row))
+    with db.begin() as DB:
+        results = DB.execute(stmt)
+        for row in results:
+            seasons.append(admin_season_row_mapper(row))
     return seasons
 

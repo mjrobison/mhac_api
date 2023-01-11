@@ -32,50 +32,61 @@ def row_mapper(row) -> Level:
     return Level
 
 
-def get_level_by_id(id, DB=db()) -> Level:
-
-    stmt = text(f'''{base_query} WHERE id = :id''')
-    stmt = stmt.bindparams(id=id)
-    results = DB.execute(stmt)
-    return results.fetchone()
+def get_level_by_id(id) -> Level:
+    with db.begin() as DB:
+        stmt = text(f'''{base_query} WHERE id = :id''')
+        stmt = stmt.bindparams(id=id)
+        results = DB.execute(stmt)
+        results = results.fetchone()
+    return results
 
 
 def get_by_name(level_name) -> Level:
-    DB = db()
-    stmt = text(f'''{base_query} WHERE level_name = :level_name''')
-    stmt = stmt.bindparams(level_name=level_name)
-    results = DB.execute(stmt)
-    return results.fetchone()
+    with db.begin() as DB:
+        stmt = text(f'''{base_query} WHERE level_name = :level_name''')
+        stmt = stmt.bindparams(level_name=level_name)
+        results = DB.execute(stmt)
+        results = results.fetchone()
+        return results
 
 
-def get_list(db=db()) -> List[Level]:
+def get_list() -> List[Level]:
     stmt = text(f'''{base_query}''')
-    results = db.execute(stmt)
-    db.close()
+    with db.begin() as DB:
+        results = DB.execute(stmt)
+
     level_list = []
     for result in results.fetchall():
         level_list.append(row_mapper(result))
     return level_list
 
 
-def create(level: LevelBase, DB=db()):
+def create(level: LevelBase):
     stmt = text('''INSERT INTO mhac.levels(level_name) 
                     VALUES
                     (:level_name)''')
     stmt = stmt.bindparams(level_name=level.level_name)
-
-    DB.execute(stmt)
-    DB.commit()
+    with db.begin() as DB:
+        try:
+            DB.execute(stmt)
+            DB.commit()
+        except Exception as exc:
+            print(str(exc))
+            return {500: "There was a problem creating the level"}
     return {200: "Success"}
 
 
 def update(level: Level):
-    DB = db()
     stmt = text('''UPDATE mhac.levels
                     SET level_name =:level_name
                     WHERE id = :id ''')
     stmt = stmt.bindparams(id=level.id, level_name=level.level_name)
 
-    DB.execute(stmt)
-    DB.commit()
+    with db.begin() as DB:
+        try:    
+            DB.execute(stmt)
+            DB.commit()
+        except Exception as exc:
+            print(str(exc))
+            return {500: "There was a problem creating the level"}
     return {200: "Success"}

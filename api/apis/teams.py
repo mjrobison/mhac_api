@@ -6,6 +6,7 @@ from datetime import datetime, date
 
 from dao import teams
 from .addresses import Address
+from psycopg2.errors import ForeignKeyViolation
 
 router = APIRouter()
 
@@ -55,34 +56,44 @@ class TeamIn(TeamBase):
 
 @router.get('/getTeams/{slug}', response_model=List[TeamOut], summary="Get an invididual team", tags=['teams'])
 def getTeam(slug=None):
-    if slug:
-        return teams.get(slug=slug)
-    else:
-        return teams.get_list()
-
+    team = teams.get(slug=slug)
+    if not team:
+        raise HTTPException(status_code=404, detail="No team found")
+    
 
 @router.get('/getTeams', response_model=List[TeamOut], summary="Get All Teams", tags=['teams'])
 async def get():
-    return teams.get_list()
+    teamsList =  teams.get_list()
+    if len(teamsList) < 1:
+        raise HTTPException(status_code=404, detail="Team or Season didn't exist")
+    
+    return teamsList
 
 
 @router.get('/getSeasonTeams/', response_model=List[SeasonTeamOut2], summary="Get all teams for the current season",
             tags=['teams'])
 @router.get('/getSeasonTeams/{slug}', response_model=List[SeasonTeamOut2], summary="Get an invididual team",
             tags=['teams'])
-def getSeasonTeams(slug: str = None):
+def getSeasonTeams(slug= None):
     return teams.get_season_teams(slug)
     
 
 @router.get('/getSeasonTeams/{slug}/{seasonid}', response_model=SeasonTeamOut2, summary="Get an invididual team",
             tags=['teams'])
 def getSeasonTeams(slug, seasonid):
-    return teams.get_season_team(slug, seasonid)
+    teamsList = teams.get_season_team(slug, seasonid)
+    if len(teamsList) < 1:
+        raise HTTPException(status_code=404, detail="Team or Season didn't exist")
+    return teamsList
 
 
 @router.post('/addTeamToSeason', tags=['teams', 'season'])
-async def add_to_season(season_team: SeasonTeam):
-    return teams.add_to_season(season_team)
+def add_to_season(season_team: SeasonTeam):
+    try:
+        teams.add_to_season(season_team)
+    except ForeignKeyViolation as exc:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {200: 'Success'}
 
 
 @router.post('/createTeam', tags=['teams'])
