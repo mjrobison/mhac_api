@@ -146,8 +146,6 @@ class Season(Base):
     def __repr__(self):
         return '{0}'.format(self.name)
 
-
-
 class SeasonTeams(Base):
     __tablename__ = 'season_teams_with_names'
     __table_args__ = {"schema": "mhac"}
