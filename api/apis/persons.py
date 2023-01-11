@@ -95,7 +95,12 @@ def add_to_roster():
 @router.get('/getRoster/{season_team}', summary="Get a leveled team roster", tags=['players', 'rosters'])
 def get_team_roster(season_team: UUID):
     team = teams._get_slug_by_level_id(season_team).get('slug')
-    return players.get_team_list(team, season_team)
+    try:
+        roster = players.get_team_list(team, season_team)
+    except HTTPException:
+        raise 
+    return roster
+
 
 #TODO: Move to Rosters
 @router.get('/getAdminPlayers/{slug}', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])

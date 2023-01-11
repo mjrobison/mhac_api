@@ -146,7 +146,7 @@ def get_by_year(year: str) -> List[Season]:
     where = 'WHERE seasons.year = :year'
     stmt = text(F'''{base_query} {where} ''')
     with db.begin() as DB:
-        result = db.execute(stmt.bindparams(year=year))
+        result = DB.execute(stmt.bindparams(year=year))
     
     season_list = []
     for r in result :
@@ -323,13 +323,13 @@ def get_active_year(archive=None):
         ORDER BY year desc
     ''')
     with db.begin() as DB:
-        result = db.execute(stmt)
+        result = DB.execute(stmt)
         result = result.fetchone()
 
     return result
 
 
-def get_all_years(db=db()):
+def get_all_years():
     stmt = text('''
         SELECT DISTINCT name, year 
         FROM mhac.seasons
@@ -337,8 +337,10 @@ def get_all_years(db=db()):
     ''')
     with db.begin() as DB:
         result = DB.execute(stmt)
+        result = result.fetchall()
+
+    return result
     
-    return result.fetchall()
 
 def get_admin_season():
     seasons = []
@@ -369,7 +371,7 @@ def get_admin_season():
     ''')
 
     with db.begin() as DB:
-        results = db.execute(stmt)
+        results = DB.execute(stmt)
         for row in results:
             seasons.append(admin_season_row_mapper(row))
     return seasons

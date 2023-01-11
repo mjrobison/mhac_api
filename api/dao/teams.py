@@ -268,7 +268,12 @@ def add_to_season(season_team: SeasonTeam):
 
 def get_team_count(season_id=None):
     query = text(
-        """SELECT COUNT(*) FROM mhac.season_teams_with_names INNER JOIN mhac.standings ON season_teams_with_names.id = standings.team_id WHERE season_teams_with_names.season_id = :season_id AND standings_rank <> 99""")
+        """SELECT COUNT(*) 
+        FROM mhac.season_teams_with_names 
+        INNER JOIN mhac.standings 
+            ON season_teams_with_names.id = standings.team_id 
+        WHERE season_teams_with_names.season_id = :season_id 
+            --AND standings_rank <> 99""")
     query = query.bindparams(season_id=season_id)
 
     with db.begin() as DB:

@@ -1,16 +1,13 @@
-from sqlalchemy import Column, String
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
-
+from fastapi import HTTPException
 from sqlalchemy.sql import text # type: ignore
 from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4, UUID
-# from sqlalchemy.dialects.postgresql import JSON, UUID
-from datetime import date, timedelta, datetime
 from database import db
 
 from .teams import get_with_uuid as get_team, SeasonTeam
 from .levels import get_level_by_id
 from database import db
+
 
 # DB = db()
 
@@ -105,7 +102,7 @@ def get(id) -> Person:
     else:
         return PlayerCreate
 
-async def get_list(person_type=None):
+def get_list(person_type=None):
     player_list = []
     stmt = text('''SELECT person.id, 
                         person.first_name
@@ -124,7 +121,6 @@ async def get_list(person_type=None):
         result = DB.execute(stmt)
     
     for row in result:
-        print(row)
         player_list.append(person_row_mapper(row))
 
     return player_list
@@ -164,6 +160,8 @@ def get_team_list(slug, season_level: Optional[str] = None, DB=db()):
     try:
         with db.begin() as DB:
             result = DB.execute(stmt)
+            if result.rowcount == 0:
+                raise HTTPException(status_code=404, detail="No rosters for the team.")
             for row in result:
                 player_list.append(player_row_mapper(row))
     except Exception as exc:
