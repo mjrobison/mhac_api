@@ -208,7 +208,7 @@ def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
     stmt = stmt.bindparams(season_id = season_id, team_id = team_id)
     session.execute(stmt)
 
-def add_team_to_season(season_id: UUID, team_id: UUID, session=db()):
+def add_team_to_season(season_id: UUID, team_id: UUID):
     season_team_id=uuid4()
 
     stmt = text("""INSERT INTO mhac.season_teams(id, season_id, team_id)
@@ -217,20 +217,21 @@ def add_team_to_season(season_id: UUID, team_id: UUID, session=db()):
             """)
             
     stmt = stmt.bindparams(id=season_team_id, season_id=season_id, team_id=team_id)
-    try:
+    with db() as session:
+        try:
+            session.execute(stmt)
+        except Exception as exc:
+            print(str(exc))
+            raise exc
+        stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
+                        VALUES
+                (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
+                ''')
+        stmt = stmt.bindparams(team_id=season_team_id, season_id=season_id)
         session.execute(stmt)
-    except Exception as exc:
-        print(str(exc))
-        raise exc
-    stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
-                    VALUES
-            (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
-            ''')
-    stmt = stmt.bindparams(team_id=season_team_id, season_id=season_id)
-    session.execute(stmt)
 
 
-def update(season: SeasonUpdate, session=db()):
+def update(season: SeasonUpdate):
     archive = season.archive
     if not season.archive:
         archive = None
@@ -250,33 +251,33 @@ def update(season: SeasonUpdate, session=db()):
                            slug=season.slug,
                            season_id=season.season_id)
     try:
-        session.execute(stmt)
-        stmt = text('''SELECT * FROM mhac.season_teams WHERE season_id = :season_id 
-            ''')
-        stmt = stmt.bindparams(season_id = season.season_id)
-        current_season_teams = session.execute(stmt)
-        current_team_list = [team.team_id for team in current_season_teams]
-        incoming_team_list = [team.team_id for team in season.season_teams]
-        teams_to_remove = set(current_team_list) - set(incoming_team_list)
-        
-        for team in teams_to_remove:
-            remove_team_by_id(team_id= team, season_id=season.season_id, session=session)
-        
-        for team in season.season_teams:
-            if team.team_id in current_team_list:
-                continue
-            add_team_to_season(season_id=season.season_id, team_id=team.team_id, session=session)
+        with db() as session:
+            session.execute(stmt)
+            stmt = text('''SELECT * FROM mhac.season_teams WHERE season_id = :season_id 
+                ''')
+            stmt = stmt.bindparams(season_id = season.season_id)
+            current_season_teams = session.execute(stmt)
+            current_team_list = [team.team_id for team in current_season_teams]
+            incoming_team_list = [team.team_id for team in season.season_teams]
+            teams_to_remove = set(current_team_list) - set(incoming_team_list)
             
-        session.commit()
+            for team in teams_to_remove:
+                remove_team_by_id(team_id= team, season_id=season.season_id, session=session)
+            
+            for team in season.season_teams:
+                if team.team_id in current_team_list:
+                    continue
+                add_team_to_season(season_id=season.season_id, team_id=team.team_id, session=session)
+                
+            session.commit()
     except Exception as exc:
         print(str(exc))
         raise exc
-    finally:
-        session.close()
+    
     return {200: "Success"}
 
 
-def create(season: SeasonNew, level: Level, session=db()):
+def create(season: SeasonNew, level: Level):
     new_season_id = uuid4()
     slug = season.slug
     return_statement = {}
@@ -290,20 +291,16 @@ def create(season: SeasonNew, level: Level, session=db()):
                                sport=1, season_start_date=season.season_start_date,
                                roster_submission_deadline=season.roster_submission_deadline,
                                tournament_start_date=season.tournament_start_date, archive=None, slug=slug)
-
-    result = session.execute(stmt)
-    print(result)
+    with db() as session:
+        result = session.execute(stmt)
+        print(result)
     
-    for team in season.season_teams:
-        add_team_to_season(season_id=new_season_id, team_id= team.team_id, session=session)
+        for team in season.season_teams:
+            z(season_id=new_season_id, team_id= team.team_id, session=session)
         
-    session.commit()
+        session.commit()
     return_statement = {200: f'{new_season_id} Added'}
-    # except Exception as exc:
-    #     session.rollback()
-    #     return_statement = {500: f"Problem with creation of {season.season_name}\n {str(exc)}"}
-    # finally:
-    #     session.close()
+
     return return_statement
 
 
