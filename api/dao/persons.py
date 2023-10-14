@@ -11,8 +11,6 @@ from database import db
 from .teams import get_with_uuid as get_team, SeasonTeam
 from .levels import get_level_by_id
 
-DB = db()
-
 class Height(TypedDict):
     feet: Optional[int]
     inches: Optional[int]
@@ -87,29 +85,30 @@ def player_row_mapper(row) -> PlayerReturn:
 
 
 def get(id) -> Person:
-    DB = db()
     stmt = text('''SELECT person.* FROM mhac.person WHERE id = :id ''')
     stmt = stmt.bindparams(id = id)
-    result = DB.execute(stmt)
-    row = result.fetchone()
-    DB.close()
+
+    with db() as session:
+        result = session.execute(stmt)
+        row = result.fetchone()
+
     if row is None:
         raise LookupError(f'Could not find key value with id: {id}')
-    else:
-        return PlayerCreate
+    
+    return row
 
 def get_list(person_type) -> List[Person]:
-    DB = db()
     player_list = []
     stmt = text('''SELECT person.* FROM mhac.person INNER JOIN mhac.person_type ON person.person_type = person_type.id WHERE person_type.type = :person_type ''')
-    result = DB.execute(stmt.bindparams(person_type = person_type))
-    
-    for row in result:
-        player_list.append(player_row_mapper(row))
-    DB.close()
+    with db() as session:
+        result = session.execute(stmt.bindparams(person_type = person_type))  
+        for row in result:
+            player_list.append(player_row_mapper(row))
+    if len(player_list) == 0:
+        raise LookupError('No persons with that type were found')
     return player_list
 
-def get_team_list(slug, season_level: Optional[str] = None, DB=db()):
+def get_team_list(slug, season_level: Optional[str] = None):
     player_list = []
 
     base_query = text(''' 
@@ -141,19 +140,20 @@ def get_team_list(slug, season_level: Optional[str] = None, DB=db()):
         stmt = text(f"{base_query} and team_rosters.season_team_id = :season_level {group_by}")
         stmt = stmt.bindparams(slug = slug, season_level = season_level)
     
-    try:
-        result = DB.execute(stmt)
-        for row in result:
-            player_list.append(player_row_mapper(row))
-    except Exception as exc:
-        print(str(exc))
-        raise
-    finally:
-        DB.close()
+    with db() as session:
+        try:
+            result = session.execute(stmt)
+            for row in result:
+                player_list.append(player_row_mapper(row))
+        except Exception as exc:
+            print(str(exc))
+            raise
+    if len(player_list) == 0:
+        raise LookupError(f'No players found for {slug}')
     
     return player_list
 
-def update(id, Player: PlayerCreate, DB=db()):
+def update(id, Player: PlayerCreate):
     #TODO: Compare incoming with existing and update the new field
     #TODO: Remove a seasonTeam
     
@@ -165,65 +165,54 @@ def update(id, Player: PlayerCreate, DB=db()):
     WHERE player_id = :player_id
         AND season_teams_with_names.archive is null
     """)
-
     query = query.bindparams(player_id = Player.id)
-    results = DB.execute(query).fetchall()
+    with db() as session:
+        results = session.execute(query).fetchall()
 
-    if len(results) > len(Player.season_roster):
-        
-        for r in results:
-            if r not in Player.season_roster: 
-                update = text("""DELETE FROM mhac.team_rosters WHERE roster_id = :roster_id """)
-                update = update.bindparams(roster_id = r.roster_id)
-                DB.execute(update)
+        if len(results) > len(Player.season_roster):
+            
+            for r in results:
+                if r not in Player.season_roster: 
+                    update = text("""DELETE FROM mhac.team_rosters WHERE roster_id = :roster_id """)
+                    update = update.bindparams(roster_id = r.roster_id)
+                    session.execute(update)
 
-    for season_team in Player.season_roster:
-        stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
-        VALUES
-        (:season_team_id, :player_id, :number) 
-        ON CONFLICT ON CONSTRAINT ux_season_team_player_id 
-        DO UPDATE
-        SET jersey_number = :number''')
-        
-        stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = id, number = Player.player_number)
-        DB.execute(stmt)
-    player_height = combine_height(Player.height)
-    stmt = text('''UPDATE mhac.person 
-    SET first_name = :first_name, last_name = :last_name, age = :age, position = :position, height = :height, number = :player_number, person_type = :person_type
-    WHERE id = :id''')
-    stmt = stmt.bindparams(first_name=Player.first_name,
-                           last_name=Player.last_name,
-                           age=Player.age,
-                           position=Player.position,
-                           height=player_height,
-                           player_number=Player.player_number,
-                           id=Player.id, person_type = '1')
+        for season_team in Player.season_roster:
+            stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
+            VALUES
+            (:season_team_id, :player_id, :number) 
+            ON CONFLICT ON CONSTRAINT ux_season_team_player_id 
+            DO UPDATE
+            SET jersey_number = :number''')
+            
+            stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = id, number = Player.player_number)
+            session.execute(stmt)
+        player_height = combine_height(Player.height)
+        stmt = text('''UPDATE mhac.person 
+        SET first_name = :first_name, last_name = :last_name, age = :age, position = :position, height = :height, number = :player_number, person_type = :person_type
+        WHERE id = :id''')
+        stmt = stmt.bindparams(first_name=Player.first_name,
+                            last_name=Player.last_name,
+                            age=Player.age,
+                            position=Player.position,
+                            height=player_height,
+                            player_number=Player.player_number,
+                            id=Player.id, person_type = '1')
 
-    try:
-        DB.execute(stmt)
-        DB.commit()
-    except Exception as exc:
-        print(str(exc))
-    finally:
-        DB.close()
+        try:
+            session.execute(stmt)
+            session.commit()
+        except Exception as exc:
+            print(str(exc))
     
     
 def create_player(player):
-    DB = db()
-
     message = ''
     try:
-        # player_check_query = text('''SELECT * FROM mhac.person WHERE first_name = :first_name AND last_name = :last_name AND birth_date = :birth_date ''')
-        # player_check_query = player_check_query.bindparams(first_name = player.first_name, last_name = player.last_name, birth_date = player.birth_date)
-        # results = DB.execute(player_check_query)
-        # if results.rowcount < 1:
-        # height =  #('height', None)
-        # if height:
-        
         player_height = combine_height(player.height)
         if player_height == 0:
             player_height = None
-        # player['height'] = player_height
+
         player_id = uuid4()
         stmt = text('''INSERT INTO mhac.person (id, first_name, last_name, age, height, number, position, person_type, team_id)
         VALUES (:id, :first_name, :last_name, :age, :height, :number, :position, :person_type, :team_id)
@@ -241,29 +230,28 @@ def create_player(player):
                                position = player.position,
                                person_type = '1',
                                team_id= player.team_id)
-        result = DB.execute(stmt).fetchone()
-        if result:
-            player_id = result[0]
+        
+        with db() as session:
+            result = session.execute(stmt).fetchone()
+            if result:
+                player_id = result[0]
 
-        for season_team in player.season_roster:
-            stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
-            VALUES
-            (:season_team_id, :player_id, :number)
-            ON CONFLICT ON CONSTRAINT ux_season_team_player_id
-            DO UPDATE
-            SET jersey_number = :number''')
-            stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = player_id, number = player.player_number)
+            for season_team in player.season_roster:
+                stmt = text('''INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
+                VALUES
+                (:season_team_id, :player_id, :number)
+                ON CONFLICT ON CONSTRAINT ux_season_team_player_id
+                DO UPDATE
+                SET jersey_number = :number''')
+                stmt = stmt.bindparams(season_team_id = season_team.team_id, player_id = player_id, number = player.player_number)
 
-            DB.execute(stmt)
+                session.execute(stmt)
 
-        DB.commit()
-        message = 'Successfully added player'
-        #TODO: Add to a "roster"
+            session.commit()
+            message = 'Successfully added player'
+            #TODO: Add to a "roster"
     except Exception as exc:
         message =  str(exc)
         print(str(exc))
-        DB.rollback()
+        session.rollback()
         raise
-    finally:
-        DB.close()
-
