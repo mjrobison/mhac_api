@@ -181,33 +181,32 @@ def final_score_mapper(row) -> FinalScores:
 
 
 def get(game_id) -> Game:
-    DB = db()
     stmt = text('''SELECT * FROM mhac.games WHERE game_id = :game_id ''')
     stmt = stmt.bindparams(game_id=game_id)
-    results = DB.execute(stmt)
-    DB.close()
+    with db() as session:
+        results = session.execute(stmt)
+    
     return results.fetchone()
 
 
 def create(game: Schedule):
     # Check for active season?
-
-    DB = db()
     game_id = uuid4()
     stmt = text(
         '''INSERT INTO mhac.games(game_id, home_team_id, away_team_id) VALUES (:game_id, :home_team, :away_team) ''')
     stmt = stmt.bindparams(game_id=game_id, home_team=game.home_team, away_team=game.away_team)
-    DB.execute(stmt)
+   
+    with db as session:
+        session.execute(stmt)
 
-    stmt = text('''INSERT INTO mhac.schedule (game_id, game_date, game_time, season_id, neutral_site) 
-                   VALUES
-                   (:game_id, :game_date, :game_time, :season_id, :neutral_site) ''')
+        stmt = text('''INSERT INTO mhac.schedule (game_id, game_date, game_time, season_id, neutral_site) 
+                    VALUES
+                    (:game_id, :game_date, :game_time, :season_id, :neutral_site) ''')
 
-    stmt = stmt.bindparams(game_id=game_id, game_date=game.date, game_time=game.time, season_id=game.season,
-                           neutral_site=game.neutral_site)
-    DB.execute(stmt)
-    DB.commit()
-    DB.close()
+        stmt = stmt.bindparams(game_id=game_id, game_date=game.date, game_time=game.time, season_id=game.season,
+                            neutral_site=game.neutral_site)
+        session.execute(stmt)
+        session.commit()
 
     return {200: "success"}
 
@@ -217,30 +216,27 @@ def get_list():
 
 
 def update(game: Schedule):
-    # TODO: This Call isn't correct yet
-    DB = db()
     game_id = game.game_id
-    # stmt = text('''INSERT INTO mhac.games(game_id, home_team_id, away_team_id) VALUES (:game_id, :home_team, :away_team) ''')
+    
+    with db() as session:
+        try:
+            stmt = text("""UPDATE mhac.games
+            SET home_team_id = :home_team, away_team_id = :away_team
+            WHERE game_id = :game_id """)
+            stmt = stmt.bindparams(game_id=game_id, home_team=game.home_team, away_team=game.away_team)
+            session.execute(stmt)
 
-    try:
-        stmt = text("""UPDATE mhac.games
-        SET home_team_id = :home_team, away_team_id = :away_team
-        WHERE game_id = :game_id """)
-        stmt = stmt.bindparams(game_id=game_id, home_team=game.home_team, away_team=game.away_team)
-        DB.execute(stmt)
+            stmt = text('''UPDATE mhac.schedule 
+                        SET game_date= :game_date, game_time = :game_time, season_id = :season_id 
+                        WHERE game_id = :game_id
+                    ''')
+            stmt = stmt.bindparams(game_date=game.date, game_time=game.time, season_id=game.season, game_id=game_id)
+            session.execute(stmt)
+            session.commit()
+        except Exception as exc:
+            print(str(exc))
+            raise
 
-        stmt = text('''UPDATE mhac.schedule 
-                    SET game_date= :game_date, game_time = :game_time, season_id = :season_id 
-                    WHERE game_id = :game_id
-                   ''')
-        stmt = stmt.bindparams(game_date=game.date, game_time=game.time, season_id=game.season, game_id=game_id)
-        DB.execute(stmt)
-        DB.commit()
-    except Exception as exc:
-        print(str(exc))
-        raise
-    finally:
-        DB.close()
 
 
 def add_period_score(game: GameResult, game_id: UUID, database=None):
@@ -359,9 +355,6 @@ def update_period_score(game: GameResult, game_id, database=None):
 
 
 def get_game_results(game_id: UUID, team_id: UUID):
-    # TODO: GameId, TeamID, Final Scores, Player Stats
-    # print(game_id, team_id)
-    DB = db()
     stmt = text(''' 
         SELECT COALESCE(expected_periods.period, game_results.period) as quarter, home_score, away_score, game_order 
         FROM mhac.game_results 
@@ -383,85 +376,85 @@ def get_game_results(game_id: UUID, team_id: UUID):
 
     ''')
     stmt = stmt.bindparams(game_id=game_id)
-    results = DB.execute(stmt)
-    game_scores = []
-    for (quarter, home_score, away_score, game_order) in results:
-        quarter_scores = {}
 
-        quarter_scores['game_id'] = game_id
-        quarter_scores['period'] = quarter
-        quarter_scores['home_score'] = home_score
-        quarter_scores['away_score'] = away_score
-        quarter_scores['game_order'] = game_order
-        game_scores.append(quarter_scores)
+    with db() as session:
+        results = session.execute(stmt)
+        game_scores = []
+        for (quarter, home_score, away_score, game_order) in results:
+            quarter_scores = {}
 
-    stmt = text(''' 
-        SELECT * FROM mhac.games where game_id = :game_id
-    ''')
-    stmt = stmt.bindparams(game_id=game_id)
-    results = DB.execute(stmt)
+            quarter_scores['game_id'] = game_id
+            quarter_scores['period'] = quarter
+            quarter_scores['home_score'] = home_score
+            quarter_scores['away_score'] = away_score
+            quarter_scores['game_order'] = game_order
+            game_scores.append(quarter_scores)
 
-    game = {}
-    game['game_id'] = game_id
-    game['final_scores'] = final_score_mapper(results.fetchone())
-    game['game_scores'] = game_scores
-
-    team_filter = ''
-    if team_id:
-        team_filter = 'AND season_teams_with_names.id = :team_id'
-    game['team_id'] = team_id
-    stmt = text(f'''WITH game_roster AS
-    (
-        SELECT mhac.team_rosters.season_team_id AS season_team_id
-        , mhac.person.id AS id
-        , mhac.person.first_name AS first_name
-        , mhac.person.last_name AS last_name
-        , mhac.team_rosters.jersey_number AS number
-        , mhac.games.game_id AS game_id
-    FROM mhac.team_rosters 
-    JOIN mhac.season_teams_with_names 
-        ON mhac.team_rosters.season_team_id = mhac.season_teams_with_names.id 
-    JOIN mhac.games 
-        ON mhac.games.home_team_id = mhac.season_teams_with_names.id 
-            OR mhac.games.away_team_id = mhac.season_teams_with_names.id 
-    JOIN mhac.person ON mhac.person.id = mhac.team_rosters.player_id
-    WHERE  mhac.games.game_id = :game_id 
-        {team_filter}
-    )
-    SELECT
-        roster.season_team_id,
-        roster.id AS id, 
-        roster.first_name AS roster_first_name, 
-        roster.last_name AS roster_last_name, 
-        roster.number AS roster_number, 
-        coalesce(mhac.basketball_stats.field_goals_made, 0) AS field_goals_made, 
-        coalesce(mhac.basketball_stats.field_goals_attempted, 0) AS field_goals_attempted, 
-        coalesce(mhac.basketball_stats.three_pointers_made, 0) AS three_pointers_made, 
-        coalesce(mhac.basketball_stats.three_pointers_attempted, 0) AS three_pointers_attempted, 
-        coalesce(mhac.basketball_stats.free_throws_made, 0) AS free_throws_made, 
-        coalesce(mhac.basketball_stats.free_throws_attempted, 0) AS free_throws_attempted, 
-        coalesce(mhac.basketball_stats.total_points, 0) AS total_points, 
-        coalesce(mhac.basketball_stats.assists, 0) AS assists, 
-        coalesce(mhac.basketball_stats.offensive_rebounds, 0) AS offensive_rebounds, 
-        coalesce(mhac.basketball_stats.defensive_rebounds, 0) AS defensive_rebounds, 
-        coalesce(mhac.basketball_stats.total_rebounds, 0) AS total_rebounds, 
-        coalesce(mhac.basketball_stats.steals, 0) AS steals, 
-        coalesce(mhac.basketball_stats.blocks, 0) AS blocks, 
-        coalesce(mhac.basketball_stats.turnovers, 0) AS turnovers,
-        coalesce(mhac.basketball_stats.game_played, false) AS game_played
-    FROM game_roster AS roster 
-    LEFT OUTER JOIN mhac.basketball_stats 
-        ON roster.game_id = mhac.basketball_stats.game_id 
-        AND roster.id = mhac.basketball_stats.player_id
-    ''')
-    if team_id:
-        stmt = stmt.bindparams(game_id=game_id, team_id=team_id)
-    else:
+        stmt = text(''' 
+            SELECT * FROM mhac.games where game_id = :game_id
+        ''')
         stmt = stmt.bindparams(game_id=game_id)
-    # print(stmt)
-    results = DB.execute(stmt)
+        results = session.execute(stmt)
 
-    DB.close()
+        game = {}
+        game['game_id'] = game_id
+        game['final_scores'] = final_score_mapper(results.fetchone())
+        game['game_scores'] = game_scores
+
+        team_filter = ''
+        if team_id:
+            team_filter = 'AND season_teams_with_names.id = :team_id'
+        game['team_id'] = team_id
+        stmt = text(f'''WITH game_roster AS
+        (
+            SELECT mhac.team_rosters.season_team_id AS season_team_id
+            , mhac.person.id AS id
+            , mhac.person.first_name AS first_name
+            , mhac.person.last_name AS last_name
+            , mhac.team_rosters.jersey_number AS number
+            , mhac.games.game_id AS game_id
+        FROM mhac.team_rosters 
+        JOIN mhac.season_teams_with_names 
+            ON mhac.team_rosters.season_team_id = mhac.season_teams_with_names.id 
+        JOIN mhac.games 
+            ON mhac.games.home_team_id = mhac.season_teams_with_names.id 
+                OR mhac.games.away_team_id = mhac.season_teams_with_names.id 
+        JOIN mhac.person ON mhac.person.id = mhac.team_rosters.player_id
+        WHERE  mhac.games.game_id = :game_id 
+            {team_filter}
+        )
+        SELECT
+            roster.season_team_id,
+            roster.id AS id, 
+            roster.first_name AS roster_first_name, 
+            roster.last_name AS roster_last_name, 
+            roster.number AS roster_number, 
+            coalesce(mhac.basketball_stats.field_goals_made, 0) AS field_goals_made, 
+            coalesce(mhac.basketball_stats.field_goals_attempted, 0) AS field_goals_attempted, 
+            coalesce(mhac.basketball_stats.three_pointers_made, 0) AS three_pointers_made, 
+            coalesce(mhac.basketball_stats.three_pointers_attempted, 0) AS three_pointers_attempted, 
+            coalesce(mhac.basketball_stats.free_throws_made, 0) AS free_throws_made, 
+            coalesce(mhac.basketball_stats.free_throws_attempted, 0) AS free_throws_attempted, 
+            coalesce(mhac.basketball_stats.total_points, 0) AS total_points, 
+            coalesce(mhac.basketball_stats.assists, 0) AS assists, 
+            coalesce(mhac.basketball_stats.offensive_rebounds, 0) AS offensive_rebounds, 
+            coalesce(mhac.basketball_stats.defensive_rebounds, 0) AS defensive_rebounds, 
+            coalesce(mhac.basketball_stats.total_rebounds, 0) AS total_rebounds, 
+            coalesce(mhac.basketball_stats.steals, 0) AS steals, 
+            coalesce(mhac.basketball_stats.blocks, 0) AS blocks, 
+            coalesce(mhac.basketball_stats.turnovers, 0) AS turnovers,
+            coalesce(mhac.basketball_stats.game_played, false) AS game_played
+        FROM game_roster AS roster 
+        LEFT OUTER JOIN mhac.basketball_stats 
+            ON roster.game_id = mhac.basketball_stats.game_id 
+            AND roster.id = mhac.basketball_stats.player_id
+        ''')
+        if team_id:
+            stmt = stmt.bindparams(game_id=game_id, team_id=team_id)
+        else:
+            stmt = stmt.bindparams(game_id=game_id)
+        # print(stmt)
+        results = session.execute(stmt)
 
     player_list = []
     for row in results:
@@ -473,7 +466,7 @@ def get_game_results(game_id: UUID, team_id: UUID):
 
 def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug: str = None, year: str = None) -> List[
     TeamSchedule]:
-    DB = db()
+
     missing_subquery = ''
     wheres = ''
 
@@ -600,12 +593,13 @@ def get_team_schedule(season_team_id: UUID = None, season_id: UUID = None, slug:
             ORDER BY schedule.game_date
             ''')
 
-    results = DB.execute(stmt)
+    with db() as session:
+        results = session.execute(stmt)
 
-    schedule = []
-    for game in results:
-        schedule.append(team_schedule_row_mapper(game))
-    DB.close()
+        schedule = []
+        for game in results:
+            schedule.append(team_schedule_row_mapper(game))
+    
     return schedule
 
 
