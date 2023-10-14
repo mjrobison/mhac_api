@@ -65,7 +65,6 @@ class PlayerIn(PersonBase):
 #TODO: Move to Rosters
 @router.get('/getPlayers/{slug}', response_model=List[PublicPlayerOut], summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
-    # print(players.get_team_list(slug))
     return players.get_team_list(slug)
 
 @router.get('/getPlayers', response_model=List[PublicPlayerOut], summary="Get all players", tags=['players']  )
