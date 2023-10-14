@@ -1,0 +1,2 @@
+ALTER TABLE mhac.teams
+ALTER COLUMN address_id DROP NOT NULL; 
