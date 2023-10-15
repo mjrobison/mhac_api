@@ -1,16 +1,3 @@
-from fastapi import Depends
-from sqlalchemy import Column, String
-from sqlalchemy import (
-    Boolean,
-    Column,
-    ForeignKey,
-    Integer,
-    String,
-    DateTime,
-    Date,
-    Numeric,
-)
-
 from sqlalchemy.sql import text  # type: ignore
 from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4, UUID
@@ -113,21 +100,6 @@ def get(slug: str) -> List[Team]:
             team_list.append(row_mapper(row))
 
     return team_list
-
-
-def _get_slug_by_level_id(id: str):
-    team_list = []
-    stmt = text(
-        """SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null"""
-    )
-    stmt = stmt.bindparams(id=id)
-
-    with db() as session:
-        result = session.execute(stmt)
-        for row in result:
-            team_list.append(row_mapper(row))
-
-    return team_list[0]
 
 
 def get_season_teams(slug: str = None) -> List[SeasonTeam]:
