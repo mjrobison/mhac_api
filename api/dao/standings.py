@@ -1,15 +1,3 @@
-from sqlalchemy import Column, String
-from sqlalchemy import (
-    Boolean,
-    Column,
-    ForeignKey,
-    Integer,
-    String,
-    DateTime,
-    Date,
-    Numeric,
-)
-
 from sqlalchemy.sql import text  # type: ignore
 from typing import TypedDict
 from database import db
