@@ -11,8 +11,8 @@ from database import db
 
 
 class Sport(TypedDict):
-    id = int
-    sport_name = str
+    id: int
+    sport_name: str
     # relationship('Season', backref=('sport_season'))
 
 def row_mapper(row) -> Sport:
@@ -23,36 +23,35 @@ def row_mapper(row) -> Sport:
     return Sport
 
 def get(id):
-    DB = db()
-    stmt = text('''SELECT * FROM mhac.sports WHERE id = :id ''')
-    stmt = stmt.bindparams(id=id)
-    result =  DB.execute(stmt)
-    row = result.fetchone()
+    with db() as DB:
+        stmt = text('''SELECT * FROM mhac.sports WHERE id = :id ''')
+        stmt = stmt.bindparams(id=id)
+        result =  DB.execute(stmt)
+        row = result.fetchone()
     
-    DB.close()
-    if not row:
-        return None
-    return row_mapper(row)
+    if row:
+        results = row_mapper(row)
+    return results 
 
 def get_list():
-    DB = db()
     sport_list = []
     stmt = text('''SELECT * FROM mhac.sports ''')
-    results = DB.execute(stmt)
-    DB.close()
-    for row in results:
-        sport_list.append(row_mapper(row))
+    with db() as DB:
+        results = DB.execute(stmt)
+    
+        for row in results:
+            sport_list.append(row_mapper(row))
     
     return sport_list
     
 def create(sport):
     #TODO: Return SPORT_ID or Sport
-    DB = db()
-    try:
-        stmt = text('''INSERT INTO mhac.sports(sport_name) values (:sport_name) RETURNING id''')
-        result = DB.execute(stmt.bindparams(sport_name = sport.sport_name))
-        DB.commit()
-    except Exception as exc:
-        return {400: str(exc)}
-    DB.close()
+    stmt = text('''INSERT INTO mhac.sports(sport_name) values (:sport_name) RETURNING id''')
+    
+    with db() as DB:
+        try:
+            result = DB.execute(stmt.bindparams(sport_name = sport.sport_name))
+            DB.commit()
+        except Exception as exc:
+            return {400: str(exc)}
     return get(result.fetchone()[0])

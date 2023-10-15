@@ -16,7 +16,7 @@ from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4
 from sqlalchemy.dialects.postgresql import JSON, UUID
 
-from database import db, get_db
+from database import db
 
 base_query = text("""SELECT * FROM mhac.addresses """)
 

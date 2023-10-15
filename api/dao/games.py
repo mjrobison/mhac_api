@@ -4,7 +4,7 @@ from sqlalchemy.sql import text  # type: ignore
 from typing import TypedDict, List, Optional
 from uuid import uuid4, UUID
 from datetime import date, time
-from database import get_db, db
+from database import db
 
 from .standings import add_to_standings, remove_from_standings
 from .teams import get_with_uuid as team_get, SeasonTeam
