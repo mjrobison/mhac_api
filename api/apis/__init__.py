@@ -27,8 +27,3 @@ api_router.include_router(coaches)
 api_router.include_router(tournament)
 api_router.include_router(websockets)
 
-# app.include_router(
-#     user.router,
-#     prefix="/user",
-#     dependencies=[Depends(auth)],
-# )
