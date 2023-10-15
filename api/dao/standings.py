@@ -11,11 +11,7 @@ from sqlalchemy import (
 )
 
 from sqlalchemy.sql import text  # type: ignore
-from typing import TypedDict, List, Dict, Any, Optional
-from uuid import uuid4, UUID
-
-# from sqlalchemy.dialects.postgresql import JSON, UUID
-from datetime import date, timedelta, datetime
+from typing import TypedDict
 from database import db
 
 from .seasons import Season, get as season_get, get_list
