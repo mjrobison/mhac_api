@@ -1,8 +1,6 @@
 import time, os
 from fastapi import FastAPI, Request, APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
-# from database import Base
-# from dao import models, teams
 import json
 
 import uvicorn
