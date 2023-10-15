@@ -14,13 +14,6 @@ engine = create_engine(
 )
 db = sessionmaker(autocommit=False, autoflush=True, bind=engine)
 
-async def get_db():
-    db = DBSession()
-    try:
-        yield db
-    finally:
-        db.close()
-
 @contextmanager
 def database_conn():
     DB = db()
