@@ -119,7 +119,9 @@ def get_team_list(slug, season_level: Optional[str] = None):
 
     base_query = text(
         """ 
-        SELECT person.id, person.first_name
+        SELECT 
+        person.id
+        , person.first_name
         , person.last_name
         , person.age
         , person.height
@@ -372,3 +374,9 @@ def import_player(player):
         message = str(exc)
         print(message)
         return {500: message}
+
+
+def get_still_active_players():
+    # TODO: Get a list of player still active include last team played for
+    # TODO: Write and endpoint to update this years rosters with current team
+    ...

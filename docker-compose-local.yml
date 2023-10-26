@@ -4,7 +4,7 @@ services:
   mhac_api:
     image: mhac_api
     ports: 
-      - "8000:8000"
+      - "8005:8000"
     volumes:
       - ./api/:/app
     
