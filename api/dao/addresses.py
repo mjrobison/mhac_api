@@ -49,7 +49,7 @@ def get_address_with_id(id: UUID):
 
     query = query.bindparams(id=id)
     with db() as DB:
-        results = DB.execute(query).fetchone()
+        results = DB.execute(query).mappings().one()
 
         if len(results) < 1:
             raise HTTPException(status_code=404)
@@ -67,6 +67,6 @@ def create():
     )
 
     with db() as DB:
-        result = DB.execute(stmt).fetchone()
+        result = DB.execute(stmt).mappings().one()
 
     return result

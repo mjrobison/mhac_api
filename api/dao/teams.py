@@ -64,8 +64,8 @@ def season_team_row_mapper(row) -> SeasonTeam:
         "logo_color": row["logo_color"],
         "logo_grey": row["logo_grey"],
         "slug": row["slug"],
-        "season_id": row["season_id"],
-        "level_name": row["level_name"],
+            # "season_id": row["season_id"],
+            # "level_name": row["level_name"],
         "team_name": row["team_name"],
     }
     return SeasonTeam
@@ -93,10 +93,12 @@ def get(slug: str) -> List[Team]:
         """SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null"""
     )
     stmt = stmt.bindparams(slug=slug)
-    session = db()
+    
     with db() as session:
-        result = session.execute(stmt).fetchall()
+        result = session.execute(stmt).mappings().all()
+        print(result)
         for row in result:
+            print(row)
             team_list.append(row_mapper(row))
 
     return team_list
@@ -121,7 +123,8 @@ def get_season_teams(slug: str = None) -> List[SeasonTeam]:
             query = query.bindparams(slug=slug)
 
         result = session.execute(query)
-        for row in result:
+        results_as_dict = result.mappings().all()
+        for row in results_as_dict:
             team_list.append(season_team_row_mapper(row))
 
     return team_list
@@ -136,8 +139,8 @@ def get_season_team(slug: str, seasonid: str) -> SeasonTeam:
     stmt = stmt.bindparams(slug=slug, seasonid=seasonid)
 
     with db() as session:
-        result = session.execute(stmt)
-        result = season_team_row_mapper(result.fetchone())
+        resultset = session.execute(stmt)
+        result = season_team_row_mapper(resultset.mappings().one())
     return result
 
 
@@ -145,7 +148,7 @@ def get_list() -> List[TeamOut]:
     team_list = []
     stmt = text("""SELECT * FROM mhac.teams WHERE active""")
     with db() as session:
-        result = session.execute(stmt)
+        result = session.execute(stmt).mappings().all()
 
         for row in result:
             team_list.append(row_mapper(row))
@@ -158,7 +161,7 @@ def get_with_uuid(id: UUID) -> SeasonTeam:
     stmt = stmt.bindparams(id=id)
     with db() as session:
         result = session.execute(stmt)
-        row = result.fetchone()
+        row = result.mappings.one()
 
     if row is None:
         raise LookupError(f"Could not find key value with id: {id}")
@@ -173,7 +176,7 @@ def admin_get_with_uuid(id: UUID) -> SeasonTeam:
 
     with db() as session:
         result = session.execute(stmt)
-        row = result.fetchone()
+        row = result.mappings().one()
 
     if row is None:
         raise LookupError(f"Could not find key value with id: {id}")
@@ -251,3 +254,29 @@ def get_team_count(season_id=None):
         results = results[0]
 
     return results
+
+
+def get_with_slug(team_slug):
+    stmt = text("""SELECT * FROM mhac.teams WHERE slug = :slug""")
+    stmt = stmt.bindparams(slug = team_slug)
+    with db() as session:
+        result = session.execute(stmt)
+        row = result.mappings().one()
+
+    if row is None:
+        raise LookupError(f"Could not find key value with id: {id}")
+
+    key = season_team_row_mapper(row)
+    return key
+
+
+def _get_slug_by_level_id(id: str):
+    team_list = []
+    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null''')
+    stmt = stmt.bindparams(id=id)
+    with db() as DB:
+        result = DB.execute(stmt).mappings().all()
+
+        for row in result:
+            team_list.append(row_mapper(row))
+    return team_list[0]

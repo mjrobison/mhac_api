@@ -14,7 +14,7 @@ from logging.config import dictConfig
 
 from typing import List
 
-dictConfig(LogConfig().dict())
+# dictConfig(LogConfig().dict())
 logger = logging.getLogger("mhac_api")
 
 app = FastAPI(title='MHAC API', version='1.0', description='MHAC API - v1')

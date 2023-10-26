@@ -140,17 +140,24 @@ def get_by_id(id: UUID, db=db()) -> Season:
     return season
 
 
-def get_by_year(year: str, session=db()) -> List[Season]:
+def get_by_year(year: str) -> List[Season]:
     where = 'WHERE seasons.year = :year'
     stmt = text(F'''{base_query} {where} ''')
-    result = db.execute(stmt.bindparams(year=year))
-    season_list = []
-    for r in result :
-        season_list.append(row_mapper(r))
+    with db() as session:
+        result = session.execute(stmt.bindparams(year=year)).mappings().all()
+        season_list = []
+        for r in result:
+            season_list.append(row_mapper(r))
 
-    session.close()
     return season_list
 
+def get_by_year_and_level(year:str, level_name:str):
+    where = 'WHERE seasons.year = :year and level_name = :level_name'
+    stmt = text(F'''{base_query} {where} ''')
+    with db() as session:
+        result = session.execute(stmt.bindparams(year=year, level_name=level_name)).mappings().one()
+        
+    return row_mapper(result)
 
 def archive_season(season: UUID, session=db()):
     stmt = text(f'''UPDATE mhac.seasons

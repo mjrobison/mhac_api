@@ -19,11 +19,11 @@ class SeasonStats(BaseModel):
     team_id: Optional[UUID] = None
 
 
-@router.get('/getStats')
+@router.get('/getStats', tags=['stats'])
 def get_Stats(season_id: Optional[UUID] = None, team_id: Optional[UUID] = None):
     return stats.stats_by_season_and_team(season_id, team_id)
 
-@router.get('/getSeasonStats')
+@router.get('/getSeasonStats', tags=['stats'])
 def get_Stats(season_stats: SeasonStats):
     print(season_stats.season_id, season_stats.team_id)
     try:
