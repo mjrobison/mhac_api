@@ -114,7 +114,6 @@ async def create_team_file(file: UploadFile, team_slug: str, year: str):
         wb = openpyxl.load_workbook(xlsx)
         ws = wb.active
         level_name = ws.cell(row=1, column=3).value
-        print(level_name)
         
         import re
         pattern = re.compile(r"""(\d+)(?:'|’)(?: *(\d+))?""")
