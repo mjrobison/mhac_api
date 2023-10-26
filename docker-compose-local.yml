@@ -2,7 +2,9 @@ version: "3.7"
 
 services:
   mhac_api:
-    image: mhac_api
+    # image: mhac_api
+    build:
+      dockerfile: Dockerfile
     ports: 
       - "8000:8000"
     volumes:
