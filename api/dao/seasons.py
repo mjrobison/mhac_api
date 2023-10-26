@@ -152,7 +152,7 @@ def get_by_year(year: str) -> List[Season]:
     return season_list
 
 def get_by_year_and_level(year:str, level_name:str):
-    where = 'WHERE seasons.year = :year and level_name = :level_name'
+    where = 'WHERE seasons.year = :year and lower(level_name) = :level_name'
     stmt = text(F'''{base_query} {where} ''')
     with db() as session:
         result = session.execute(stmt.bindparams(year=year, level_name=level_name)).mappings().one()

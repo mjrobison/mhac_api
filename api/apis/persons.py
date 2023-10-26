@@ -105,7 +105,7 @@ def get_all_players():
 
 
 @router.post('/teamFile')
-async def create_team_file(file: UploadFile, team_slug: str, level_name: str, year: str):
+async def create_team_file(file: UploadFile, team_slug: str, year: str):
     #TODO: Needs season_roster: List[SeasonTeamOut2]
     # print(file.filename, team_id)
     if file.filename.endswith('.xlsx'):
@@ -113,6 +113,8 @@ async def create_team_file(file: UploadFile, team_slug: str, level_name: str, ye
         xlsx = io.BytesIO(f)
         wb = openpyxl.load_workbook(xlsx)
         ws = wb.active
+        level_name = ws.cell(row=1, column=3).value
+        print(level_name)
         
         import re
         pattern = re.compile(r"""(\d+)(?:'|’)(?: *(\d+))?""")
@@ -130,7 +132,7 @@ async def create_team_file(file: UploadFile, team_slug: str, level_name: str, ye
                     'inches': int(inches or 0)
                 }
                 
-                person['level_name'] = level_name
+                person['level_name'] = level_name.lower()
                 person['team_slug'] = team_slug
                 person['year'] = year
                 person['person_type'] = '1'
