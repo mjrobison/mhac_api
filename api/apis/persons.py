@@ -95,7 +95,7 @@ def get_team_roster(season_team: UUID):
     return players.get_team_list(team, season_team) 
 
 #TODO: Move to Rosters
-@router.get('/getAdminPlayers/{slug}', response_model=List[PlayerOut], summary='Get a teams players', tags=['players'])
+@router.get('/getAdminPlayers/{slug}', summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
     return players.get_team_list(slug)
 
@@ -104,17 +104,15 @@ def get_all_players():
     return players.get_list(person_type='Player')
 
 
-@router.post('/teamFile')
+@router.post('/teamFile/{team_slug}/{year}')
 async def create_team_file(file: UploadFile, team_slug: str, year: str):
     #TODO: Needs season_roster: List[SeasonTeamOut2]
-    # print(file.filename, team_id)
     if file.filename.endswith('.xlsx'):
         f = await file.read()
         xlsx = io.BytesIO(f)
         wb = openpyxl.load_workbook(xlsx)
         ws = wb.active
         level_name = ws.cell(row=1, column=3).value
-        
         import re
         pattern = re.compile(r"""(\d+)(?:'|’)(?: *(\d+))?""")
         headers = ['player_number', 'age', 'grade', 'position', 'height', 'first_name', 'last_name']

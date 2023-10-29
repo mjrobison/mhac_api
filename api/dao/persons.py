@@ -156,7 +156,7 @@ def get_team_list(slug, season_level: Optional[str] = None):
 
     with db() as session:
         try:
-            result = session.execute(stmt)
+            result = session.execute(stmt).mappings().all()
             for row in result:
                 player_list.append(player_row_mapper(row))
         except Exception as exc:

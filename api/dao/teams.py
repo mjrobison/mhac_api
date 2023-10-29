@@ -161,7 +161,7 @@ def get_with_uuid(id: UUID) -> SeasonTeam:
     stmt = stmt.bindparams(id=id)
     with db() as session:
         result = session.execute(stmt)
-        row = result.mappings.one()
+        row = result.mappings().one()
 
     if row is None:
         raise LookupError(f"Could not find key value with id: {id}")

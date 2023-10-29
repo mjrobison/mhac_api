@@ -216,7 +216,7 @@ def remove_team_by_id(team_id: UUID, season_id: UUID, session=db()):
     stmt = stmt.bindparams(season_id = season_id, team_id = team_id)
     session.execute(stmt)
 
-def add_team_to_season(season_id: UUID, team_id: UUID):
+def add_team_to_season(season_id: UUID, team_id: UUID, session=None):
     season_team_id=uuid4()
 
     stmt = text("""INSERT INTO mhac.season_teams(id, season_id, team_id)
@@ -225,18 +225,18 @@ def add_team_to_season(season_id: UUID, team_id: UUID):
             """)
             
     stmt = stmt.bindparams(id=season_team_id, season_id=season_id, team_id=team_id)
-    with db() as session:
-        try:
-            session.execute(stmt)
-        except Exception as exc:
-            print(str(exc))
-            raise exc
-        stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
-                        VALUES
-                (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
-                ''')
-        stmt = stmt.bindparams(team_id=season_team_id, season_id=season_id)
+    # with db() as session:
+    try:
         session.execute(stmt)
+    except Exception as exc:
+        print(str(exc))
+        raise exc
+    stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
+                    VALUES
+            (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
+            ''')
+    stmt = stmt.bindparams(team_id=season_team_id, season_id=season_id)
+    session.execute(stmt)
 
 
 def update(season: SeasonUpdate):

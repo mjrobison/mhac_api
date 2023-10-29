@@ -5,7 +5,7 @@ from uuid import UUID
 from datetime import date
 
 from dao import seasons
-from .teams import TeamBase, TeamOut
+from .teams import TeamBase, TeamOut, TeamIn
 from .levels import LevelOut
 router = APIRouter()
 
@@ -55,7 +55,7 @@ class SeasonUpdate(BaseModel):
     archive: Optional[bool]
     slug: Optional[str]
     level: LevelOut
-    season_teams: Optional[List[TeamOut]]
+    season_teams: Optional[List[TeamIn]]
 
 
 class Standings(BaseModel):
