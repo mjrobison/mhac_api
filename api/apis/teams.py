@@ -20,7 +20,10 @@ class TeamBase(BaseModel):
     logo_grey: str
     slug: str
 
-
+class TeamIn(TeamBase):
+    team_id: UUID
+    address: Optional[Address]
+    
 class TeamOut(TeamBase):
     team_id: UUID
     address: Optional[Address]
