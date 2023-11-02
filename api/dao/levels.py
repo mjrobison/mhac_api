@@ -34,8 +34,8 @@ def get_level_by_id(id) -> Level:
     stmt = text(f"""{base_query} WHERE id = :id""")
     stmt = stmt.bindparams(id=id)
     with db() as DB:
-        results = DB.execute(stmt)
-    return results.fetchone()
+        results = DB.execute(stmt).mappings().one()
+    return results
 
 
 def get_by_name(level_name) -> Level:
@@ -49,10 +49,10 @@ def get_by_name(level_name) -> Level:
 def get_list() -> List[Level]:
     stmt = text(f"""{base_query}""")
     with db() as DB:
-        results = DB.execute(stmt)
+        results = DB.execute(stmt).mappings().all()
 
     level_list = []
-    for result in results.fetchall():
+    for result in results:
         level_list.append(row_mapper(result))
     return level_list
 

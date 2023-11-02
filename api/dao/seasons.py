@@ -85,6 +85,7 @@ def admin_season_row_mapper(row):
         'archive': row['archive'] or False,
         'season_teams': season_teams
     }
+    # print(Season)
     return Season
 
 
@@ -114,11 +115,12 @@ def get_list(active=None, session=db()) -> List[Season]:
     if active:
         where = 'WHERE archive is null'
     stmt = text(f'''{base_query} {where} ''')
-    result = session.execute(stmt)
+    with db() as conn:
+        result = conn.execute(stmt).mappings().all()
 
-    for row in result:
-        season_list.append(row_mapper(row))
-    session.close()
+        for row in result:
+            season_list.append(row_mapper(row))
+    
     return season_list
 
 
@@ -300,7 +302,7 @@ def create(season: SeasonNew, level: Level):
                                roster_submission_deadline=season.roster_submission_deadline,
                                tournament_start_date=season.tournament_start_date, archive=None, slug=slug)
     with db() as session:
-        result = session.execute(stmt)
+        result = session.execute(stmt).mappings().all()
     
         for team in season.season_teams:
             add_team_to_season(season_id=new_season_id, team_id= team.team_id)
@@ -337,7 +339,7 @@ def get_all_years(db=db()):
 
     return result.fetchall()
 
-def get_admin_season(db=db()):
+def get_admin_season():
     seasons = []
     stmt = text(''' 
     SELECT 
@@ -364,8 +366,9 @@ def get_admin_season(db=db()):
             levels.id, seasons.archive
     ORDER BY seasons.year desc, levels.id
     ''')
-
-    results = db.execute(stmt)
+    with db() as conn:
+        results = conn.execute(stmt).mappings().all()
+    
     for row in results:
         seasons.append(admin_season_row_mapper(row))
     return seasons

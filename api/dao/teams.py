@@ -86,6 +86,23 @@ def row_mapper_team(row) -> TeamOut:
     }
     return Team
 
+def season_team_level_row_mapper(row) -> SeasonTeam:
+    SeasonTeam = {
+        "team_id": row["id"],
+        # 'team_name': row['team_name'],
+        "team_mascot": row["team_mascot"],
+        "main_color": row["main_color"],
+        "secondary_color": row["secondary_color"],
+        "website": row["website"],
+        "logo_color": row["logo_color"],
+        "logo_grey": row["logo_grey"],
+        "slug": row["slug"],
+        "season_id": row["season_id"],
+        "level_name": row["level_name"],
+        "team_name": row["team_name"],
+    }
+    return SeasonTeam
+
 
 def get(slug: str) -> List[Team]:
     team_list = []
@@ -102,6 +119,21 @@ def get(slug: str) -> List[Team]:
             team_list.append(row_mapper(row))
 
     return team_list
+
+
+def get_with_level_uuid(id: UUID) -> SeasonTeam:
+    stmt = text("""SELECT * FROM mhac.season_teams_with_names WHERE id = :id""")
+    stmt = stmt.bindparams(id=id)
+    # print(stmt)
+    with db() as session:
+        result = session.execute(stmt)
+        row = result.mappings().one()
+
+    if row is None:
+        raise LookupError(f"Could not find key value with id: {id}")
+
+    key = season_team_level_row_mapper(row)
+    return key
 
 
 def get_season_teams(slug: str = None) -> List[SeasonTeam]:

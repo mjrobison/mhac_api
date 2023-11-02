@@ -4,7 +4,7 @@ from uuid import uuid4, UUID
 
 from database import db
 
-from .teams import get_with_uuid as get_team, SeasonTeam, get_with_slug
+from .teams import get_with_level_uuid as get_team, SeasonTeam, get_with_slug
 from .levels import get_level_by_id
 
 from .seasons import get_by_year_and_level
@@ -67,6 +67,7 @@ def combine_height(height: Height):
 
 def player_row_mapper(row) -> PlayerReturn:
     feet, inches = break_height(row["height"] if row["height"] is not None else 0)
+    print(row)
     PlayerReturn = {
         "id": row["id"],
         "first_name": row["first_name"],
@@ -83,6 +84,7 @@ def player_row_mapper(row) -> PlayerReturn:
         "position": row["position"],
         "season_roster": [get_team(i) for i in row["season_roster"].split(",")],
     }
+    print(PlayerReturn)
     return PlayerReturn
 
 
@@ -130,7 +132,7 @@ def get_team_list(slug, season_level: Optional[str] = None):
         , person.position
         , team_rosters.jersey_number as number
         , string_agg(season_team_id::text, ',') AS season_roster
-        , string_agg(level_id::text,',') 
+        , string_agg(level_id::text,',') as level
         FROM mhac.team_rosters
         INNER JOIN mhac.season_teams_with_names as teams
             ON team_rosters.season_team_id = teams.id 
@@ -161,7 +163,7 @@ def get_team_list(slug, season_level: Optional[str] = None):
                 player_list.append(player_row_mapper(row))
         except Exception as exc:
             print(str(exc))
-            raise
+            
     if len(player_list) == 0:
         raise LookupError(f"No players found for {slug}")
 
@@ -184,7 +186,7 @@ def update(id, Player: PlayerCreate):
     )
     query = query.bindparams(player_id=Player.id)
     with db() as session:
-        results = session.execute(query).fetchall()
+        results = session.execute(query).mappings().all()
 
         if len(results) > len(Player.season_roster):
             for r in results:
@@ -305,7 +307,7 @@ def import_player(player):
     season_id = get_by_year_and_level(player.year, player.level_name)
     season_id['season_id']
     team_id = get_with_slug(player.team_slug)
-    print(team_id)
+    # print(team_id)
     message = ""
 
     try:
@@ -348,7 +350,6 @@ def import_player(player):
             season_roster = session.execute(stmt).mappings().all()
             
             for season_team in season_roster:
-                print(season_team)
                 stmt = text(
                     """INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
                     VALUES
@@ -357,7 +358,7 @@ def import_player(player):
                     DO UPDATE
                     SET jersey_number = :number"""
                 )
-                print(stmt)
+                
                 stmt = stmt.bindparams(
                     season_team_id=season_team['id'],
                     player_id=player_id,
