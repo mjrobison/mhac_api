@@ -7,6 +7,7 @@ from datetime import date
 from dao import seasons
 from .teams import TeamBase, TeamOut, TeamIn
 from .levels import LevelOut
+
 router = APIRouter()
 
 
@@ -67,34 +68,35 @@ class Standings(BaseModel):
     win_percentage: float
 
 
-@router.get('/getSeason/{id}', response_model=SeasonBase, tags=['season'])
+@router.get("/getSeason/{id}", response_model=SeasonBase, tags=["season"])
 def get_a_season(id):
     return seasons.get(id)
 
 
-@router.get('/getArchivedSeasons', response_model=List[SeasonBase], tags=['season'])
+@router.get("/getArchivedSeasons", response_model=List[SeasonBase], tags=["season"])
 def get_all_seasons():
     return seasons.get_list(active=False)
 
 
-@router.get('/getSeasons/{year}', response_model=List[SeasonBase], tags=['season'])
+@router.get("/getSeasons/{year}", response_model=List[SeasonBase], tags=["season"])
 def get_seasons_by_year(year: str):
     return seasons.get_by_year(year=year)
 
 
-@router.get('/getSeasons', response_model=List[SeasonOut], tags=['season'])
+@router.get("/getSeasons", response_model=List[SeasonOut], tags=["season"])
 def get_seasons():
     return seasons.get_list()
 
 
-@router.post('/addSeason', tags=['season'])
+@router.post("/addSeason", tags=["season"])
 def add_season(season: SeasonNew):
     msg = []
     for level in season.level:
         msg.append(seasons.create(season, level))
     return msg
 
-@router.put('/updateSeason', status_code=200, tags=['season'])
+
+@router.put("/updateSeason", status_code=200, tags=["season"])
 def update_season(seasonsUpdate: List[SeasonUpdate]):
     errors = []
     try:
@@ -109,27 +111,26 @@ def update_season(seasonsUpdate: List[SeasonUpdate]):
     return None
 
 
-
-@router.put('/archiveSeason/{season_id}', tags=['season'])
+@router.put("/archiveSeason/{season_id}", tags=["season"])
 def archive_season(season_id: UUID):
     return seasons.archive_season(season_id)
 
 
-@router.get('/getCurrentSeasons', tags=['season'])
+@router.get("/getCurrentSeasons", tags=["season"])
 def get_current_season():
     return seasons.get_list(active=True)
 
 
-@router.get('/getActiveYear', tags=['season'])
+@router.get("/getActiveYear", tags=["season"])
 def get_current_season():
     return seasons.get_active_year()
 
 
-@router.get('/getYears', tags=['season'])
+@router.get("/getYears", tags=["season"])
 def get_all_years():
     return seasons.get_all_years()
 
 
-@router.get('/getAdminSeasons', tags=['season'])
+@router.get("/getAdminSeasons", tags=["season"])
 def get_admin_seasons():
     return seasons.get_admin_season()
