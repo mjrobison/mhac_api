@@ -686,7 +686,7 @@ def get_team_schedule(
     return schedule
 
 
-def get_program_schedule(slug: str = None, year=None) -> List[TeamSchedule]:
+def get_program_schedule(slug: str = None, year=None):
     stmt = text(
         f""" {schedule_base_query}
             WHERE home_team.archive is null and away_team.archive is null
@@ -697,7 +697,7 @@ def get_program_schedule(slug: str = None, year=None) -> List[TeamSchedule]:
     )
     stmt = stmt.bindparams(slug=slug)
     with db() as DB:
-        results = DB.execute(stmt)
+        results = DB.execute(stmt).mappings().all()
 
     schedule = []
     for game in results:

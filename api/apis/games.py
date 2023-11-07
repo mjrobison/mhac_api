@@ -173,12 +173,12 @@ def get_season_schedules(path):
         return games.get_season_schedule(year=path)
 
 
-@router.get('/getProgramSchedule/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
+@router.get('/getProgramSchedule/{slug}', tags=['games', 'test'])
 def get_program_schedules(slug: str):
     return games.get_program_schedule(slug=slug)
 
 
-@router.get('/getSchedule/{season_id}/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
+@router.get('/getSchedule/{season_id}/{slug}', tags=['games', 'test'])
 def get_schedules(season_id: UUID, slug: str = None):
     return games.get_team_schedule(season_id=season_id, slug=slug)
 
