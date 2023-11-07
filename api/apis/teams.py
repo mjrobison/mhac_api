@@ -48,7 +48,7 @@ class SeasonTeamOut2(TeamBase):
     team_id: UUID
     season_id: Optional[UUID]
     level_name: Optional[str]
-    # select_team_name: str
+    # select_team_name: Optional[str]
 
 
 @router.get('/getTeams/{slug}', summary="Get an invididual team", tags=['teams'])
@@ -64,15 +64,15 @@ async def get():
     return teams.get_list()
 
 
-@router.get('/getSeasonTeams/', response_model=List[SeasonTeamOut2], summary="Get all teams for the current season",
+@router.get('/getSeasonTeams/', summary="Get all teams for the current season",
             tags=['teams'])
-@router.get('/getSeasonTeams/{slug}', response_model=List[SeasonTeamOut2], summary="Get an invididual team",
+@router.get('/getSeasonTeams/{slug}', summary="Get an invididual team",
             tags=['teams'])
 def getSeasonTeams(slug: str = None):
     return teams.get_season_teams(slug)
 
 
-@router.get('/getSeasonTeams/{slug}/{seasonid}', response_model=SeasonTeamOut2, summary="Get an invididual team",
+@router.get('/getSeasonTeams/{slug}/{seasonid}', summary="Get an invididual team",
             tags=['teams'])
 def getSeasonTeams(slug, seasonid):
     return teams.get_season_team(slug, seasonid)

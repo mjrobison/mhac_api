@@ -4,7 +4,6 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, D
 from sqlalchemy.sql import text # type: ignore
 from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4, UUID
-# from sqlalchemy.dialects.postgresql import JSON, UUID
 from datetime import date, timedelta, datetime
 from database import db
 
@@ -13,7 +12,7 @@ from database import db
 class Sport(TypedDict):
     id: int
     sport_name: str
-    # relationship('Season', backref=('sport_season'))
+
 
 def row_mapper(row) -> Sport:
     Sport = {
@@ -54,4 +53,4 @@ def create(sport):
             DB.commit()
         except Exception as exc:
             return {400: str(exc)}
-    return get(result.fetchone()[0])
+    return get(result.mappings().one()[0])

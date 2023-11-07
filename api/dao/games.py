@@ -188,7 +188,7 @@ def get(game_id) -> Game:
     with db() as session:
         results = session.execute(stmt)
 
-    return results.fetchone()
+    return results.mappings().one()
 
 
 def create(game: Schedule):
@@ -201,7 +201,7 @@ def create(game: Schedule):
         game_id=game_id, home_team=game.home_team, away_team=game.away_team
     )
 
-    with db as session:
+    with db() as session:
         session.execute(stmt)
 
         stmt = text(
@@ -533,7 +533,7 @@ def get_team_schedule(
     season_id: UUID = None,
     slug: str = None,
     year: str = None,
-) -> List[TeamSchedule]:
+):
     missing_subquery = ""
     wheres = ""
 
@@ -654,7 +654,7 @@ def get_team_schedule(
 
         stmt = text(
             f"""SELECT
-            schedule.id as schedule_id, 
+                schedule.id as schedule_id, 
                 games.game_id as game_id,
                 schedule.game_date as game_date,
                 schedule.game_time as game_time, 
@@ -677,7 +677,7 @@ def get_team_schedule(
         )
 
     with db() as session:
-        results = session.execute(stmt)
+        results = session.execute(stmt).mappings().all()
 
         schedule = []
         for game in results:

@@ -53,7 +53,6 @@ def calc_age(birth_date):
 
 
 def break_height(inches):
-    # print(inches)
     if inches:
         feet = int(int(inches) / 12)
         inches = int(int(inches) % 12)
@@ -67,7 +66,6 @@ def combine_height(height: Height):
 
 def player_row_mapper(row) -> PlayerReturn:
     feet, inches = break_height(row["height"] if row["height"] is not None else 0)
-    print(row)
     PlayerReturn = {
         "id": row["id"],
         "first_name": row["first_name"],
@@ -84,7 +82,6 @@ def player_row_mapper(row) -> PlayerReturn:
         "position": row["position"],
         "season_roster": [get_team(i) for i in row["season_roster"].split(",")],
     }
-    print(PlayerReturn)
     return PlayerReturn
 
 
@@ -327,12 +324,12 @@ def import_player(player):
         )
         stmt = stmt.bindparams(
             id=player_id,
-            first_name=player.first_name,
-            last_name=player.last_name,
+            first_name=player.first_name.strip(),
+            last_name=player.last_name.strip(),
             age=player.age,
             height=player_height,
             number=player.player_number,
-            position=player.position,
+            position=player.position.strip(),
             person_type="1",
             team_id=team_id['team_id'],
         )

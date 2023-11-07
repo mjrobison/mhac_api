@@ -27,7 +27,7 @@ class SeasonTeam(Team):
     team_id: UUID
     season_id: UUID
     level_name: Optional[str]
-    select_team_name: Optional[str]
+    # select_team_name: Optional[str]
 
 
 class SeasonTeamUpdate(Team):
@@ -113,9 +113,7 @@ def get(slug: str) -> List[Team]:
     
     with db() as session:
         result = session.execute(stmt).mappings().all()
-        print(result)
         for row in result:
-            print(row)
             team_list.append(row_mapper(row))
 
     return team_list

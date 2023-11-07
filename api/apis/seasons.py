@@ -42,7 +42,7 @@ class SeasonNew(BaseModel):
     year: str
     archive: Optional[bool]
     slug: Optional[str]
-    season_teams: Optional[List[TeamOut]]
+    season_teams: Optional[List[TeamIn]]
 
 
 class SeasonUpdate(BaseModel):

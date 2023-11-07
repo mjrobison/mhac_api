@@ -1,5 +1,5 @@
 from sqlalchemy.sql import text  # type: ignore
-from typing import TypedDict
+from typing import TypedDict, List
 from database import db
 
 from .seasons import Season, get as season_get, get_list
@@ -42,7 +42,7 @@ def row_mapper(row, leader=None) -> Standings:
     return Standings
 
 
-def get_a_season(id) -> Standings:
+def get_a_season(id) -> List[Standings]:
     stmt = text(
         f"""SELECT * FROM mhac.standings
     INNER JOIN mhac.season_teams_with_names
@@ -55,7 +55,7 @@ def get_a_season(id) -> Standings:
     )
     stmt = stmt.bindparams(id=id)
     with db() as DB:
-        results = DB.execute(stmt)
+        results = DB.execute(stmt).mappings().all()
 
     standings_list = []
     i = 1
@@ -87,7 +87,7 @@ def get(level=None) -> Standings:
         ORDER BY win_percentage DESC, wins desc"""
     )
     with db() as DB:
-        result = DB.execute(stmt)
+        result = DB.execute(stmt).mappings().all()
         standings_list = []
         i = 1
         leader = {}

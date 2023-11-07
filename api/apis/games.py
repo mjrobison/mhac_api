@@ -13,12 +13,10 @@ router = APIRouter()
 
 
 class GameBase(BaseModel):
-    # home_team: TeamBase
-    # away_team: TeamBase
     home_team: UUID
     away_team: UUID
-    final_home_score: Optional[int]
-    final_away_score: Optional[int]
+    # final_home_score: Optional[int]
+    # final_away_score: Optional[int]
 
 
 class GameIn(GameBase):
@@ -40,7 +38,7 @@ class Schedule(GameBase):
     date: date
     time: Optional[time]
     season: UUID
-    neutral_site: Optional[str]
+    neutral_site: Optional[bool]
 
 
 class ScheduleUpdate(Schedule):
@@ -108,7 +106,7 @@ class GameResultsStatsOut(PlayerOut):
 
 @router.post('/addGame', tags=['games'])
 def add_game(game: Schedule):
-    # print(game)
+    print(game)
     if game.neutral_site == '':
         game.neutral_site = False
     return games.create(game)
