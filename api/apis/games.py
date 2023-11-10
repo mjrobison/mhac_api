@@ -188,10 +188,6 @@ def get_team_schedule(season_team_id: UUID):
     return games.get_team_schedule(season_team_id=season_team_id)
 
 
-@router.post('/deleteGame', tags=['games', 'test'])
+@router.post('/deleteGame', tags=['games', 'test'], status_code=204)
 def delete_game(game_id: GameInDel):
-    try:
-        games.remove_game(game_id)
-        return {'200': 'success'}
-    except:
-        return {'400': 'There was a problem'}
+    return games.remove_game(game_id)

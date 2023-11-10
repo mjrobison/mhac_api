@@ -1,5 +1,4 @@
-from fastapi import HTTPException, Depends
-
+from fastapi import HTTPException
 from sqlalchemy.sql import text  # type: ignore
 from typing import TypedDict, List, Optional
 from uuid import uuid4, UUID
@@ -15,7 +14,7 @@ schedule_base_query = text(
     """SELECT
          schedule.id as schedule_id, 
             games.game_id as game_id,
-            schedule.game_date as game_date,
+            schedule.game_date::date as game_date,
             schedule.game_time as game_time, 
             home_team.id as home_team,
             away_team.id as away_team, 
@@ -559,7 +558,7 @@ def get_team_schedule(
             f"""SELECT
             schedule.id as schedule_id, 
                 games.game_id as game_id,
-                schedule.game_date as game_date,
+                schedule.game_date::date as game_date,
                 schedule.game_time as game_time, 
                 home_team.id as home_team,
                 away_team.id as away_team, 
@@ -600,7 +599,7 @@ def get_team_schedule(
             f"""SELECT
             schedule.id as schedule_id, 
                 games.game_id as game_id,
-                schedule.game_date as game_date,
+                schedule.game_date::date as game_date,
                 schedule.game_time as game_time, 
                 home_team.id as home_team,
                 away_team.id as away_team, 
@@ -628,7 +627,7 @@ def get_team_schedule(
             f"""SELECT
                 schedule.id as schedule_id, 
                     games.game_id as game_id,
-                    schedule.game_date as game_date,
+                    schedule.game_date::date as game_date,
                     schedule.game_time as game_time, 
                     home_team.id as home_team,
                     away_team.id as away_team, 
@@ -656,7 +655,7 @@ def get_team_schedule(
             f"""SELECT
                 schedule.id as schedule_id, 
                 games.game_id as game_id,
-                schedule.game_date as game_date,
+                schedule.game_date::date as game_date,
                 schedule.game_time as game_time, 
                 home_team.id as home_team,
                 away_team.id as away_team, 
@@ -728,7 +727,7 @@ def get_season_schedule(season_id=None, year=None, DB=db()):
         f"""SELECT
         schedule.id as schedule_id, 
             games.game_id as game_id,
-            schedule.game_date as game_date,
+            schedule.game_date::date as game_date,
             schedule.game_time as game_time, 
             home_team.id as home_team,
             away_team.id as away_team, 
@@ -767,14 +766,13 @@ def remove_game(game: GameIdDel):
         SELECT * FROM mhac.game_results WHERE game_id = :game_id
         """
         )
+        
         stmt = stmt.bindparams(game_id=game.game_id)
         with db() as DB:
             results = DB.execute(stmt)
-
             if results.rowcount > 0:
+                print("Shouldn't be here")
                 raise HTTPException(status_code=400, detail="Game has results attached")
-            elif results.rowcount < 1:
-                raise HTTPException(status_code=404, detail="Game doesn't exist")
 
             stmt = text(
                 """
@@ -782,7 +780,6 @@ def remove_game(game: GameIdDel):
             """
             )
             stmt = stmt.bindparams(game_id=game.game_id)
-
             DB.execute(stmt)
 
             stmt = text(
@@ -792,11 +789,11 @@ def remove_game(game: GameIdDel):
             )
             stmt = stmt.bindparams(game_id=game.game_id)
             DB.execute(stmt)
-
             DB.commit()
+        
     except Exception as exc:
         print(str(exc))
-        return {404: "Game not found"}
+        return HTTPException(status_code=500, detail=str(exc))
 
 
 def parse_csv(fileContents, game_id, team_id):
