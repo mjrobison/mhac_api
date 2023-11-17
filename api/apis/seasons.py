@@ -5,7 +5,7 @@ from uuid import UUID
 from datetime import date
 
 from dao import seasons
-from .teams import TeamBase, TeamOut, TeamIn
+from .teams import TeamBase, TeamOut, TeamIn, SeasonTeamUpdate
 from .levels import LevelOut
 
 router = APIRouter()
@@ -56,7 +56,7 @@ class SeasonUpdate(BaseModel):
     archive: Optional[bool]
     slug: Optional[str]
     level: LevelOut
-    season_teams: Optional[List[TeamIn]]
+    season_teams: Optional[List[SeasonTeamUpdate]]
 
 
 class Standings(BaseModel):
@@ -96,7 +96,7 @@ def add_season(season: SeasonNew):
     return msg
 
 
-@router.put("/updateSeason", status_code=200, tags=["season"])
+@router.put("/updateSeason")
 def update_season(seasonsUpdate: List[SeasonUpdate]):
     errors = []
     try:
@@ -107,7 +107,7 @@ def update_season(seasonsUpdate: List[SeasonUpdate]):
         errors.append(str(exc))
 
     if len(errors) > 0:
-        raise HTTPException(status_code=500, detail="Something Went Wrong")
+        raise HTTPException(status_code=500, detail=errors)
     return None
 
 

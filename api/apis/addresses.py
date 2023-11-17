@@ -13,4 +13,4 @@ class Address(BaseModel):
     address_line_2: Optional[str]
     city: str
     state: str
-    postal_code: str
+    postal_code: Optional[str]

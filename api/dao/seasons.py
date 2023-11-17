@@ -71,7 +71,7 @@ def admin_season_row_mapper(row):
     season_teams = []
     if row.season_teams:
         season_teams = [admin_get_with_uuid(i) for i in row.season_teams.split(',')]
-
+    
     Season = {
         'season_id': row['season_id'],
         'season_name': row['name'],
@@ -85,7 +85,7 @@ def admin_season_row_mapper(row):
         'archive': row['archive'] or False,
         'season_teams': season_teams
     }
-    # print(Season)
+    
     return Season
 
 
@@ -269,21 +269,22 @@ def update(season: SeasonUpdate):
     try:
         with db() as session:
             session.execute(stmt)
-            stmt = text('''SELECT * FROM mhac.season_teams WHERE season_id = :season_id 
-                ''')
+            stmt = text('''SELECT * FROM mhac.season_teams WHERE season_id = :season_id''')
             stmt = stmt.bindparams(season_id = season.season_id)
-            current_season_teams = session.execute(stmt)
-            current_team_list = [team.team_id for team in current_season_teams]
-            incoming_team_list = [team.team_id for team in season.season_teams]
+            current_season_teams = session.execute(stmt).mappings().all()
+            # print(current_season_teams)
+            current_team_list = [team['team_id'] for team in current_season_teams]
+            incoming_team_list = [team['team_id'] for team in season.season_teams]
             teams_to_remove = set(current_team_list) - set(incoming_team_list)
             
             for team in teams_to_remove:
                 remove_team_by_id(team_id= team, season_id=season.season_id, session=session)
             
             for team in season.season_teams:
-                if team.team_id in current_team_list:
+                print(f'In team loop: {team}')
+                if team['team_id'] in current_team_list:
                     continue
-                add_team_to_season(season_id=season.season_id, team_id=team.team_id, session=session)
+                add_team_to_season(season_id=season.season_id, team_id=team['team_id'], session=session)
                 
             session.commit()
     except Exception as exc:
