@@ -97,11 +97,19 @@ def get_team_roster(season_team: UUID):
 #TODO: Move to Rosters
 @router.get('/getAdminPlayers/{slug}', summary='Get a teams players', tags=['players'])
 def get_team_players(slug):
-    return players.get_team_list(slug)
+    try:
+        player_list = players.get_team_list(slug)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return player_list
 
 @router.get('/getAdminPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
 def get_all_players():
-    return players.get_list(person_type='Player')
+    try:
+        player_list = players.get_list(person_type='Player')
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return player_list
 
 
 @router.post('/teamFile/{team_slug}/{year}')

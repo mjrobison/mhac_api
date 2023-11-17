@@ -330,6 +330,7 @@ def get_active_year(archive=None):
         FROM mhac.seasons
         WHERE archive is NULL
         ORDER BY year desc
+        LIMIT 1
     ''')
 
     with db() as session:

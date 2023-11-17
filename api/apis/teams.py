@@ -9,7 +9,6 @@ from .addresses import Address
 
 router = APIRouter()
 
-
 class TeamBase(BaseModel):
     team_name: str
     team_mascot: str
@@ -49,6 +48,12 @@ class SeasonTeamOut2(TeamBase):
     season_id: Optional[UUID]
     level_name: Optional[str]
     # select_team_name: Optional[str]
+
+class SeasonTeamUpdate(TeamBase):
+    team_id: UUID
+    season_id: Optional[UUID]
+    address: Optional[Address]
+    level_name: Optional[str]
 
 
 @router.get('/getTeams/{slug}', summary="Get an invididual team", tags=['teams'])

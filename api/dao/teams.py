@@ -64,8 +64,8 @@ def season_team_row_mapper(row) -> SeasonTeam:
         "logo_color": row["logo_color"],
         "logo_grey": row["logo_grey"],
         "slug": row["slug"],
-            # "season_id": row["season_id"],
-            # "level_name": row["level_name"],
+        "season_id": row["season_id"],
+        "level_name": row["level_name"],
         "team_name": row["team_name"],
     }
     return SeasonTeam
