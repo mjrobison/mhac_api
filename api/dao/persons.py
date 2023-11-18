@@ -1,11 +1,10 @@
 from sqlalchemy.sql import text  # type: ignore
-from typing import TypedDict, List, Dict, Any, Optional
+from typing import TypedDict, List, Any, Optional
 from uuid import uuid4, UUID
 
 from database import db
 
 from .teams import get_with_level_uuid as get_team, SeasonTeam, get_with_slug
-from .levels import get_level_by_id
 
 from .seasons import get_by_year_and_level
 
@@ -118,7 +117,7 @@ def get_team_list(slug, season_level: Optional[str] = None):
 
     base_query = text(
         """ 
-        SELECT 
+        SELECT
         person.id
         , person.first_name
         , person.last_name
@@ -160,7 +159,7 @@ def get_team_list(slug, season_level: Optional[str] = None):
                 player_list.append(player_row_mapper(row))
         except Exception as exc:
             print(str(exc))
-            
+
     if len(player_list) == 0:
         raise LookupError(f"No players found for {slug}")
 
@@ -234,77 +233,84 @@ def update(id, Player: PlayerCreate):
             print(str(exc))
 
 
-# def create_player(player):
-#     try:
-#         player_height = combine_height(player.height)
-#         if player_height == 0:
-#             player_height = None
+def create_player(player):
+    try:
+        player_height = combine_height(player.height)
+        if player_height == 0:
+            player_height = None
 
-#         player_id = uuid4()
-#         stmt = text(
-#             """INSERT INTO mhac.person (id, first_name, last_name, age, height, number, position, person_type, team_id)
-#         VALUES (:id, :first_name, :last_name, :age, :height, :number, :position, :person_type, :team_id)
-#         ON CONFLICT ON CONSTRAINT ux_persons
-#         DO
-#         UPDATE
-#         SET first_name = :first_name, last_name = :last_name, age = :age, height=:height, number = :number, position=:position
-#         RETURNING id"""
-#         )
-#         stmt = stmt.bindparams(
-#             id=player_id,
-#             first_name=player.first_name,
-#             last_name=player.last_name,
-#             age=player.age,
-#             height=player_height,
-#             number=player.player_number,
-#             position=player.position,
-#             person_type="1",
-#             team_id=team_id[0]['team_id'],
-#         )
-#         with db() as session:
-#             result = session.execute(stmt).fetchone()
-#             if result:
-#                 player_id = result[0]
+        player_id = uuid4()
+        stmt = text(
+            """INSERT INTO mhac.person (id, first_name, last_name, age, height, number, position, person_type, team_id)
+        VALUES (:id, :first_name, :last_name, :age, :height, :number, :position, :person_type, :team_id)
+        ON CONFLICT ON CONSTRAINT ux_persons
+        DO
+        UPDATE
+        SET first_name = :first_name, last_name = :last_name, age = :age, height=:height, number = :number, position=:position
+        RETURNING id"""
+        )
+        stmt = stmt.bindparams(
+            id=player_id,
+            first_name=player.first_name,
+            last_name=player.last_name,
+            age=player.age,
+            height=player_height,
+            number=player.player_number,
+            position=player.position,
+            person_type="1",
+            team_id=team_id[0]["team_id"],
+        )
+        with db() as session:
+            result = session.execute(stmt).fetchone()
+            if result:
+                player_id = result[0]
 
-#             stmt = """SELECT * FROM mhac.season_teams_with_names 
-#             WHERE team_id = :team_id 
-#                 AND lower(level_name) = :level_name 
-#                 AND season_id = :season_id;
-#             """
-#             stmt = stmt.bindparams(team_id = team_id[0]['team_id'], level_name=player.level_name.lower(), season_id= season_id['season_id'])
-#             season_roster = session.execute(stmt).mappings().all()
-            
-#             for season_team in season_roster:
-#                 stmt = text(
-#                     """INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
-#                     VALUES
-#                     (:season_team_id, :player_id, :number)
-#                     ON CONFLICT ON CONSTRAINT ux_season_team_player_id
-#                     DO UPDATE
-#                     SET jersey_number = :number"""
-#                 )
-#                 stmt = stmt.bindparams(
-#                     season_team_id=season_team.team_id,
-#                     player_id=player_id,
-#                     number=player.player_number,
-#                 )
+            stmt = """SELECT * FROM mhac.season_teams_with_names 
+            WHERE team_id = :team_id 
+                AND lower(level_name) = :level_name 
+                AND season_id = :season_id;
+            """
+            stmt = stmt.bindparams(
+                team_id=team_id[0]["team_id"],
+                level_name=player.level_name.lower(),
+                season_id=season_id["season_id"],
+            )
+            season_roster = session.execute(stmt).mappings().all()
+            if len(season_roster) < 1:
+                raise HTTPException(
+                    status_code=500, detail=f"There was a problem:\n{stmt}"
+                )
+            for season_team in season_roster:
+                stmt = text(
+                    """INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
+                    VALUES
+                    (:season_team_id, :player_id, :number)
+                    ON CONFLICT ON CONSTRAINT ux_season_team_player_id
+                    DO UPDATE
+                    SET jersey_number = :number"""
+                )
+                stmt = stmt.bindparams(
+                    season_team_id=season_team.team_id,
+                    player_id=player_id,
+                    number=player.player_number,
+                )
 
-#                 session.execute(stmt)
+                session.execute(stmt)
 
-#             session.commit()
-#             message = "Successfully added player"
-#             # TODO: Add to a "roster"
-#     except Exception as exc:
-#         message = str(exc)
-#         print(message)
-#         return {500: message}
+            session.commit()
+            message = "Successfully added player"
+            # TODO: Add to a "roster"
+    except Exception as exc:
+        message = str(exc)
+        print(message)
+        return {500: message}
 
 
 def import_player(player):
     season_id = get_by_year_and_level(player.year, player.level_name)
-    season_id['season_id']
+    print(season_id["season_id"])
     team_id = get_with_slug(player.team_slug)
-    # print(team_id)
+
     message = ""
 
     try:
@@ -331,21 +337,31 @@ def import_player(player):
             number=player.player_number,
             position=player.position.strip(),
             person_type="1",
-            team_id=team_id['team_id'],
+            team_id=team_id["id"],
         )
         with db() as session:
             result = session.execute(stmt).fetchone()
             if result:
                 player_id = result[0]
 
-            stmt = text("""SELECT * FROM mhac.season_teams_with_names 
-            WHERE team_id = :team_id 
-                AND lower(level_name) = :level_name 
+            stmt = text(
+                """SELECT * FROM mhac.season_teams_with_names
+            WHERE team_id = :team_id
+                AND lower(level_name) = :level_name
                 AND season_id = :season_id;
-            """)
-            stmt = stmt.bindparams(team_id = team_id['team_id'], level_name=player.level_name.lower(), season_id= season_id['season_id'])
+            """
+            )
+            stmt = stmt.bindparams(
+                team_id=team_id["id"],
+                level_name=player.level_name.lower(),
+                season_id=season_id["season_id"],
+            )
             season_roster = session.execute(stmt).mappings().all()
-            
+            print(season_roster)
+            if len(season_roster) < 1:
+                raise HTTPException(
+                    status_code=500, detail=f"There was a problem:\n{stmt}"
+                )
             for season_team in season_roster:
                 stmt = text(
                     """INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
@@ -355,13 +371,12 @@ def import_player(player):
                     DO UPDATE
                     SET jersey_number = :number"""
                 )
-                
+
                 stmt = stmt.bindparams(
-                    season_team_id=season_team['id'],
+                    season_team_id=season_team["id"],
                     player_id=player_id,
                     number=player.player_number,
                 )
-                
 
                 session.execute(stmt)
 

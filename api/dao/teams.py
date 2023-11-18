@@ -296,8 +296,8 @@ def get_with_slug(team_slug):
     if row is None:
         raise LookupError(f"Could not find key value with id: {id}")
 
-    key = season_team_row_mapper(row)
-    return key
+    # key = season_team_row_mapper(row)
+    return row
 
 
 def _get_slug_by_level_id(id: str):
