@@ -86,6 +86,7 @@ def row_mapper_team(row) -> TeamOut:
     }
     return Team
 
+
 def season_team_level_row_mapper(row) -> SeasonTeam:
     SeasonTeam = {
         "team_id": row["id"],
@@ -103,22 +104,6 @@ def season_team_level_row_mapper(row) -> SeasonTeam:
     }
     return SeasonTeam
 
-
-def get(slug: str) -> List[Team]:
-    team_list = []
-    stmt = text(
-        """SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null"""
-    )
-    stmt = stmt.bindparams(slug=slug)
-    
-    with db() as session:
-        result = session.execute(stmt).mappings().all()
-        for row in result:
-            team_list.append(row_mapper(row))
-
-    return team_list
-
-
 def get_with_level_uuid(id: UUID) -> SeasonTeam:
     stmt = text("""SELECT * FROM mhac.season_teams_with_names WHERE id = :id""")
     stmt = stmt.bindparams(id=id)
@@ -132,6 +117,20 @@ def get_with_level_uuid(id: UUID) -> SeasonTeam:
 
     key = season_team_level_row_mapper(row)
     return key
+
+def get(slug: str) -> List[Team]:
+    team_list = []
+    stmt = text(
+        """SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null"""
+    )
+    stmt = stmt.bindparams(slug=slug)
+
+    with db() as session:
+        result = session.execute(stmt).mappings().all()
+        for row in result:
+            team_list.append(row_mapper(row))
+
+    return team_list
 
 
 def get_season_teams(slug: str = None) -> List[SeasonTeam]:
@@ -288,7 +287,7 @@ def get_team_count(season_id=None):
 
 def get_with_slug(team_slug):
     stmt = text("""SELECT * FROM mhac.teams WHERE slug = :slug""")
-    stmt = stmt.bindparams(slug = team_slug)
+    stmt = stmt.bindparams(slug=team_slug)
     with db() as session:
         result = session.execute(stmt)
         row = result.mappings().one()
@@ -302,7 +301,9 @@ def get_with_slug(team_slug):
 
 def _get_slug_by_level_id(id: str):
     team_list = []
-    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null''')
+    stmt = text(
+        """SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null"""
+    )
     stmt = stmt.bindparams(id=id)
     with db() as DB:
         result = DB.execute(stmt).mappings().all()

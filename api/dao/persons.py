@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from sqlalchemy.sql import text  # type: ignore
 from typing import TypedDict, List, Any, Optional
 from uuid import uuid4, UUID
@@ -234,6 +235,7 @@ def update(id, Player: PlayerCreate):
 
 
 def create_player(player):
+    print(player)
     try:
         player_height = combine_height(player.height)
         if player_height == 0:
@@ -258,29 +260,30 @@ def create_player(player):
             number=player.player_number,
             position=player.position,
             person_type="1",
-            team_id=team_id[0]["team_id"],
+            team_id=player.team_id
         )
         with db() as session:
             result = session.execute(stmt).fetchone()
             if result:
                 player_id = result[0]
 
-            stmt = """SELECT * FROM mhac.season_teams_with_names 
-            WHERE team_id = :team_id 
-                AND lower(level_name) = :level_name 
-                AND season_id = :season_id;
-            """
-            stmt = stmt.bindparams(
-                team_id=team_id[0]["team_id"],
-                level_name=player.level_name.lower(),
-                season_id=season_id["season_id"],
-            )
-            season_roster = session.execute(stmt).mappings().all()
-            if len(season_roster) < 1:
-                raise HTTPException(
-                    status_code=500, detail=f"There was a problem:\n{stmt}"
+            for season_team in player.season_roster:
+                stmt = text("""SELECT * FROM mhac.season_teams_with_names
+                WHERE team_id = :team_id
+                    AND lower(level_name) = :level_name
+                    AND season_id = :season_id;
+                """)
+                stmt = stmt.bindparams(
+                    team_id = player.team_id,
+                    level_name=season_team.level_name.lower(),
+                    # season_id=season_id["season_id"],
+                    season_id=season_team.season_id
                 )
-            for season_team in season_roster:
+                season_roster = session.execute(stmt).mappings().all()
+                if len(season_roster) < 1:
+                    raise HTTPException(
+                        status_code=500, detail=f"There was a problem:\n{stmt}"
+                    )
                 stmt = text(
                     """INSERT INTO mhac.team_rosters(season_team_id, player_id, jersey_number)
                     VALUES
@@ -307,13 +310,14 @@ def create_player(player):
 
 
 def import_player(player):
-    season_id = get_by_year_and_level(player.year, player.level_name)
-    print(season_id["season_id"])
-    team_id = get_with_slug(player.team_slug)
-
-    message = ""
-
+    message = {"first_name": player.first_name, "last_name": player.last_name}
     try:
+        season_id = get_by_year_and_level(player.year, player.level_name)
+        print(season_id["season_id"])
+        team_id = get_with_slug(player.team_slug)
+
+        message = {}
+
         player_height = combine_height(player.height)
         if player_height == 0:
             player_height = None
@@ -381,12 +385,15 @@ def import_player(player):
                 session.execute(stmt)
 
             session.commit()
-            message = "Successfully added player"
+            message['detail'] = "Successfully added player"
+            status_code = 200
             # TODO: Add to a "roster"
     except Exception as exc:
-        message = str(exc)
-        print(message)
-        return {500: message}
+        message['detail'] =  str(exc)
+        # print(message)
+        status_code = 500
+    
+    return {"status_code": status_code, "detail":  message}
 
 
 def get_still_active_players():

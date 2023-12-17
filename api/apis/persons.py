@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, UploadFile
-from typing import Optional, List, Dict
+from fastapi import APIRouter, HTTPException, UploadFile, status
+from fastapi.responses import JSONResponse
+from typing import Optional, List, Union
 from pydantic import BaseModel, ValidationError, validator
 from uuid import UUID
 from datetime import datetime, date
@@ -41,9 +42,9 @@ class PlayerOut(PersonBase):
 class PlayerIn(PersonBase):
     id: Optional[UUID]
     season_roster: List[SeasonTeamOut2]
-    age: int
+    age: Union[int, str]
     height: Optional[Height]
-    person_type: str
+    person_type: Union[int, str]
     player_number: Optional[int]
     position: Optional[str]
 
@@ -72,6 +73,7 @@ def get_all_players():
 
 @router.post('/addPlayer', tags=['players'])
 def add_player(player: PlayerIn):
+    print(player)
     players.create_player(player)
     return {200: "Success"}
 
@@ -114,6 +116,7 @@ def get_all_players():
 
 @router.post('/teamFile/{team_slug}/{year}')
 async def create_team_file(file: UploadFile, team_slug: str, year: str):
+    error = False
     #TODO: Needs season_roster: List[SeasonTeamOut2]
     if file.filename.endswith('.xlsx'):
         f = await file.read()
@@ -141,9 +144,14 @@ async def create_team_file(file: UploadFile, team_slug: str, year: str):
                 person['team_slug'] = team_slug
                 person['year'] = year
                 person['person_type'] = '1'
-                
-                response_list.append(players.import_player(ImportPlayer(**person)))
-
-        return response_list
-
+                response = players.import_player(ImportPlayer(**person))
+                print(response)
+                if response['status_code'] != 200:
+                    error = True
+                response_list.append(response['detail'])
         
+        status_code = status.HTTP_200_OK
+        if error:
+            status_code = status.HTTP_409_CONFLICT
+
+        return JSONResponse(status_code=status_code, content=response_list)

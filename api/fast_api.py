@@ -17,11 +17,19 @@ from typing import List
 # dictConfig(LogConfig().dict())
 logger = logging.getLogger("mhac_api")
 
-app = FastAPI(title='MHAC API', version='1.0', description='MHAC API - v1')
+app = FastAPI(title="MHAC API", version="1.0", description="MHAC API - v1")
+
+origins = [
+    "http://localhost:8080",
+    "http://192.168.0.229:8080",
+    "http://localhost:8005",
+    "http://localhost:3001",
+    "https://mhacsports.com"
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,8 +37,9 @@ app.add_middleware(
 
 
 def get_settings():
-    env = os.environ.get('API_ENV', 'development')
+    env = os.environ.get("API_ENV", "development")
     return config.get(env)
+
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
@@ -38,12 +47,9 @@ async def add_process_time_header(request: Request, call_next):
     response = await call_next(request)
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
-    # response.headers["Access-Control-Allow-Origin"] = "https://mhacsports.com"
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    # response.headers["Access-Control-Allow-Origin"] = "*"
-    # response.headers["Access-Control-Allow-Origin"] = "*"
-    return response
+    # response.headers["Access-Control-Allow-Origin"] =  "http://localhost:8080"
 
+    return response
 
 
 html = """
@@ -126,11 +132,10 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
 
 app.include_router(api_router)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
     # {"request-type": "BroadcastCustomMessage","realm": "1", "data": {"action": "incrementAway", "value": 10},"message-id": "1"}
     # {"request-type": "BroadcastCustomMessage","realm": "1", "data": {"action": "setAway", "value": 3},"message-id": "1"}
     # {"request-type": "BroadcastCustomMessage","realm": "1", "data": {"action": "toggle_time", "value": 0},"message-id": "1"}
     # {"request-type": "GetSceneList","message-id": "1"}
-
