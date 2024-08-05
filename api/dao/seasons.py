@@ -109,7 +109,7 @@ base_query = """
         """
 
 
-def get_list(active=None, session=db()) -> List[Season]:
+def get_list(active=None) -> List[Season]:
     season_list = []
     where = ""
     if active:
@@ -178,10 +178,14 @@ def archive_season(season: UUID, session=db()):
                      WHERE id = season_id """
     )
     stmt = stmt.bindparams(season_id=season)
-
-    session.execute(stmt)
-    session.commit()
-    session.close()
+    with db.begin() as DB:
+        try:
+            DB.execute(stmt)
+            DB.commit()
+        except Exception as exc:
+            print(str(exc))
+            return {500: 'problem'}
+    
     return {200: "Season Archived"}
 
 
@@ -254,7 +258,7 @@ def add_team_to_season(season_id: UUID, team_id: UUID, session=None):
     )
 
     stmt = stmt.bindparams(id=season_team_id, season_id=season_id, team_id=team_id)
-    # with db() as session:
+
     try:
         session.execute(stmt)
         stmt = text(

@@ -21,7 +21,6 @@ class Standings(TypedDict):
     games_behind: float
     win_percentage: float
 
-
 def row_mapper(row, leader=None) -> Standings:
     games_behind = 0.0
     if leader:
@@ -203,7 +202,6 @@ def update_all_active_seasons(refactor=None):
 
 def update_standings_rank(season_id, DB):
     # using the season_id determine if a change needs to be made
-
     # if needed apply the update
     try:
         query = text(

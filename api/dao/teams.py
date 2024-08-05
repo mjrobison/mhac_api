@@ -17,10 +17,15 @@ class Team(TypedDict):
     slug: str
 
 
+class TeamIn(Team):
+    active: bool
+
+
 class TeamOut(Team):
     team_id: UUID
     address: Optional[Address]
     season_id: Optional[UUID]
+    active: bool
 
 
 class SeasonTeam(Team):
@@ -28,6 +33,7 @@ class SeasonTeam(Team):
     season_id: UUID
     level_name: Optional[str]
     # select_team_name: Optional[str]
+
 
 
 class SeasonTeamUpdate(Team):
@@ -239,6 +245,12 @@ def create(team: Team):
 
     return results
 
+    with db.begin() as DB:
+        address_result = DB.execute(query).all()
+        
+        insert_stmt = insert_stmt.bindparams(team_name=team.team_name, team_mascot=team.team_mascot, address_id=address_result[0][0],
+                           main_color=team.main_color, secondary_color=team.secondary_color, website=team.website,
+                           logo_color=team.logo_color, logo_grey=team.logo_grey, slug=team.slug, active=team.active)
 
 def add_to_season(season_team: SeasonTeam):
     print(f"HERE: {season_team}")

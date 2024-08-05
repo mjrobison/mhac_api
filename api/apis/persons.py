@@ -28,7 +28,7 @@ class PublicPlayerOut(PersonBase):
     player_number: Optional[int]
     position: Optional[str]
     age: Optional[int]
-    season_roster: Optional[List[SeasonTeamOut2]]
+    # season_roster: Optional[List[SeasonTeamOut2]]
 
 class PlayerOut(PersonBase):
     id: UUID
@@ -66,9 +66,11 @@ class ImportPlayer(BaseModel):
 def get_team_players(slug):
     return players.get_team_list(slug)
 
-@router.get('/getPlayers', response_model=List[PublicPlayerOut], summary="Get all players", tags=['players']  )
-def get_all_players():
-    return players.get_list(person_type='Player')
+@router.get('/getPlayers', summary="Get all players", tags=['players']  )
+async def get_all_players():
+    rosters = await players.get_list(person_type='Player')
+    # print(rosters)
+    return rosters
 
 
 @router.post('/addPlayer', tags=['players'])
@@ -95,6 +97,12 @@ def add_to_roster():
 def get_team_roster(season_team: UUID):
     team = teams._get_slug_by_level_id(season_team).get('slug')
     return players.get_team_list(team, season_team) 
+    # try:
+    #     roster = players.get_team_list(team, season_team)
+    # except HTTPException:
+    #     raise 
+    # return roster
+
 
 #TODO: Move to Rosters
 @router.get('/getAdminPlayers/{slug}', summary='Get a teams players', tags=['players'])
@@ -105,7 +113,8 @@ def get_team_players(slug):
         raise HTTPException(status_code=404, detail=str(exc))
     return player_list
 
-@router.get('/getAdminPlayers', response_model=List[PlayerOut], summary="Get all players", tags=['players']  )
+
+@router.get('/getAdminPlayers', summary="Get all players", tags=['players']  )
 def get_all_players():
     try:
         player_list = players.get_list(person_type='Player')

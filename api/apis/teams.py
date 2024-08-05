@@ -5,6 +5,7 @@ from uuid import UUID
 
 from dao import teams
 from .addresses import Address
+from psycopg2.errors import ForeignKeyViolation
 
 router = APIRouter()
 
@@ -30,6 +31,7 @@ class TeamOut(TeamBase):
     address: Optional[Address]
     season_id: Optional[UUID]
     level_name: Optional[str]
+    active: bool
 
 
 class TeamUpdate(TeamBase):
@@ -43,7 +45,7 @@ class SeasonTeam(BaseModel):
 
 class SeasonTeamOut(SeasonTeam):
     season_team_id: UUID
-
+    
 
 class SeasonTeamOut2(TeamBase):
     team_id: UUID
@@ -61,15 +63,18 @@ class SeasonTeamUpdate(TeamBase):
 
 @router.get("/getTeams/{slug}", summary="Get an invididual team", tags=["teams"])
 def getTeam(slug=None):
-    if slug:
-        return teams.get(slug=slug)
-    else:
-        return teams.get_list()
-
+    team = teams.get(slug=slug)
+    if not team:
+        raise HTTPException(status_code=404, detail="No team found")
+    
 
 @router.get("/getTeams", summary="Get All Teams", tags=["teams"])
 async def get():
-    return teams.get_list()
+    teamsList =  teams.get_list()
+    if len(teamsList) < 1:
+        raise HTTPException(status_code=404, detail="Team or Season didn't exist")
+    
+    return teamsList
 
 
 @router.get(
@@ -78,7 +83,7 @@ async def get():
 @router.get("/getSeasonTeams/{slug}", summary="Get an invididual team", tags=["teams"])
 def getSeasonTeams(slug: str = None):
     return teams.get_season_teams(slug)
-
+    
 
 @router.get(
     "/getSeasonTeams/{slug}/{seasonid}",

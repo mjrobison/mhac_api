@@ -84,6 +84,15 @@ def player_row_mapper(row) -> PlayerReturn:
     }
     return PlayerReturn
 
+def person_row_mapper(row):
+    PersonReturn = {
+        'id': row['id'],
+        'first_name': row['first_name'],
+        'last_name': row['last_name'],
+        'age': row['age'],
+    }
+    return PersonReturn
+
 
 def get(id) -> Person:
     stmt = text("""SELECT person.* FROM mhac.person WHERE id = :id """)

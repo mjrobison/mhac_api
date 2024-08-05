@@ -32,10 +32,10 @@ class Coach(Person):
 
 class CoachOut(Coach):
     id: UUID
-    first_name = str
-    last_name = str
-    person_type = int
-    team_id = str
+    first_name: str
+    last_name: str
+    person_type: int
+    team_id: str
 
 
 def coach_row_mapper(row) -> CoachOut:
@@ -98,7 +98,8 @@ def get_coach_list(person_type) -> List[CoachOut]:
 
 
 def get_all_coaches() -> List[CoachOut]:
-    DB = db()
+    person_type='2'
+
     player_list = []
     print(person_type)
     stmt = text(

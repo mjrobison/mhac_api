@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 
 from config import config
 import os
@@ -15,12 +15,11 @@ engine = create_engine(
 db = sessionmaker(autocommit=False, autoflush=True, bind=engine)
 
 @contextmanager
-def database_conn():
-    DB = db()
+def database_conn(*args, **kwargs):
     try:
-        yield DB
+        yield db
         db.commit()
     except:
-        DB.rollback()
+        db.rollback()
     finally:
-        DB.close()
+        db.close()

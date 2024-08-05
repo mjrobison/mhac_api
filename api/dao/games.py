@@ -171,7 +171,7 @@ def game_result_row_mapper(row) -> Player:
         },
     }
     return Player
-
+    
 
 def final_score_mapper(row) -> FinalScores:
     final_score = {
@@ -311,7 +311,7 @@ def add_final_score(game: GameStats, connection=None):
     stmt = text("""SELECT * FROM mhac.game_results WHERE game_id = :game_id """)
     stmt = stmt.bindparams(game_id=game.game_id)
     results = DB.execute(stmt)
-    # print(results, results.rowcount, str(results))
+    
     if results.rowcount > 0:
         home_score = 0
         away_score = 0

@@ -12,16 +12,20 @@ from sqlalchemy import (
 )
 
 from sqlalchemy.sql import text  # type: ignore
-from typing import TypedDict, List, Dict, Any, Optional
-from uuid import uuid4
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from typing import TypedDict, Optional
+from sqlalchemy.dialects.postgresql import UUID
 
 from database import db
 
-base_query = text("""SELECT * FROM mhac.addresses """)
-
 
 class Address(TypedDict):
+    address_id: UUID
+    location_name: Optional[str]
+    address_line_1: str
+    address_line_2: Optional[str]
+    city: str
+    state: str
+    postal_code: str
     address_id: UUID
     location_name: Optional[str]
     address_line_1: str

@@ -1,5 +1,5 @@
 import time, os
-from fastapi import FastAPI, Request, APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import json
 
@@ -47,7 +47,9 @@ async def add_process_time_header(request: Request, call_next):
     response = await call_next(request)
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
-    # response.headers["Access-Control-Allow-Origin"] =  "http://localhost:8080"
+    # response.headers["Access-Control-Allow-Origin"] = "https://mhacsports.com"
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
 
     return response
 
@@ -70,7 +72,7 @@ html = """
         <script>
             var client_id = Date.now()
             document.querySelector("#ws-id").textContent = client_id;
-            var ws = new WebSocket(`ws://127.0.0.1:8003/ws/${client_id}`);
+            var ws = new WebSocket(`ws://172.20.1.171:8003/ws/${client_id}`);
             ws.onmessage = function(event) {
                 var messages = document.getElementById('messages')
                 var message = document.createElement('li')
@@ -124,7 +126,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         while True:
             data = await websocket.receive_text()
             await manager.send_personal_message(f"You wrote: {data}", websocket)
-            await manager.broadcast(f"Client #{client_id} says: {data}")
+            await manager.broadcast(f"{data}")
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         await manager.broadcast(f"Client #{client_id} left the chat")

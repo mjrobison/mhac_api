@@ -13,7 +13,6 @@ class Sport(TypedDict):
     id: int
     sport_name: str
 
-
 def row_mapper(row) -> Sport:
     Sport = {
         'sport_id': row['id'],

@@ -2,9 +2,6 @@ CREATE DATABASE mhac;
 
 CREATE SCHEMA mhac;
 
-
-
-
 ALTER SCHEMA mhac OWNER TO postgres;
 
 CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;

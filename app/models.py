@@ -6,7 +6,7 @@ import datetime
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Numeric
 from sqlalchemy.orm import relationship
 
-from .database import Base
+from database import Base
 
 class User(Base):
     """ User Model for storing user related details """
@@ -58,27 +58,27 @@ class Address(Base):
     postal_code = Column(String(10))
     teams = relationship('Teams',  backref=('Address'))
 
-# class Teams(Base):
-#     __tablename__ = 'teams'
-#     __table_args__ = {"schema":"mhac"}
+class Teams(Base):
+    __tablename__ = 'teams'
+    __table_args__ = {"schema":"mhac"}
 
-#     # Team color, website, Team Secondary, logo name color, logo name grey
-#     id = Column(UUID(as_uuid=True), unique=True,
-#                    nullable=False, primary_key=True, default=uuid4)
-#     team_name = Column(String(100))
-#     team_mascot = Column(String(150))
-#     address_id = Column(UUID(as_uuid=True), ForeignKey('mhac.addresses.id'))
-#     main_color = Column(String(6))
-#     secondary_color = Column(String(6))
-#     website = Column(String(150))
-#     logo_color = Column(String(150))
-#     logo_grey = Column(String(150))
-#     # home_team = relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
-#     # away_team = relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
-#     slug = Column(String(150))
+    # Team color, website, Team Secondary, logo name color, logo name grey
+    id = Column(UUID(as_uuid=True), unique=True,
+                   nullable=False, primary_key=True, default=uuid4)
+    team_name = Column(String(100))
+    team_mascot = Column(String(150))
+    address_id = Column(UUID(as_uuid=True), ForeignKey('mhac.addresses.id'))
+    main_color = Column(String(6))
+    secondary_color = Column(String(6))
+    website = Column(String(150))
+    logo_color = Column(String(150))
+    logo_grey = Column(String(150))
+    # home_team = relationship('Games', backref=('home_teams'), foreign_keys="Games.home_team_id")
+    # away_team = relationship('Games', backref=('away_teams'), foreign_keys="Games.away_team_id")
+    slug = Column(String(150))
 
-#     def __repr__(self):
-#         return '<id {}>'.format(self.id)
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
 
 
 class Level(Base):
@@ -145,6 +145,8 @@ class Season(Base):
 
     def __repr__(self):
         return '{0}'.format(self.name)
+
+
 
 class SeasonTeams(Base):
     __tablename__ = 'season_teams_with_names'
