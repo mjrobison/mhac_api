@@ -15,33 +15,31 @@ class WebSocketUrl(TypedDict):
     WebSocketUrl: str
 
 
-def get_websocket_url(DB=db()):
+def get_websocket_url():
     stmt =  '''
         SELECT * FROM mhac.websocket
     '''
-    
-    webSocketUrl = DB.execute(stmt).fetchone()
-    
-    DB.close()
+    with db() as DB:
+        webSocketUrl = DB.execute(stmt).fetchone()
+        
     if not webSocketUrl:
         webSocketUrl = None
     return webSocketUrl
 
-def post_websocket_url(websocket_url, DB=db()):
+def post_websocket_url(websocket_url):
     web_address = urlparse(websocket_url)
     stmt = text('''
     Update mhac.websocket
     set websocket_url = :url, websocket_port = :port 
     ''')
     stmt = stmt.bindparams(url=f'{web_address.scheme}://{web_address.hostname}', port=web_address.port)
-    try:
-        DB.execute(stmt)
-        DB.commit()
-        DB.close()
-    except:
-        DB.rollback()
-        DB.close()
-        raise HTTPException(status_code=400, detail='There was a problem saving the URL, check the format and try again.')
-        
+    with db() as DB:
+        try:
+            DB.execute(stmt)
+            DB.commit()
+        except:
+            DB.rollback()
+            raise HTTPException(status_code=400, detail='There was a problem saving the URL, check the format and try again.')
+            
     return {"webSocketUrl": websocket_url}
     

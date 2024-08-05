@@ -1,9 +1,5 @@
-from re import L
-from fastapi import APIRouter, HTTPException
-from typing import Optional, List, Dict
-from pydantic import BaseModel, ValidationError, validator
-from uuid import UUID
-from datetime import datetime, date, time
+from fastapi import APIRouter
+from pydantic import BaseModel
 from dao import websockets
 
 router = APIRouter()

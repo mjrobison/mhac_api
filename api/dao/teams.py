@@ -1,12 +1,6 @@
-from fastapi import HTTPException
-# from sqlalchemy import Column, String
-from sqlalchemy import Boolean
-
 from sqlalchemy.sql import text  # type: ignore
 from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4, UUID
-
-from psycopg2.errors import ForeignKeyViolation
 
 from .addresses import get_address_with_id, Address
 from database import db
@@ -31,14 +25,15 @@ class TeamOut(Team):
     team_id: UUID
     address: Optional[Address]
     season_id: Optional[UUID]
-    active: Boolean
+    active: bool
 
 
 class SeasonTeam(Team):
     team_id: UUID
     season_id: UUID
     level_name: Optional[str]
-    select_team_name: Optional[str]
+    # select_team_name: Optional[str]
+
 
 
 class SeasonTeamUpdate(Team):
@@ -50,116 +45,122 @@ class SeasonTeamUpdate(Team):
 
 def row_mapper(row) -> TeamOut:
     Team = {
-        'team_id': row['id'],
-        'team_name': row['team_name'],
-        'team_mascot': row['team_mascot'],
-        'main_color': row['main_color'],
-        'secondary_color': row['secondary_color'],
-        'website': row['website'],
-        'logo_color': row['logo_color'],
-        'logo_grey': row['logo_grey'],
-        'slug': row['slug'],
-        'active': row['active'],
-        'address': get_address_with_id(row['address_id'])
+        "team_id": row["id"],
+        "team_name": row["team_name"],
+        "team_mascot": row["team_mascot"],
+        "main_color": row["main_color"],
+        "secondary_color": row["secondary_color"],
+        "website": row["website"],
+        "logo_color": row["logo_color"],
+        "logo_grey": row["logo_grey"],
+        "slug": row["slug"],
+        "address": get_address_with_id(row["address_id"]),
     }
     return Team
 
 
 def season_team_row_mapper(row) -> SeasonTeam:
     SeasonTeam = {
-        'team_id': row['id'],
+        "team_id": row["id"],
         # 'team_name': row['team_name'],
-        'team_mascot': row['team_mascot'],
-        'main_color': row['main_color'],
-        'secondary_color': row['secondary_color'],
-        'website': row['website'],
-        'logo_color': row['logo_color'],
-        'logo_grey': row['logo_grey'],
-        'slug': row['slug'],
-        'season_id': row['season_id'],
-        'level_name': row['level_name'],
-        'team_name': row['team_name']
+        "team_mascot": row["team_mascot"],
+        "main_color": row["main_color"],
+        "secondary_color": row["secondary_color"],
+        "website": row["website"],
+        "logo_color": row["logo_color"],
+        "logo_grey": row["logo_grey"],
+        "slug": row["slug"],
+        "season_id": row["season_id"],
+        "level_name": row["level_name"],
+        "team_name": row["team_name"],
     }
     return SeasonTeam
 
 
 def row_mapper_team(row) -> TeamOut:
     Team = {
-        'team_id': row['team_id'],
-        'team_name': row['team_name'],
-        'team_mascot': row['team_mascot'],
-        'main_color': row['main_color'],
-        'secondary_color': row['secondary_color'],
-        'website': row['website'],
-        'logo_color': row['logo_color'],
-        'logo_grey': row['logo_grey'],
-        'slug': row['slug'],
-        'address': get_address_with_id(row['address_id'])
+        "team_id": row["team_id"],
+        "team_name": row["team_name"],
+        "team_mascot": row["team_mascot"],
+        "main_color": row["main_color"],
+        "secondary_color": row["secondary_color"],
+        "website": row["website"],
+        "logo_color": row["logo_color"],
+        "logo_grey": row["logo_grey"],
+        "slug": row["slug"],
+        "address": get_address_with_id(row["address_id"]),
     }
     return Team
 
 
+def season_team_level_row_mapper(row) -> SeasonTeam:
+    SeasonTeam = {
+        "team_id": row["id"],
+        # 'team_name': row['team_name'],
+        "team_mascot": row["team_mascot"],
+        "main_color": row["main_color"],
+        "secondary_color": row["secondary_color"],
+        "website": row["website"],
+        "logo_color": row["logo_color"],
+        "logo_grey": row["logo_grey"],
+        "slug": row["slug"],
+        "season_id": row["season_id"],
+        "level_name": row["level_name"],
+        "team_name": row["team_name"],
+    }
+    return SeasonTeam
+
+def get_with_level_uuid(id: UUID) -> SeasonTeam:
+    stmt = text("""SELECT * FROM mhac.season_teams_with_names WHERE id = :id""")
+    stmt = stmt.bindparams(id=id)
+    # print(stmt)
+    with db() as session:
+        result = session.execute(stmt)
+        row = result.mappings().one()
+
+    if row is None:
+        raise LookupError(f"Could not find key value with id: {id}")
+
+    key = season_team_level_row_mapper(row)
+    return key
+
 def get(slug: str) -> List[Team]:
     team_list = []
-    stmt = text('''SELECT *, true as active FROM mhac.season_teams_with_names 
-                    WHERE slug = :slug and archive is null''')
+    stmt = text(
+        """SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null"""
+    )
     stmt = stmt.bindparams(slug=slug)
-    with db.begin() as DB:
-        result = DB.execute(stmt).all()
+
+    with db() as session:
+        result = session.execute(stmt).mappings().all()
         for row in result:
-            print(row_mapper(row))
             team_list.append(row_mapper(row))
-    
+
     return team_list
 
 
-def _get_slug_by_level_id(id: str):
-    team_list = []
-    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null''')
-    stmt = stmt.bindparams(id=id)
-    with db.begin() as DB:
-        result = DB.execute(stmt)
-
-        for row in result:
-            team_list.append(row_mapper(row))
-    return team_list[0]
-
-
-def get_season_teams(slug = None) -> List[SeasonTeam]:
+def get_season_teams(slug: str = None) -> List[SeasonTeam]:
     team_list = []
 
-    base_query = text(f'''SELECT * FROM mhac.season_teams_with_names 
-        WHERE archive is null''')
-    team_name = ''
-    with db.begin() as DB:
-        if slug:
-            # if type(slug) == UUID:
-            try:
-                season_id = UUID(slug)
-                team_name = text(f"""{base_query}  AND season_id = :slug """)
-                team_name = team_name.bindparams(slug=season_id)
-                print(team_name)
-                result = DB.execute(team_name)
+    base_query = text(
+        f"""SELECT * FROM mhac.season_teams_with_names 
+        WHERE archive is null"""
+    )
 
-        
-            except ValueError:
-                team_name = text(f""" {base_query} AND slug = :slug """)
-                team_name = team_name.bindparams(slug=slug)
-                print(team_name)
-                result = DB.execute(team_name)
-                if result.rowcount == 0:
-                    raise HTTPException(status_code=404, detail="didn't find any teams")
-            else:
-                raise HTTPException(status_code=404, detail="didn't find any teams")
-
-                
-            for row in result:    
-                team_list.append(season_team_row_mapper(row))
-
+    with db() as session:
+        if not slug:
+            query = base_query
+        elif type(slug) == UUID:
+            query = text(f"""{base_query}  AND season_id = :slug """)
+            query = query.bindparams(slug=slug)
         else:
-            result = DB.execute(base_query)
-            for row in result:    
-                team_list.append(season_team_row_mapper(row))
+            query = text(f""" {base_query} AND slug = :slug """)
+            query = query.bindparams(slug=slug)
+
+        result = session.execute(query)
+        results_as_dict = result.mappings().all()
+        for row in results_as_dict:
+            team_list.append(season_team_row_mapper(row))
 
     return team_list
 
@@ -167,66 +168,82 @@ def get_season_teams(slug = None) -> List[SeasonTeam]:
 def get_season_team(slug: str, seasonid: str) -> SeasonTeam:
     team_list = []
 
-    print(f"\n\n{slug}, {seasonid}\n\n")
-
     stmt = text(
-        '''SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null and season_id = :seasonid''')
+        """SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null and season_id = :seasonid"""
+    )
     stmt = stmt.bindparams(slug=slug, seasonid=seasonid)
-    with db.begin() as DB:
-        result = DB.execute(stmt).one()
 
-    return season_team_row_mapper(result)
+    with db() as session:
+        resultset = session.execute(stmt)
+        result = season_team_row_mapper(resultset.mappings().one())
+    return result
 
 
 def get_list() -> List[TeamOut]:
     team_list = []
-    with db.begin() as DB:
-        stmt = text('''SELECT * FROM mhac.teams WHERE active''')
-        result = DB.execute(stmt)
+    stmt = text("""SELECT * FROM mhac.teams WHERE active""")
+    with db() as session:
+        result = session.execute(stmt).mappings().all()
 
-    for row in result:
-        team_list.append(row_mapper(row))
-    
+        for row in result:
+            team_list.append(row_mapper(row))
+
     return team_list
 
 
 def get_with_uuid(id: UUID) -> SeasonTeam:
-    
-    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id''')
-
+    stmt = text("""SELECT * FROM mhac.season_teams_with_names WHERE id = :id""")
     stmt = stmt.bindparams(id=id)
-    with db.begin() as DB:
-        result = DB.execute(stmt)
-        row = result.fetchone()
-    
+    with db() as session:
+        result = session.execute(stmt)
+        row = result.mappings().one()
+
     if row is None:
-        # raise LookupError(f'Could not find key value with id: {id}')
-        return ''
-    else:
-        key = season_team_row_mapper(row)
-        return key
+        raise LookupError(f"Could not find key value with id: {id}")
+
+    key = season_team_row_mapper(row)
+    return key
 
 
 def admin_get_with_uuid(id: UUID) -> SeasonTeam:
-    stmt = text('''SELECT * FROM mhac.season_teams_with_names WHERE id = :id''')
-
+    stmt = text("""SELECT * FROM mhac.season_teams_with_names WHERE id = :id""")
     stmt = stmt.bindparams(id=id)
-    with db.begin() as DB:
-        result = DB.execute(stmt)
-        row = result.fetchone()
+
+    with db() as session:
+        result = session.execute(stmt)
+        row = result.mappings().one()
+
     if row is None:
-        raise LookupError(f'Could not find key value with id: {id}')
-    else:
-        key = row_mapper_team(row)
-        return key
+        raise LookupError(f"Could not find key value with id: {id}")
+
+    key = row_mapper_team(row)
+    return key
 
 
-def create(team: TeamIn):
-    
-    insert_stmt = text('''INSERT INTO mhac.teams (id,team_name,team_mascot,address_id,main_color,secondary_color,website,logo_color,logo_grey,slug, active)
+def create(team: Team):
+    stmt = text(
+        """INSERT INTO mhac.teams (id,team_name,team_mascot,address_id,main_color,secondary_color,website,logo_color,logo_grey,slug)
                    VALUES
-                    (uuid_generate_v4(),:team_name,:team_mascot,:address_id,:main_color,:secondary_color,:website,:logo_color,:logo_grey,:slug, :active)''')
-    query = text('''SELECT * FROM mhac.addresses limit 1''')
+                    (id,:team_name,:team_mascot,:address_id,:main_color,:secondary_color,:website,:logo_color,:logo_grey,:slug)"""
+    )
+    stmt = stmt.bindparams(
+        id=uuid4,
+        team_name=team.team_name,
+        team_mascot=team.team_mascot,
+        address_id="",
+        main_color=team.main_color,
+        secondary_color=team.secondary_color,
+        website=team.website,
+        logo_color=team.logo_color,
+        logo_grey=team.logo_grey,
+        slug=team.slug,
+    )
+
+    with db() as session:
+        results = session.execute(stmt)
+        session.commit()
+
+    return results
 
     with db.begin() as DB:
         address_result = DB.execute(query).all()
@@ -235,48 +252,74 @@ def create(team: TeamIn):
                            main_color=team.main_color, secondary_color=team.secondary_color, website=team.website,
                            logo_color=team.logo_color, logo_grey=team.logo_grey, slug=team.slug, active=team.active)
 
-        print(insert_stmt)
-        DB.execute(insert_stmt)
-        DB.commit()
-        
-    return team
-
-
 def add_to_season(season_team: SeasonTeam):
-    stmt = text('''INSERT INTO mhac.season_teams (id, season_id, team_id)
+    print(f"HERE: {season_team}")
+
+    stmt = text(
+        """INSERT INTO mhac.season_teams (id, season_id, team_id)
                    VALUES
-                    (uuid_generate_v4(), :season_id, :team_id)''')
-    stmt = stmt.bindparams(season_id=season_team.season_id, team_id=season_team.team_id)
-    
-    with db.begin() as DB:
+                    (:id, :season_id, :team_id)"""
+    )
+    stmt = stmt.bindparams(
+        id=uuid4, season_id=season_team.season_id, team_id=season_team.team_id
+    )
+    with db() as session:
         try:
-            DB.execute(stmt)
-            stmt = text('''INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
+            session.execute(stmt)
+            stmt = text(
+                """INSERT INTO mhac.standings (team_id, season_id, wins, losses, games_played, win_percentage, standings_rank)
             VALUES
             (:team_id, :season_id, 0, 0, 0, 0.00, 0) 
-            ''')
-            stmt = stmt.bindparams(team_id=season_team.team_id, season_id=season_team.season_id)
-            DB.execute(stmt)
-            DB.commit()
-        except ForeignKeyViolation as exc:
-            print(str(exc))
-            DB.rollback()
-            return ForeignKeyViolation 
+            """
+            )
+            stmt = stmt.bindparams(
+                team_id=season_team.team_id, season_id=season_team.season_id
+            )
+            session.execute(stmt)
+            session.commit()
+        except:
+            session.rollback()
+            raise
 
-    return season_team
+    return "Team was successfully added to season"
 
 
 def get_team_count(season_id=None):
     query = text(
-        """SELECT COUNT(*) 
-        FROM mhac.season_teams_with_names 
-        INNER JOIN mhac.standings 
-            ON season_teams_with_names.id = standings.team_id 
-        WHERE season_teams_with_names.season_id = :season_id 
-            --AND standings_rank <> 99""")
+        """SELECT COUNT(*) FROM mhac.season_teams_with_names INNER JOIN mhac.standings ON season_teams_with_names.id = standings.team_id WHERE season_teams_with_names.season_id = :season_id AND standings_rank <> 99"""
+    )
     query = query.bindparams(season_id=season_id)
 
-    with db.begin() as DB:
-        results = DB.execute(query).one()
-        
+    with db() as session:
+        results = session.execute(query).fetchone()
+        results = results[0]
+
     return results
+
+
+def get_with_slug(team_slug):
+    stmt = text("""SELECT * FROM mhac.teams WHERE slug = :slug""")
+    stmt = stmt.bindparams(slug=team_slug)
+    with db() as session:
+        result = session.execute(stmt)
+        row = result.mappings().one()
+
+    if row is None:
+        raise LookupError(f"Could not find key value with id: {id}")
+
+    # key = season_team_row_mapper(row)
+    return row
+
+
+def _get_slug_by_level_id(id: str):
+    team_list = []
+    stmt = text(
+        """SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null"""
+    )
+    stmt = stmt.bindparams(id=id)
+    with db() as DB:
+        result = DB.execute(stmt).mappings().all()
+
+        for row in result:
+            team_list.append(row_mapper(row))
+    return team_list[0]

@@ -36,7 +36,7 @@ def update_coach(id, coach: PersonBase):
 def get_coach_list(team_slug):
     return coaches.get_all_coaches(person_type='Coach')
 
-@router.get('/getCoach/{id}', response_model=CoachOut)
+@router.get('/getCoach/{id}', response_model=CoachOut, tags=['coaches', 'rosters'])
 def get_coach():
     return coaches.get_coach(id =id)
 

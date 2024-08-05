@@ -13,12 +13,10 @@ router = APIRouter()
 
 
 class GameBase(BaseModel):
-    # home_team: TeamBase
-    # away_team: TeamBase
     home_team: UUID
     away_team: UUID
-    final_home_score: Optional[int]
-    final_away_score: Optional[int]
+    # final_home_score: Optional[int]
+    # final_away_score: Optional[int]
 
 
 class GameIn(GameBase):
@@ -40,7 +38,7 @@ class Schedule(GameBase):
     date: date
     time: Optional[time]
     season: UUID
-    neutral_site: Optional[str]
+    neutral_site: Optional[bool]
 
 
 class ScheduleUpdate(Schedule):
@@ -172,12 +170,12 @@ def get_season_schedules(path):
         return games.get_season_schedule(year=path)
 
 
-@router.get('/getProgramSchedule/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
+@router.get('/getProgramSchedule/{slug}', tags=['games', 'test'])
 def get_program_schedules(slug: str):
     return games.get_program_schedule(slug=slug)
 
 
-@router.get('/getSchedule/{season_id}/{slug}', response_model=List[TeamSchedule], tags=['games', 'test'])
+@router.get('/getSchedule/{season_id}/{slug}', tags=['games', 'test'])
 def get_schedules(season_id: UUID, slug: str = None):
     return games.get_team_schedule(season_id=season_id, slug=slug)
 
@@ -187,10 +185,6 @@ def get_team_schedule(season_team_id: UUID):
     return games.get_team_schedule(season_team_id=season_team_id)
 
 
-@router.post('/deleteGame', tags=['games', 'test'])
+@router.post('/deleteGame', tags=['games', 'test'], status_code=204)
 def delete_game(game_id: GameInDel):
-    try:
-        games.remove_game(game_id)
-        return {'200': 'success'}
-    except:
-        return {'400': 'There was a problem'}
+    return games.remove_game(game_id)

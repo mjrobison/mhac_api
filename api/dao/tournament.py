@@ -80,7 +80,7 @@ def tournamentRowMapper(row):
     }
 
 
-def get_tournament_games(DB=db(), season_id=None) -> TournamentGame:
+def get_tournament_games(season_id=None) -> TournamentGame:
     if season_id:
         where = f'WHERE seasons.id = :season_id '
     else:
@@ -124,28 +124,28 @@ def get_tournament_games(DB=db(), season_id=None) -> TournamentGame:
     query = query.bindparams(season_id=season_id)
 
     data_all = []
-    results = DB.execute(query)
-    for r in results:
-        data_all.append(tournamentGameRowMapper(r))
-    DB.close()
+    with db() as DB:
+        results = DB.execute(query)
+        for r in results:
+            data_all.append(tournamentGameRowMapper(r))
+    
     return data_all
 
 
 def get_tournament(year=None):
     query = """SELECT * FROM mhac.tournaments"""
     data_all = []
-    with db.begin() as DB:
+    with db() as DB:
         results = DB.execute(query)
-    
-    for r in results:
-        data_all.append(tournamentRowMapper(r))
+        for r in results:
+            data_all.append(tournamentRowMapper(r))
 
     return data_all
 
 
 def create_tournament_game(game):
-    with db.begin() as DB:
-        next_game = game.game
+    next_game = game.game
+    with db() as DB:
         if game.game is None:
             query = text("""SELECT MAX(game_number) + 1 FROM mhac.tournamentgames WHERE season_id = :season_id """)
             query = query.bindparams(season_id=game.season_id)
@@ -182,14 +182,15 @@ def create_tournament_game(game):
                                     game_description=game.game_description, season_id=game.seasons.season_id,
                                     winner_to=game.matchup.winner_to, loser_to=game.matchup.loser_to)
 
+            
             DB.execute(query)
             DB.commit()
         except Exception as exc:
             print(str(exc))
             DB.rollback()
-            return {'problem', 500}
+            raise
 
-        return {'success': 200}
+    return {'success': 200}
 
 
 def update_tournament_game(game):
@@ -197,26 +198,27 @@ def update_tournament_game(game):
         SET home_team_seed = :home_team_seed, away_team_seed = :away_team_seed
         WHERE game_number = :game_number 
             AND season_id = :season_id """)
-    with db.begin():
-        try:
-            # Check for scores
-            if game.matchup.scoreTeam1 is not None and game.matchup.scoreTeam2 is not None:
 
-                # Declare a variable for the winner and loser of the game
-                if game.matchup.scoreTeam1 > game.matchup.scoreTeam2:
-                    winner = game.matchup.team1Seed
-                    loser = game.matchup.team2Seed
-                else:
-                    winner = game.matchup.team2Seed
-                    loser = game.matchup.team1Seed
+    try:
+        # Check for scores
+        if game.matchup.scoreTeam1 is not None and game.matchup.scoreTeam2 is not None:
 
-                # Update the game scores if they are there.
-                update = text("""UPDATE mhac.tournamentgames 
-                SET home_team_score = :home_team_score, away_team_score = :away_team_score
-                WHERE game_number = :game_number AND season_id = :season_id """)
+            # Declare a variable for the winner and loser of the game
+            if game.matchup.scoreTeam1 > game.matchup.scoreTeam2:
+                winner = game.matchup.team1Seed
+                loser = game.matchup.team2Seed
+            else:
+                winner = game.matchup.team2Seed
+                loser = game.matchup.team1Seed
 
-                update = update.bindparams(home_team_score=game.matchup.scoreTeam1, away_team_score=game.matchup.scoreTeam2,
-                                        game_number=game.game, season_id=game.seasons.season_id)
+            # Update the game scores if they are there.
+            update = text("""UPDATE mhac.tournamentgames 
+            SET home_team_score = :home_team_score, away_team_score = :away_team_score
+            WHERE game_number = :game_number AND season_id = :season_id """)
+
+            update = update.bindparams(home_team_score=game.matchup.scoreTeam1, away_team_score=game.matchup.scoreTeam2,
+                                       game_number=game.game, season_id=game.seasons.season_id)
+            with db() as DB:
                 DB.execute(update)
                 DB.commit()
 
@@ -376,22 +378,22 @@ def update_tournament_game(game):
 
 
 
-            # What about reordering games
-            else:
-                query = text(""" 
-                    UPDATE mhac.tournamentgames
-                    SET game_date = :game_date, game_time = :game_time, home_team_seed = :home_team_seed, away_team_seed = :away_team_seed, game_description = :game_description, winner_to = :winner_to, loser_to = :loser_to
-                    WHERE game_number = :game_number
-                        AND season_id = :season_id
-                """)
-                query = query.bindparams(season_id=game.seasons.season_id, game_number=game.game, game_date=game.date,
-                                        game_time=game.time, home_team_seed=game.matchup.team1Seed,
-                                        away_team_seed=game.matchup.team2Seed, game_description=game.game_description,
-                                        winner_to=game.matchup.winner_to, loser_to=game.matchup.loser_to)
-
+        # What about reordering games
+        else:
+            query = text(""" 
+                UPDATE mhac.tournamentgames
+                SET game_date = :game_date, game_time = :game_time, home_team_seed = :home_team_seed, away_team_seed = :away_team_seed, game_description = :game_description, winner_to = :winner_to, loser_to = :loser_to
+                WHERE game_number = :game_number
+                    AND season_id = :season_id
+            """)
+            query = query.bindparams(season_id=game.seasons.season_id, game_number=game.game, game_date=game.date,
+                                     game_time=game.time, home_team_seed=game.matchup.team1Seed,
+                                     away_team_seed=game.matchup.team2Seed, game_description=game.game_description,
+                                     winner_to=game.matchup.winner_to, loser_to=game.matchup.loser_to)
+            with db() as DB:
                 DB.execute(query)
                 DB.commit()
-        except Exception as exc:
-            print(str(exc))
-            raise HTTPException(status_code=400, detail=str(exc))
-        return
+    except Exception as exc:
+        print(str(exc))
+        raise HTTPException(status_code=400, detail=str(exc))
+    return
