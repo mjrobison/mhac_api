@@ -1,6 +1,7 @@
 import time, os
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
+import json
 
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,14 +14,22 @@ from logging.config import dictConfig
 
 from typing import List
 
-dictConfig(LogConfig().dict())
+# dictConfig(LogConfig().dict())
 logger = logging.getLogger("mhac_api")
 
-app = FastAPI(title='MHAC API', version='1.0', description='MHAC API - v1')
+app = FastAPI(title="MHAC API", version="1.0", description="MHAC API - v1")
+
+origins = [
+    "http://localhost:8080",
+    "http://192.168.0.229:8080",
+    "http://localhost:8005",
+    "http://localhost:3001",
+    "https://mhacsports.com"
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,8 +37,9 @@ app.add_middleware(
 
 
 def get_settings():
-    env = os.environ.get('API_ENV', 'development')
+    env = os.environ.get("API_ENV", "development")
     return config.get(env)
+
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
@@ -41,6 +51,7 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
+    return response
 
 
 html = """
@@ -123,5 +134,10 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
 
 app.include_router(api_router)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    # {"request-type": "BroadcastCustomMessage","realm": "1", "data": {"action": "incrementAway", "value": 10},"message-id": "1"}
+    # {"request-type": "BroadcastCustomMessage","realm": "1", "data": {"action": "setAway", "value": 3},"message-id": "1"}
+    # {"request-type": "BroadcastCustomMessage","realm": "1", "data": {"action": "toggle_time", "value": 0},"message-id": "1"}
+    # {"request-type": "GetSceneList","message-id": "1"}

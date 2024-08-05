@@ -2,11 +2,11 @@ version: "3.7"
 
 services:
   mhac_api:
-    container_name: "mhac_api"
+    # image: mhac_api
     build:
-      context: .
+      dockerfile: Dockerfile
     ports: 
-      - "8000:8000"
+      - "8005:8000"
     volumes:
       - ./api/:/app
     

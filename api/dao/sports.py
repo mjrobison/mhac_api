@@ -4,7 +4,6 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, D
 from sqlalchemy.sql import text # type: ignore
 from typing import TypedDict, List, Dict, Any, Optional
 from uuid import uuid4, UUID
-# from sqlalchemy.dialects.postgresql import JSON, UUID
 from datetime import date, timedelta, datetime
 from database import db
 
@@ -13,7 +12,6 @@ from database import db
 class Sport(TypedDict):
     id: int
     sport_name: str
-    # relationship('Season', backref=('sport_season'))
 
 def row_mapper(row) -> Sport:
     Sport = {
@@ -23,20 +21,20 @@ def row_mapper(row) -> Sport:
     return Sport
 
 def get(id):
-    stmt = text('''SELECT * FROM mhac.sports WHERE id = :id ''')
-    stmt = stmt.bindparams(id=id)
-    with db.begin() as DB:
+    with db() as DB:
+        stmt = text('''SELECT * FROM mhac.sports WHERE id = :id ''')
+        stmt = stmt.bindparams(id=id)
         result =  DB.execute(stmt)
         row = result.fetchone()
     
-    if not row:
-        return None
-    return row_mapper(row)
+    if row:
+        results = row_mapper(row)
+    return results 
 
 def get_list():
     sport_list = []
     stmt = text('''SELECT * FROM mhac.sports ''')
-    with db.begin() as DB:
+    with db() as DB:
         results = DB.execute(stmt)
     
         for row in results:
@@ -46,12 +44,12 @@ def get_list():
     
 def create(sport):
     #TODO: Return SPORT_ID or Sport
-    with db.begin() as DB:
+    stmt = text('''INSERT INTO mhac.sports(sport_name) values (:sport_name) RETURNING id''')
+    
+    with db() as DB:
         try:
-            stmt = text('''INSERT INTO mhac.sports(sport_name) values (:sport_name) RETURNING id''')
             result = DB.execute(stmt.bindparams(sport_name = sport.sport_name))
             DB.commit()
         except Exception as exc:
             return {400: str(exc)}
-    
-    return get(result.fetchone()[0])
+    return get(result.mappings().one()[0])

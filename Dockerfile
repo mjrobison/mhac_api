@@ -3,12 +3,15 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y netcat-openbsd gcc python3-dev libpq-dev && \
     apt-get clean
-    
+
 ADD requirements.txt .
+
+ADD ./api/db.conf . 
 RUN python -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app
+
 ADD ./api .
 
 # WORKDIR /app

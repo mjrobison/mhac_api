@@ -12,7 +12,7 @@ class SeasonStats(BaseModel):
     team_id: Optional[UUID] = None
 
 
-@router.get('/getStats')
+@router.get('/getStats', tags=['stats'])
 def get_stats(season_id: Optional[UUID] = None, team_id: Optional[UUID] = None):
     try:
         statistics = stats.stats_by_season_and_team(season_id, team_id)
@@ -23,7 +23,7 @@ def get_stats(season_id: Optional[UUID] = None, team_id: Optional[UUID] = None):
         raise HTTPException(status_code=500, detail="there was a problem with the server.")
     return statistics
 
-@router.get('/getSeasonStats')
+@router.get('/getSeasonStats', tags=['stats'])
 def get_season_stats(season_stats: SeasonStats):
     print(season_stats.season_id, season_stats.team_id)
     try:
