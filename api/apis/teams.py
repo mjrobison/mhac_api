@@ -1,10 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from typing import Optional
 from pydantic import BaseModel
 from uuid import UUID
 
 from dao import teams
-from .addresses import Address
+from .addresses import Address, AddressSeasonUpdate
+from .levels import LevelBase
 from psycopg2.errors import ForeignKeyViolation
 
 router = APIRouter()
@@ -57,9 +58,13 @@ class SeasonTeamOut2(TeamBase):
 class SeasonTeamUpdate(TeamBase):
     team_id: UUID
     season_id: Optional[UUID]
-    address: Optional[Address]
+    address: Optional[AddressSeasonUpdate]
     level_name: Optional[str]
 
+class SeasonTeamUpdateSeason(TeamBase):
+    team_id: UUID
+    season_id: Optional[UUID] = None
+    address: Optional[AddressSeasonUpdate] = None
 
 @router.get("/getTeams/{slug}", summary="Get an invididual team", tags=["teams"])
 def getTeam(slug=None):
