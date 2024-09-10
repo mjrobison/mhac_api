@@ -71,6 +71,7 @@ def getTeam(slug=None):
     team = teams.get(slug=slug)
     if not team:
         raise HTTPException(status_code=404, detail="No team found")
+    return team
     
 
 @router.get("/getTeams", summary="Get All Teams", tags=["teams"])
