@@ -25,15 +25,13 @@ class TeamOut(Team):
     team_id: UUID
     address: Optional[Address]
     season_id: Optional[UUID]
-    active: bool
+    active: Optional[bool]
 
 
 class SeasonTeam(Team):
     team_id: UUID
     season_id: UUID
     level_name: Optional[str]
-    # select_team_name: Optional[str]
-
 
 
 class SeasonTeamUpdate(Team):
@@ -55,6 +53,7 @@ def row_mapper(row) -> TeamOut:
         "logo_grey": row["logo_grey"],
         "slug": row["slug"],
         "address": get_address_with_id(row["address_id"]),
+        "active": row["active"]
     }
     return Team
 
@@ -62,7 +61,6 @@ def row_mapper(row) -> TeamOut:
 def season_team_row_mapper(row) -> SeasonTeam:
     SeasonTeam = {
         "team_id": row["id"],
-        # 'team_name': row['team_name'],
         "team_mascot": row["team_mascot"],
         "main_color": row["main_color"],
         "secondary_color": row["secondary_color"],
@@ -96,7 +94,6 @@ def row_mapper_team(row) -> TeamOut:
 def season_team_level_row_mapper(row) -> SeasonTeam:
     SeasonTeam = {
         "team_id": row["id"],
-        # 'team_name': row['team_name'],
         "team_mascot": row["team_mascot"],
         "main_color": row["main_color"],
         "secondary_color": row["secondary_color"],
@@ -113,7 +110,6 @@ def season_team_level_row_mapper(row) -> SeasonTeam:
 def get_with_level_uuid(id: UUID) -> SeasonTeam:
     stmt = text("""SELECT * FROM mhac.season_teams_with_names WHERE id = :id""")
     stmt = stmt.bindparams(id=id)
-    # print(stmt)
     with db() as session:
         result = session.execute(stmt)
         row = result.mappings().one()
@@ -224,13 +220,13 @@ def create(team: Team):
     stmt = text(
         """INSERT INTO mhac.teams (id,team_name,team_mascot,address_id,main_color,secondary_color,website,logo_color,logo_grey,slug)
                    VALUES
-                    (id,:team_name,:team_mascot,:address_id,:main_color,:secondary_color,:website,:logo_color,:logo_grey,:slug)"""
+                    (:id,:team_name,:team_mascot,:address_id,:main_color,:secondary_color,:website,:logo_color,:logo_grey,:slug)"""
     )
     stmt = stmt.bindparams(
-        id=uuid4,
+        id=uuid4(),
         team_name=team.team_name,
         team_mascot=team.team_mascot,
-        address_id="",
+        address_id=None,
         main_color=team.main_color,
         secondary_color=team.secondary_color,
         website=team.website,
@@ -245,12 +241,6 @@ def create(team: Team):
 
     return results
 
-    with db.begin() as DB:
-        address_result = DB.execute(query).all()
-        
-        insert_stmt = insert_stmt.bindparams(team_name=team.team_name, team_mascot=team.team_mascot, address_id=address_result[0][0],
-                           main_color=team.main_color, secondary_color=team.secondary_color, website=team.website,
-                           logo_color=team.logo_color, logo_grey=team.logo_grey, slug=team.slug, active=team.active)
 
 def add_to_season(season_team: SeasonTeam):
     print(f"HERE: {season_team}")
@@ -323,3 +313,6 @@ def _get_slug_by_level_id(id: str):
         for row in result:
             team_list.append(row_mapper(row))
     return team_list[0]
+
+def update_team(team):
+    print(team)

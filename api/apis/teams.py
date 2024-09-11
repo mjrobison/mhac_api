@@ -52,7 +52,6 @@ class SeasonTeamOut2(TeamBase):
     team_id: UUID
     season_id: Optional[UUID]
     level_name: Optional[str]
-    # select_team_name: Optional[str]
 
 
 class SeasonTeamUpdate(TeamBase):
@@ -113,3 +112,8 @@ async def create_team(team: TeamBase):
 @router.get("/getTeamCount/{season_id}", tags=["teams"])
 async def count_teams(season_id):
     return teams.get_team_count(season_id=season_id)
+
+@router.put("/updateTeam", tags=["teams"])
+async def update_team(team: TeamBase):
+    print(team)
+    return "Success"
