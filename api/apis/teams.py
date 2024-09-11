@@ -1,10 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from typing import Optional
 from pydantic import BaseModel
 from uuid import UUID
 
 from dao import teams
-from .addresses import Address
+from .addresses import Address, AddressSeasonUpdate
+from .levels import LevelBase
 from psycopg2.errors import ForeignKeyViolation
 
 router = APIRouter()
@@ -24,6 +25,7 @@ class TeamBase(BaseModel):
 class TeamIn(TeamBase):
     team_id: UUID
     address: Optional[Address]
+    active: Optional[bool] = False
 
 
 class TeamOut(TeamBase):
@@ -51,21 +53,25 @@ class SeasonTeamOut2(TeamBase):
     team_id: UUID
     season_id: Optional[UUID]
     level_name: Optional[str]
-    # select_team_name: Optional[str]
 
 
 class SeasonTeamUpdate(TeamBase):
     team_id: UUID
     season_id: Optional[UUID]
-    address: Optional[Address]
+    address: Optional[AddressSeasonUpdate]
     level_name: Optional[str]
 
+class SeasonTeamUpdateSeason(TeamBase):
+    team_id: UUID
+    season_id: Optional[UUID] = None
+    address: Optional[AddressSeasonUpdate] = None
 
 @router.get("/getTeams/{slug}", summary="Get an invididual team", tags=["teams"])
 def getTeam(slug=None):
     team = teams.get(slug=slug)
     if not team:
         raise HTTPException(status_code=404, detail="No team found")
+    return team
     
 
 @router.get("/getTeams", summary="Get All Teams", tags=["teams"])
@@ -107,3 +113,9 @@ async def create_team(team: TeamBase):
 @router.get("/getTeamCount/{season_id}", tags=["teams"])
 async def count_teams(season_id):
     return teams.get_team_count(season_id=season_id)
+
+@router.put("/updateTeam", tags=["teams"])
+async def update_team(team: TeamIn):
+    print(f"Team: {team}")
+    teams.update_team(team)
+    return "Success"

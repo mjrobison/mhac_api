@@ -18,6 +18,15 @@ from sqlalchemy.dialects.postgresql import UUID
 from database import db
 
 
+class AddressSeasonUpdate(TypedDict):
+    address_id: UUID
+    location_name: Optional[str]
+    address_line_1: str
+    address_line_2: Optional[str]
+    city: str
+    state: str
+    postal_code: str
+
 class Address(TypedDict):
     address_id: UUID
     location_name: Optional[str]
@@ -49,7 +58,7 @@ def row_mapper(row) -> Address:
 
 
 def get_address_with_id(id: UUID):
-    query = text(f"""{base_query} WHERE id = :id """)
+    query = text(f"""SELECT * FROM mhac.addresses WHERE id = :id """)
 
     query = query.bindparams(id=id)
     with db() as DB:
