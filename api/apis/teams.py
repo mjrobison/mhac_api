@@ -25,6 +25,7 @@ class TeamBase(BaseModel):
 class TeamIn(TeamBase):
     team_id: UUID
     address: Optional[Address]
+    active: Optional[bool] = False
 
 
 class TeamOut(TeamBase):
@@ -114,6 +115,7 @@ async def count_teams(season_id):
     return teams.get_team_count(season_id=season_id)
 
 @router.put("/updateTeam", tags=["teams"])
-async def update_team(team: TeamBase):
-    print(team)
+async def update_team(team: TeamIn):
+    print(f"Team: {team}")
+    teams.update_team(team)
     return "Success"

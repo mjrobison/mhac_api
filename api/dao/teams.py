@@ -315,4 +315,29 @@ def _get_slug_by_level_id(id: str):
     return team_list[0]
 
 def update_team(team):
-    print(team)
+    print("updating Team")
+    stmt = text(
+        """ UPDATE mhac.teams
+            SET team_name=:team_name , team_mascot=:team_mascot, address_id = :address_id, main_color=:main_color, secondary_color=:secondary_color, website=:website, logo_color=:logo_color, logo_grey=:logo_grey, slug=:slug, active=:active
+            WHERE id = :id
+          """
+    )
+    stmt = stmt.bindparams(
+        id=team.team_id,
+        team_name=team.team_name,
+        team_mascot=team.team_mascot,
+        address_id = team.address.address_id,
+        main_color=team.main_color, 
+        secondary_color=team.secondary_color,
+        website=team.website, 
+        logo_color=team.logo_color, 
+        logo_grey=team.logo_grey, 
+        slug=team.slug, 
+        active=team.active
+    )
+    with db() as DB:
+        DB.execute(stmt)
+        DB.commit()
+    
+    return team
+
