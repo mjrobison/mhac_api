@@ -709,7 +709,7 @@ def get_team_schedule(
                 ON games.home_team_id = home_team.id
             LEFT OUTER JOIN mhac.teams AS away_team
                 ON games.away_team_id = away_team.id
-            WHERE seasons.archive is not null
+            WHERE seasons.archive is null
             ORDER BY schedule.game_date
             """
         )
@@ -768,6 +768,7 @@ def get_program_schedule(slug: str = None, year=None):
                 ON games.away_team_id = away_team.id
             WHERE (home_team.slug = :slug
                 OR away_team.slug = :slug)
+                AND seasons.archive is null
             ORDER BY game_date, game_time
             """
     )
