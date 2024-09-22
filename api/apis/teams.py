@@ -116,6 +116,12 @@ async def count_teams(season_id):
 
 @router.put("/updateTeam", tags=["teams"])
 async def update_team(team: TeamIn):
-    print(f"Team: {team}")
     teams.update_team(team)
     return "Success"
+
+@router.get(
+    "/v2/getSeasonTeams/", summary="Get all teams for the current season", tags=["teams"]
+)
+@router.get("/v2/getSeasonTeams/{slug}", summary="Get an invididual team", tags=["teams"])
+def getSeasonTeams(slug: str = None):
+    return teams.get_season_teams_for_schedule(slug)

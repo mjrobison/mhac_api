@@ -322,7 +322,6 @@ def import_player(player):
     message = {"first_name": player.first_name, "last_name": player.last_name}
     try:
         season_id = get_by_year_and_level(player.year, player.level_name)
-        print(season_id["season_id"])
         team_id = get_with_slug(player.team_slug)
 
         message = {}
