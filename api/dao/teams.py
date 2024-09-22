@@ -52,11 +52,11 @@ def row_mapper(row) -> TeamOut:
         "logo_color": row["logo_color"],
         "logo_grey": row["logo_grey"],
         "slug": row["slug"],
-        "address": get_address_with_id(row["address_id"]),
-        "active": row["active"]
+        "address": get_address_with_id(row["address_id"]) if row.get('address_id', None) else None,
+        "active": row["active"],
+        "conference": row["conference"]
     }
     return Team
-
 
 def season_team_row_mapper(row) -> SeasonTeam:
     SeasonTeam = {
@@ -126,6 +126,21 @@ def get(slug: str) -> List[Team]:
         """SELECT * FROM mhac.season_teams_with_names WHERE slug = :slug and archive is null"""
     )
     stmt = stmt.bindparams(slug=slug)
+    def row_mapper(row):
+        Team = {
+            "team_id": row["id"],
+            "team_name": row["team_name"],
+            "team_mascot": row["team_mascot"],
+            "main_color": row["main_color"],
+            "secondary_color": row["secondary_color"],
+            "website": row["website"],
+            "logo_color": row["logo_color"],
+            "logo_grey": row["logo_grey"],
+            "slug": row["slug"],
+            "address": get_address_with_id(row["address_id"]),
+            "archive": row["archive"]
+        }
+        return Team
 
     with db() as session:
         result = session.execute(stmt).mappings().all()
@@ -139,15 +154,18 @@ def get_season_teams(slug: str = None) -> List[SeasonTeam]:
     team_list = []
 
     base_query = text(
-        f"""SELECT * FROM mhac.season_teams_with_names 
-        WHERE archive is null"""
+        f"""
+            SELECT * 
+            FROM mhac.season_teams_with_names 
+            WHERE archive is null
+        """
     )
 
     with db() as session:
         if not slug:
             query = base_query
         elif type(slug) == UUID:
-            query = text(f"""{base_query}  AND season_id = :slug """)
+            query = text(f"""{base_query} AND season_id = :slug """)
             query = query.bindparams(slug=slug)
         else:
             query = text(f""" {base_query} AND slug = :slug """)
@@ -187,8 +205,22 @@ def get_list() -> List[TeamOut]:
     return team_list
 
 
-def get_with_uuid(id: UUID) -> SeasonTeam:
-    stmt = text("""SELECT * FROM mhac.season_teams_with_names WHERE id = :id""")
+def get_with_uuid(id: UUID):
+    def season_team_row_mapper(row):
+        SeasonTeam = {
+            "team_id": row["id"],
+            "team_mascot": row["team_mascot"],
+            "main_color": row["main_color"],
+            "secondary_color": row["secondary_color"],
+            "website": row["website"],
+            "logo_color": row["logo_color"],
+            "logo_grey": row["logo_grey"],
+            "slug": row["slug"],
+            "team_name": row["team_name"],
+        }
+        return SeasonTeam
+    
+    stmt = text("""SELECT * FROM mhac.teams WHERE id = :id""")
     stmt = stmt.bindparams(id=id)
     with db() as session:
         result = session.execute(stmt)
@@ -218,9 +250,9 @@ def admin_get_with_uuid(id: UUID) -> SeasonTeam:
 
 def create(team: Team):
     stmt = text(
-        """INSERT INTO mhac.teams (id,team_name,team_mascot,address_id,main_color,secondary_color,website,logo_color,logo_grey,slug)
+        """INSERT INTO mhac.teams (id,team_name,team_mascot,address_id,main_color,secondary_color,website,logo_color,logo_grey,slug, active)
                    VALUES
-                    (:id,:team_name,:team_mascot,:address_id,:main_color,:secondary_color,:website,:logo_color,:logo_grey,:slug)"""
+                    (:id,:team_name,:team_mascot,:address_id,:main_color,:secondary_color,:website,:logo_color,:logo_grey,:slug, True)"""
     )
     stmt = stmt.bindparams(
         id=uuid4(),
@@ -297,14 +329,17 @@ def get_with_slug(team_slug):
     if row is None:
         raise LookupError(f"Could not find key value with id: {id}")
 
-    # key = season_team_row_mapper(row)
     return row
 
 
 def _get_slug_by_level_id(id: str):
     team_list = []
     stmt = text(
-        """SELECT * FROM mhac.season_teams_with_names WHERE id = :id and archive is null"""
+        """SELECT * 
+            FROM mhac.season_teams_with_names 
+            WHERE id = :id 
+            AND archive IS NULL
+        """
     )
     stmt = stmt.bindparams(id=id)
     with db() as DB:
@@ -315,7 +350,6 @@ def _get_slug_by_level_id(id: str):
     return team_list[0]
 
 def update_team(team):
-    print("updating Team")
     stmt = text(
         """ UPDATE mhac.teams
             SET team_name=:team_name , team_mascot=:team_mascot, address_id = :address_id, main_color=:main_color, secondary_color=:secondary_color, website=:website, logo_color=:logo_color, logo_grey=:logo_grey, slug=:slug, active=:active
@@ -341,3 +375,60 @@ def update_team(team):
     
     return team
 
+def get_team_by_season_and_slug():
+    stmt = text("""
+    SELECT * 
+    FROM mhac.season_teams_with_names 
+    WHERE slug=:slug 
+        AND archive IS NULL 
+        AND level_name=:level_name;
+    """)
+
+    stmt = stmt.bindparams(
+        
+    )
+
+
+
+def get_season_teams_for_schedule(slug: str = None) -> List[SeasonTeam]:
+    team_list = []
+
+    def season_team_row_mapper(row) -> SeasonTeam:
+        SeasonTeam = {
+            "team_id": row["team_id"],
+            "team_mascot": row["team_mascot"],
+            "main_color": row["main_color"],
+            "secondary_color": row["secondary_color"],
+            "website": row["website"],
+            "logo_color": row["logo_color"],
+            "logo_grey": row["logo_grey"],
+            "slug": row["slug"],
+            "team_name": row["team_name"],
+            "conference": row["conference"]
+        }
+        return SeasonTeam
+
+    base_query = text(
+        f"""
+            SELECT DISTINCT team_id, team_name, team_mascot, address_id, main_color, secondary_color, website, logo_color, logo_grey, slug, archive, conference
+            FROM mhac.season_teams_with_names 
+            WHERE archive is null
+        """
+    )
+
+    with db() as session:
+        if not slug:
+            query = base_query
+        elif type(slug) == UUID:
+            query = text(f"""{base_query} AND season_id = :slug """)
+            query = query.bindparams(slug=slug)
+        else:
+            query = text(f""" {base_query} AND slug = :slug """)
+            query = query.bindparams(slug=slug)
+
+        result = session.execute(query)
+        results_as_dict = result.mappings().all()
+        for row in results_as_dict:
+            team_list.append(season_team_row_mapper(row))
+
+    return team_list

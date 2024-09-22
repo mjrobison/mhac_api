@@ -6,9 +6,14 @@ from datetime import date, time
 from database import db
 
 from .standings import add_to_standings, remove_from_standings
-from .teams import get_with_uuid as team_get, SeasonTeam
+from .teams import get_with_uuid as team_get, SeasonTeam, _get_slug_by_level_id
 from .seasons import get_by_id, Season
 from .utils import totalPoints, totalRebounds
+
+import io
+import openpyxl
+import codecs
+import csv
 
 schedule_base_query = text(
     """SELECT
@@ -533,6 +538,24 @@ def get_team_schedule(
     slug: str = None,
     year: str = None,
 ):
+    
+    def team_schedule_row_mapper(row) -> TeamSchedule:
+        return {
+            "schedule_id": row["schedule_id"],
+            "game_date": row["game_date"],
+            "game_time": row["game_time"],
+            "game_id": row["game_id"],
+            "home_team": team_get(row["home_team"]),
+            "away_team": team_get(row["away_team"]),
+            "final_scores": {
+                "away_score": row["final_away_score"],
+                "home_score": row["final_home_score"],
+            },
+            "missing_stats": row["missing_stats"],
+            "season": get_by_id(row["season_id"]),
+            "level_name": row["level_name"]
+        }
+    
     missing_subquery = ""
     wheres = ""
 
@@ -565,13 +588,18 @@ def get_team_schedule(
                 final_home_score, 
                 final_away_score,
                 CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats,
-                schedule.season_id
+                seasons.id as season_id, 
+                levels.level_name
             FROM mhac.games
             INNER JOIN mhac.schedule 
                 ON games.game_id = schedule.game_id
-            LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
+            INNER JOIN mhac.seasons
+                ON schedule.season_id = seasons.id
+            INNER JOIN mhac.levels
+                ON seasons.level_id = levels.id
+            LEFT OUTER JOIN mhac.teams AS home_team
                 ON games.home_team_id = home_team.id
-            LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
+            LEFT OUTER JOIN mhac.teams AS away_team
                 ON games.away_team_id = away_team.id
             {wheres}
             ORDER BY schedule.game_date
@@ -606,13 +634,18 @@ def get_team_schedule(
                 final_home_score, 
                 final_away_score,
                 CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats,
-                schedule.season_id
+                seasons.id as season_id, 
+                levels.level_name
             FROM mhac.games
             INNER JOIN mhac.schedule 
                 ON games.game_id = schedule.game_id
-            LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
+            INNER JOIN mhac.seasons
+                ON schedule.season_id = seasons.id
+            INNER JOIN mhac.levels
+                ON seasons.level_id = levels.id
+            LEFT OUTER JOIN mhac.teams AS home_team
                 ON games.home_team_id = home_team.id
-            LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
+            LEFT OUTER JOIN mhac.teams AS away_team
                 ON games.away_team_id = away_team.id
             {wheres}
             ORDER BY schedule.game_date
@@ -634,13 +667,14 @@ def get_team_schedule(
                     final_home_score, 
                     final_away_score,
                     {missing_subquery} as missing_stats,
-                    schedule.season_id
+                    seasons.id as season_id, 
+                    levels.level_name
                 FROM mhac.games
                 INNER JOIN mhac.schedule 
                     ON games.game_id = schedule.game_id
-                LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
+                LEFT OUTER JOIN mhac.teams AS home_team
                     ON games.home_team_id = home_team.id
-                LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
+                LEFT OUTER JOIN mhac.teams AS away_team
                     ON games.away_team_id = away_team.id
                 WHERE year = :year
                 ORDER BY schedule.game_date
@@ -661,16 +695,21 @@ def get_team_schedule(
                 away_team.id as away_team, 
                 final_home_score, 
                 final_away_score,
-                {missing_subquery} as missing_stats,
-                schedule.season_id
+                0 as missing_stats,
+                seasons.id as season_id, 
+                levels.level_name
             FROM mhac.games
             INNER JOIN mhac.schedule 
                 ON games.game_id = schedule.game_id
-            LEFT OUTER JOIN mhac.season_teams_with_names AS home_team
+            INNER JOIN mhac.seasons
+                ON schedule.season_id = seasons.id
+            INNER JOIN mhac.levels
+                ON seasons.level_id = levels.id
+            LEFT OUTER JOIN mhac.teams AS home_team
                 ON games.home_team_id = home_team.id
-            LEFT OUTER JOIN mhac.season_teams_with_names AS away_team
+            LEFT OUTER JOIN mhac.teams AS away_team
                 ON games.away_team_id = away_team.id
-            WHERE (home_team.archive is null and away_team.archive is null)
+            WHERE seasons.archive is null
             ORDER BY schedule.game_date
             """
         )
@@ -686,11 +725,50 @@ def get_team_schedule(
 
 
 def get_program_schedule(slug: str = None, year=None):
+    def team_schedule_row_mapper(row) -> TeamSchedule:
+        return {
+            "schedule_id": row["schedule_id"],
+            "game_date": row["game_date"],
+            "game_time": row["game_time"],
+            "game_id": row["game_id"],
+            "home_team": team_get(row["home_team"]),
+            "away_team": team_get(row["away_team"]),
+            "final_scores": {
+                "away_score": row["final_away_score"],
+                "home_score": row["final_home_score"],
+            },
+            "missing_stats": row["missing_stats"],
+            "season": get_by_id(row["season_id"]),
+            "level_name": row["level_name"]
+        }
+
     stmt = text(
-        f""" {schedule_base_query}
-            WHERE home_team.archive is null and away_team.archive is null
-             AND (home_team.slug = :slug
+        f""" SELECT
+                schedule.id as schedule_id, 
+                games.game_id as game_id,
+                schedule.game_date::date as game_date,
+                schedule.game_time as game_time, 
+                home_team.id as home_team,
+                away_team.id as away_team, 
+                final_home_score, 
+                final_away_score,
+                '' as missing_stats,
+                seasons.id as season_id, 
+                levels.level_name
+            FROM mhac.games
+            INNER JOIN mhac.schedule 
+                ON games.game_id = schedule.game_id
+            INNER JOIN mhac.seasons
+                ON schedule.season_id = seasons.id
+            INNER JOIN mhac.levels
+                ON seasons.level_id = levels.id
+            LEFT OUTER JOIN mhac.teams AS home_team
+                ON games.home_team_id = home_team.id
+            LEFT OUTER JOIN mhac.teams AS away_team
+                ON games.away_team_id = away_team.id
+            WHERE (home_team.slug = :slug
                 OR away_team.slug = :slug)
+                AND seasons.archive is null
             ORDER BY game_date, game_time
             """
     )
@@ -1084,3 +1162,13 @@ def stats_by_season_and_team(season_id, team_id):
         data_all.append(data)
 
     return data_all
+
+async def parse_schedule_csv(file):
+    # TODO: For each row look up the season
+    # TODO: For each row determine home and away
+    # TODO: For each row lookup opponent, add team if not exists, flag as non-conference if newly created
+    # TODO: For each row "add_game"
+    csvReader = csv.DictReader(codecs.iterdecode(file.file, 'utf-8'))
+    for row in csvReader:
+        _get_slug_by_level_id()
+    file.file.close()

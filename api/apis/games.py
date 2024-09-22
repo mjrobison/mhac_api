@@ -188,3 +188,17 @@ def get_team_schedule(season_team_id: UUID):
 @router.post('/deleteGame', tags=['games', 'test'], status_code=204)
 def delete_game(game_id: GameInDel):
     return games.remove_game(game_id)
+
+@router.post('/scheduleFile/{team_slug}/{year}', tags=['schedule'])
+async def build_schedule(file: UploadFile, team_slug, year):
+    print(file.filename.endswith('.csv'))
+    error = False
+
+    if file.filename.endswith('.xlsx'):
+        f = await file.read()
+        xlsx = io.BytesIO(f)
+        wb = openpyxl.load_workbook(xlsx)
+        ws = wb.active
+        # level_name = ws.cell(row=1, column=3).value
+    elif file.filename.endswith('.csv'):
+        await games.parse_schedule_csv(file)
