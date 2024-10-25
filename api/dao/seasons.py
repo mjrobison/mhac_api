@@ -307,7 +307,7 @@ def update(season: SeasonUpdate):
             )
             stmt = stmt.bindparams(season_id=season.season_id)
             current_season_teams = session.execute(stmt).mappings().all()
-            # print(current_season_teams)
+            # print(f"current teams: {current_season_teams}")
             current_team_list = [team["team_id"] for team in current_season_teams]
             incoming_team_list = [team.team_id for team in season.season_teams]
             teams_to_remove = set(current_team_list) - set(incoming_team_list)
@@ -323,7 +323,7 @@ def update(season: SeasonUpdate):
                 if team.team_id in current_team_list:
                     continue
                 add_team_to_season(
-                    season_id=season.season_id, team_id=team["team_id"], session=session
+                    season_id=season.season_id, team_id=team.team_id, session=session
                 )
 
             session.commit()
