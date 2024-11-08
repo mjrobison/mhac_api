@@ -123,8 +123,9 @@ def get_all_players():
     return player_list
 
 
-@router.post('/teamFile/{team_slug}/{year}')
-async def create_team_file(file: UploadFile, team_slug: str, year: str):
+@router.post('/teamFile/{team_slug}/{year}/{level_name}')
+async def create_team_file(file: UploadFile, team_slug: str, year: str, level_name: str):
+    level_name = level_name.replace('_', ' ')
     error = False
     #TODO: Needs season_roster: List[SeasonTeamOut2]
     if file.filename.endswith('.xlsx'):
@@ -132,18 +133,17 @@ async def create_team_file(file: UploadFile, team_slug: str, year: str):
         xlsx = io.BytesIO(f)
         wb = openpyxl.load_workbook(xlsx)
         ws = wb.active
-        level_name = ws.cell(row=1, column=3).value
+        # level_name = ws.cell(row=1, column=3).value
         import re
         pattern = re.compile(r"""(\d+)(?:'|’)(?: *(\d+))?""")
         headers = ['player_number', 'age', 'grade', 'position', 'height', 'first_name', 'last_name']
         response_list = []
         # From the excel file players start in A4
-        for row in ws.iter_rows(min_row=4):
+        for row in ws.iter_rows(min_row=5):
             row_values = [cell.value for cell in row]
             if set(row_values) != set([None]):
                 person = dict(zip(headers, [cell.value for cell in row]))
                 feet, inches = re.match(pattern, person['height']).groups()
-            
                 person['height'] = {
                     'feet': int(feet or 0),
                     'inches': int(inches or 0)
@@ -155,6 +155,7 @@ async def create_team_file(file: UploadFile, team_slug: str, year: str):
                 person['person_type'] = '1'
                 response = players.import_player(ImportPlayer(**person))
                 print(response)
+
                 if response['status_code'] != 200:
                     error = True
                 response_list.append(response['detail'])

@@ -57,7 +57,7 @@ class SeasonTeamOut2(TeamBase):
 
 class SeasonTeamUpdate(TeamBase):
     team_id: UUID
-    season_id: Optional[UUID]
+    # season_id: Optional[UUID]
     address: Optional[AddressSeasonUpdate]
     level_name: Optional[str]
 

@@ -90,6 +90,7 @@ class TeamSchedule(BaseModel):
     final_scores: Final_Scores
     missing_stats: Optional[bool]
     season: SeasonOut
+    level_name: Optional[str]
 
 
 class GameStats(BaseModel):
@@ -147,7 +148,7 @@ async def create_upload_file(game_id: UUID, team_id: UUID, file: UploadFile = Fi
     return msg
 
 
-@router.put('/updateFinalScore', tags=['games'])
+@router.put('/updateFinalScore', tags=['games'], status_code=200)
 def update_final_score():
     pass
 
@@ -157,18 +158,18 @@ def add_final_score(game: GameIn):
     return games.add_final_score(game)
 
 
-@router.get('/getSchedule', tags=['games'])  # , response_model=List[ScheduleOut], tags=['games'])
+@router.get('/getSchedule', tags=['games'], status_code=200)  # , response_model=List[ScheduleOut], tags=['games'])
 def get_full_schedules():
     return games.get_team_schedule()
 
 
-@router.get('/getSchedule/{path}', response_model=List[TeamSchedule], tags=['games'])
+@router.get('/getSchedule/{path}', tags=['games'], status_code=200)
 def get_season_schedules(path):
-    if type(path) == UUID:
-        return games.get_season_schedule(season_id=path)
-    elif type(path) == str:
-        return games.get_season_schedule(year=path)
-
+    results =  games.get_season_schedule(argument=path)
+    if len(results) == 0:
+        raise HTTPException(status_code=404, detail="No games for the filters")
+    return results
+    
 
 @router.get('/getProgramSchedule/{slug}', tags=['games', 'test'])
 def get_program_schedules(slug: str):
