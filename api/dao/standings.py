@@ -100,7 +100,7 @@ def get(level=None) -> Standings:
     return standings_list
 
 
-def add_to_standings(team_id, event, database):
+def add_to_standings(team_id, event, level, database):
     if event:
         update = text("""wins = wins + 1 """)
     else:
@@ -110,25 +110,46 @@ def add_to_standings(team_id, event, database):
         update = text(
             f"""UPDATE mhac.standings
                     SET games_played = games_played + 1, {update}
-                    WHERE team_id = :team_id """
+                    FROM mhac.season_teams_with_names
+                    WHERE standings.team_id = season_teams_with_names.id
+                        AND season_teams_with_names.team_id = :team_id
+                        AND level_name = :level
+                        AND archive is null
+            """
         )
 
-        stmt = update.bindparams(team_id=team_id)
+        stmt = update.bindparams(team_id=team_id, level=level)
+        print(stmt, team_id)
         database.execute(stmt)
 
         update = text(
             f"""UPDATE mhac.standings
             SET win_percentage = case when wins = 0 THEN 0.00 else ROUND(wins/games_played::decimal, 4) end
-            WHERE team_id = :team_id """
+            FROM mhac.season_teams_with_names
+            WHERE standings.team_id = season_teams_with_names.id
+                AND season_teams_with_names.team_id = :team_id
+                AND level_name = :level
+                AND archive is null
+            """
         )
 
-        stmt = update.bindparams(team_id=team_id)
+        stmt = update.bindparams(team_id=team_id, level=level)
+        print(stmt)
         database.execute(stmt)
 
         query = text(
-            """SELECT season_id FROM mhac.standings where team_id = :team_id """
+            """
+            SELECT standings.season_id FROM mhac.standings 
+            INNER JOIN mhac.season_teams_with_names
+                ON standings.season_id = season_teams_with_names.season_id
+                AND standings.team_id = season_teams_with_names.id
+            where season_teams_with_names.team_id = :team_id
+                AND archive is null
+                AND level_name = :level_name
+        """
         )
-        stmt = query.bindparams(team_id=team_id)
+        stmt = query.bindparams(team_id=team_id, level_name = level)
+        print(stmt, team_id)
         season_id = database.execute(stmt).fetchone()
 
         update_standings_rank(season_id=season_id[0], DB=database)
@@ -203,6 +224,7 @@ def update_all_active_seasons(refactor=None):
 def update_standings_rank(season_id, DB):
     # using the season_id determine if a change needs to be made
     # if needed apply the update
+    print(f"\n\n{season_id}\n\n")
     try:
         query = text(
             """UPDATE mhac.standings                                                                                                                                       

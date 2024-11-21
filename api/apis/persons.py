@@ -69,7 +69,6 @@ def get_team_players(slug):
 @router.get('/getPlayers', summary="Get all players", tags=['players']  )
 async def get_all_players():
     rosters = await players.get_list(person_type='Player')
-    # print(rosters)
     return rosters
 
 

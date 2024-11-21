@@ -94,11 +94,12 @@ class TeamSchedule(BaseModel):
 
 
 class GameStats(BaseModel):
-    game_id: UUID
-    team_id: UUID
-    game_scores: Optional[List[GameResult]]
+    game_id: Optional[UUID]
+    team_id: Optional[UUID] = None
+    game_scores: Optional[List[GameResult]] = []
     final_scores: Final_Scores
-    player_stats: List[Player_Stats]
+    player_stats: Optional[List[Player_Stats]]
+    level_name: Optional[str] = ''
 
 
 class GameResultsStatsOut(PlayerOut):
@@ -128,13 +129,14 @@ def update_game(game: ScheduleUpdate):
 
 
 @router.get('/getGameResults/{game_id}', tags=['games'])  # , response_model=List[GameResultsStatsOut], tags=['games'])
-@router.get('/getGameResults/{game_id}/{team_id}', tags=['games'])  # , response_model=List[GameResultsStatsOut], tags=['games'])
-def get_game(game_id: UUID, team_id: UUID = None):
-    return games.get_game_results(game_id=game_id, team_id=team_id)
+@router.get('/getGameResults/{game_id}/{team_id}/{level_name}', tags=['games'])  # , response_model=List[GameResultsStatsOut], tags=['games'])
+def get_game(game_id: UUID, team_id: UUID = None, level_name: str = None):
+    return games.get_game_results(game_id=game_id, team_id=team_id, level_name=level_name)
 
 
 @router.post('/addGameResults/{game_id}', tags=['games'])
 def add_game_results(game_id: UUID, game_scores: GameStats):
+    # print(game_scores)
     return games.add_games_and_stats(game_scores)
 
 

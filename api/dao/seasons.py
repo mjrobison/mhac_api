@@ -312,11 +312,11 @@ def update(season: SeasonUpdate):
             incoming_team_list = [team.team_id for team in season.season_teams]
             teams_to_remove = set(current_team_list) - set(incoming_team_list)
 
-            for team in teams_to_remove:
-                print(team)
-                remove_team_by_id(
-                    team_id=team, season_id=season.season_id, session=session
-                )
+            # for team in teams_to_remove:
+            #     print(team)
+            #     remove_team_by_id(
+            #         team_id=team, season_id=season.season_id, session=session
+            #     )
 
             for team in season.season_teams:
                 print(f"In team loop: {team}")
