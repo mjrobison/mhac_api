@@ -16,9 +16,9 @@ class WebSocketUrl(TypedDict):
 
 
 def get_websocket_url():
-    stmt =  '''
+    stmt =  text('''
         SELECT * FROM mhac.websocket
-    '''
+    ''')
     with db() as DB:
         webSocketUrl = DB.execute(stmt).fetchone()
         

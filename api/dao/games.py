@@ -562,16 +562,6 @@ def get_team_schedule(
     wheres = ""
 
     if season_id and slug:
-        missing_subquery = text(
-            """SELECT count(*) FROM mhac.basketball_stats 
-                INNER JOIN mhac.season_teams_with_names 
-                    ON basketball_stats.team_id = season_teams_with_names.id
-                    AND season_teams_with_names.slug = :slug
-                    AND basketball_stats.game_id = games.game_id
-                    and season_teams_with_names.season_id = :season_id
-                """
-        )
-
         wheres = text(
             """ 
             WHERE (home_team.slug = :slug
@@ -589,7 +579,9 @@ def get_team_schedule(
                 away_team.id as away_team, 
                 final_home_score, 
                 final_away_score,
-                CASE WHEN ({missing_subquery}) = 0 THEN true ELSE false END as missing_stats,
+                CASE WHEN (
+                    games.final_home_score is null or games.final_home_score < 0
+                ) THEN true ELSE false END as missing_stats, 
                 seasons.id as season_id, 
                 levels.level_name
             FROM mhac.games

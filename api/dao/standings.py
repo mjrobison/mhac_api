@@ -20,6 +20,7 @@ class Standings(TypedDict):
     games_played: int
     games_behind: float
     win_percentage: float
+    standings_rank: int
 
 def row_mapper(row, leader=None) -> Standings:
     games_behind = 0.0
@@ -37,6 +38,7 @@ def row_mapper(row, leader=None) -> Standings:
         "games_played": row["games_played"],
         "games_behind": games_behind,
         "win_percentage": row["win_percentage"],
+        "standings_rank": row["standings_rank"]
     }
     return Standings
 
@@ -55,7 +57,6 @@ def get_a_season(id) -> List[Standings]:
     stmt = stmt.bindparams(id=id)
     with db() as DB:
         results = DB.execute(stmt).mappings().all()
-
     standings_list = []
     i = 1
     leader = {}

@@ -15,6 +15,7 @@ from .seasons import get_by_id, Season
 from .teams import get_with_uuid, TeamOut
 
 import json
+from math import ceil, log2
 
 
 class MatchUp(TypedDict):
@@ -397,3 +398,138 @@ def update_tournament_game(game):
         print(str(exc))
         raise HTTPException(status_code=400, detail=str(exc))
     return
+
+
+def is_power_of_two(n: int) -> bool:
+    return n & (n - 1) == 0 and n != 0
+
+def next_power_of_two(n: int) -> int:
+    return 1 << (n - 1).bit_length()
+
+def generate_bracket(teams: List[Dict]):
+    print(teams)
+       # Sort teams by rank (lowest rank number is the highest-ranked team)
+    sorted_teams = sorted(teams, key=lambda x: x["standings_rank"])
+
+    num_teams = len(sorted_teams)
+    next_pow2 = next_power_of_two(num_teams)
+    num_byes = next_pow2 - num_teams
+
+    # Allocate byes to the top-ranked teams
+    bye_teams = sorted_teams[:num_byes]
+    playing_teams = sorted_teams[num_byes:]
+
+    # Build first round
+    bracket = []  # First round   
+    first_round_matches = []
+
+    # Add matches for teams playing in the first round
+    for i in range(len(playing_teams) // 2):
+        match = {
+            "match": f"1.{i + 1}",
+            "team1": playing_teams[i],
+            "team2": playing_teams[-(i + 1)],
+            "winner": None,
+        }
+        first_round_matches.append(match)
+
+    # Add bye matches (teams without opponents)
+    for i, bye_team in enumerate(bye_teams):
+        first_round_matches.append({
+            "match": f"1.{len(first_round_matches) + i + 1}",
+            "team1": bye_team,
+            "team2": None,  # Bye team has no opponent
+            "winner": bye_team,  # Automatically advances
+        })
+
+    bracket.append(first_round_matches)
+
+    # Build subsequent rounds
+    current_round = 2
+    previous_round_winners = [
+        match["team1"] if match["team2"] is None else f"Winner of {match['match']}"
+        for match in first_round_matches
+    ]
+
+    while len(previous_round_winners) > 1:
+        next_round_matches = []
+        for i in range(0, len(previous_round_winners), 2):
+            next_round_matches.append({
+                "match": f"{current_round}.{i // 2 + 1}",
+                "team1": previous_round_winners[i],
+                "team2": previous_round_winners[i + 1] if i + 1 < len(previous_round_winners) else None,
+                "winner": None,
+            })
+        bracket.append(next_round_matches)
+        previous_round_winners = [
+            f"Winner of {match['match']}" for match in next_round_matches
+        ]
+        current_round += 1
+
+    return {"rounds": bracket}
+
+
+# def generate_bracket(teams: List[Dict]):
+#     # Sort teams by rank
+#     sorted_teams = sorted(teams, key=lambda x: x["standings_rank"])
+
+#     num_teams = len(sorted_teams)
+#     next_pow2 = next_power_of_two(num_teams)
+#     num_byes = next_pow2 - num_teams
+
+#     # Allocate byes to top-ranked teams
+#     bracket = [[]]  # First round
+#     bye_teams = sorted_teams[:num_byes]
+#     playing_teams = sorted_teams[num_byes:]
+
+#     # First-round matches
+#     first_round_matches = []
+#     for i in range(len(playing_teams) // 2):
+#         match = {
+#             "match": f"1.{i + 1}",
+#             "team1": playing_teams[i],
+#             "team2": playing_teams[-(i + 1)],
+#             "winner": None,
+#         }
+#         first_round_matches.append(match)
+
+#     # Add bye matches
+#     for i, bye_team in enumerate(bye_teams):
+#         first_round_matches.append({
+#             "match": f"1.{len(first_round_matches) + i + 1}",
+#             "team1": bye_team,
+#             "team2": None,
+#             "winner": bye_team,  # Automatically advance
+#         })
+
+#     bracket.append(first_round_matches)
+
+#     # Populate second round with auto-advanced bye teams and placeholders
+#     second_round_matches = []
+#     first_round_winners = [match["winner"] if match["winner"] else f"Winner of {match['match']}" for match in first_round_matches]
+
+#     for i in range(0, len(first_round_winners), 2):
+#         second_round_matches.append({
+#             "match": f"2.{i // 2 + 1}",
+#             "team1": first_round_winners[i],
+#             "team2": first_round_winners[i + 1] if i + 1 < len(first_round_winners) else None,
+#             "winner": None,
+#         })
+
+#     bracket.append(second_round_matches)
+
+#     # Build remaining rounds
+#     current_round = 2
+#     while len(bracket[current_round]) > 1:
+#         next_round_matches = []
+#         for i in range(0, len(bracket[current_round]), 2):
+#             next_round_matches.append({
+#                 "match": f"{current_round + 1}.{i // 2 + 1}",
+#                 "team1": f"Winner of {current_round}.{2 * i + 1}",
+#                 "team2": f"Winner of {current_round}.{2 * i + 2}" if 2 * i + 2 < len(bracket[current_round]) else None,
+#                 "winner": None,
+#             })
+#         bracket.append(next_round_matches)
+#         current_round += 1
+
+#     return {"rounds": bracket, "consolation_games": []}
