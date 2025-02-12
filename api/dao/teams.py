@@ -195,7 +195,7 @@ def get_season_team(slug: str, seasonid: str) -> SeasonTeam:
 
 def get_list() -> List[TeamOut]:
     team_list = []
-    stmt = text("""SELECT * FROM mhac.teams WHERE active""")
+    stmt = text("""SELECT * FROM mhac.teams WHERE active and conference""")
     with db() as session:
         result = session.execute(stmt).mappings().all()
 

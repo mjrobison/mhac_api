@@ -249,6 +249,8 @@ def create_player(player):
         player_height = combine_height(player.height)
         if player_height == 0:
             player_height = None
+        if player.age == '':
+            player.age = None
 
         player_id = uuid4()
         stmt = text(
